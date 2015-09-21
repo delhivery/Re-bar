@@ -39,3 +39,6 @@ class ForeignKey(BaseField):
 
         self.validate()
         return self
+
+    def serialize(self):
+        return self.value.data['_id']

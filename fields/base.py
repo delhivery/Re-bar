@@ -53,6 +53,9 @@ class ChoiceField(BaseField):
         self.validate()
         return self
 
+    def serialize(self):
+        return self.value
+
 
 class TimeField(BaseField):
     def __init__(self):
@@ -61,7 +64,10 @@ class TimeField(BaseField):
     def valueOf(self, value=None):
         if value:
             if isinstance(value, int):
-                value = datetime.time(int(value/60), value % 60)
+                hours = int(value / 3600)
+                minutes = int((value - value * 3600) / 60)
+                seconds = value % 60
+                value = datetime.time(hours, minutes, seconds)
             self.value = value
 
         if value is None and self.value is None:
@@ -69,3 +75,9 @@ class TimeField(BaseField):
 
         self.validate()
         return self
+
+    def serialize(self):
+        return (
+            self.value.hour * 3600 + self.value.minute * 60 +
+            self.value.second
+        )

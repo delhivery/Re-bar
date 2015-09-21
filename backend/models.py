@@ -1,10 +1,8 @@
 import datetime
-import uuid
-
 # from .utils.graph import create_graph
 from fields.relational import ForeignKey
 from fields.base import ChoiceField, TimeField
-from mongo.utils import DBConnection
+from mongo.utils import DBConnection, serialize
 
 
 class BaseModel(dict):
@@ -32,6 +30,9 @@ class BaseModel(dict):
     def __init__(self, **kwargs):
         self.data = {}
 
+        if '_id' in kwargs:
+            self.data['_id'] = kwargs['_id']
+
         for key, key_type in self.structure.items():
             value = kwargs.get(key, None)
 
@@ -44,25 +45,16 @@ class BaseModel(dict):
 
             self.data[key] = value
 
-        if '_id' not in self.data:
-            self.data['_id'] = uuid.uuid4()
-
     def save(self, connection=None):
         connection = self.__class__.get_connection(connection)
-        save_data = {}
+        save_data = serialize(self)
 
-        for key, value in self.data.items():
-            if key == '_id':
-                save_data[key] = value
-                continue
-
-            if isinstance(self.structure[key], ForeignKey):
-                value = value.pkey
-
-            save_data[key] = value
-        connection.update_one(
-            {'_id': self.data['_id']},
-            {'$set': self.data}, upsert=True)
+        if '_id' in save_data:
+            connection.update_one(
+                {'_id': save_data['_id']},
+                {'$set': save_data}, upsert=True)
+        else:
+            connection.insert_one(save_data)
 
 
 class DeliveryCenter(BaseModel):
