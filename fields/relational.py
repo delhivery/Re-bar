@@ -6,6 +6,7 @@ from .base import BaseField
 class ForeignKey(BaseField):
 
     def __init__(self, fkey_to):
+        self.lazy_load = False
 
         if isinstance(fkey_to, str):
             self.fkey_to = fkey_to
@@ -33,8 +34,8 @@ class ForeignKey(BaseField):
 
         if value is None and self.value is None:
             raise TypeError(
-                'Missing value for ForeignKey: {}'.format(self.fkey_to)
+                'Missing value for ForeignKey: {}'.format(self.f_type)
             )
 
         self.validate()
-        return self.value
+        return self

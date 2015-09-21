@@ -1,8 +1,9 @@
 import datetime
+import uuid
 
 # from .utils.graph import create_graph
 from fields.relational import ForeignKey
-from fields.base import ChoiceField, AutoField
+from fields.base import ChoiceField, TimeField
 from mongo.utils import DBConnection
 
 
@@ -12,7 +13,6 @@ class BaseModel(dict):
     structure = ''
     required_keys = []
     unique_keys = []
-    primary_key = None
 
     @classmethod
     def get_connection(cls, connection=None):
@@ -23,51 +23,46 @@ class BaseModel(dict):
     @classmethod
     def get(cls, value, connection=None):
         connection = cls.get_connection(connection)
-        return connection.find_one({cls.primary_key: value})
+        return cls(**connection.find_one({'_id': value}))
 
     @property
     def pkey(self):
-        return self.data.get(self.primary_key)
+        return self.data.get('_id')
 
     def __init__(self, **kwargs):
         self.data = {}
 
-        for key, key_type in self.structure:
-            default = key_type
+        for key, key_type in self.structure.items():
+            value = kwargs.get(key, None)
 
-            if key_type is datetime.datetime:
-                default = datetime.datetime.now
+            if isinstance(key_type, type):
 
-            if hasattr(key_type, 'valueOf'):
-                default = key_type.valueOf
-
-            value = kwargs.get(key, default())
-
-            if not isinstance(value, key_type):
-                try:
+                if not isinstance(value, key_type):
                     value = key_type(value)
-                except TypeError:
-                    value = key_type.valueOf(value)
-                except:
-                    raise TypeError(
-                        'Invalid value {} specified for key {}. '
-                        'Accepts only {}'.format(
-                            value, key, key_type
-                        )
-                    )
+            else:
+                value = key_type.valueOf(value)
+
             self.data[key] = value
+
+        if '_id' not in self.data:
+            self.data['_id'] = uuid.uuid4()
 
     def save(self, connection=None):
         connection = self.__class__.get_connection(connection)
         save_data = {}
 
         for key, value in self.data.items():
+            if key == '_id':
+                save_data[key] = value
+                continue
 
             if isinstance(self.structure[key], ForeignKey):
                 value = value.pkey
 
             save_data[key] = value
-        connection.insert(self.data)
+        connection.update_one(
+            {'_id': self.data['_id']},
+            {'$set': self.data}, upsert=True)
 
 
 class DeliveryCenter(BaseModel):
@@ -81,7 +76,6 @@ class DeliveryCenter(BaseModel):
     }
 
     required_keys = ['code']
-    primary_key = 'code'
     unique_keys = [('code', ), ]
 
 
@@ -90,23 +84,21 @@ class Connection(BaseModel):
     database = 'easypeasy'
 
     structure = {
-        'index': AutoField(),
         'name': str,
         'origin': ForeignKey(DeliveryCenter),
         'destination': ForeignKey(DeliveryCenter),
-        'departure': datetime.time(),
-        'duration': datetime.time(),
+        'departure': TimeField(),
+        'duration': TimeField(),
         'type': ChoiceField(type=str, choices=[
             'Local', 'Surface', 'Railroad', 'Air'
         ])
     }
 
     required_keys = [
-        'index', 'name', 'origin', 'destination', 'departure', 'duration',
+        'name', 'origin', 'destination', 'departure', 'duration',
         'type'
     ]
-    primary_key = 'index'
-    unique_keys = [('index', ), ]
+    unique_keys = []
 
 
 class GraphNode(BaseModel):
@@ -117,7 +109,6 @@ class GraphNode(BaseModel):
     database = 'easypeasy'
 
     structure = {
-        'index': AutoField(),
         'wbn': str,
         'order': int,
         'vertex': ForeignKey(DeliveryCenter),
@@ -131,11 +122,10 @@ class GraphNode(BaseModel):
     }
 
     required_keys = [
-        'index', 'wbn', 'order', 'vertex', 'parent', 'edge', 'arrival',
+        'wbn', 'order', 'vertex', 'parent', 'edge', 'arrival',
         'departure', 'state'
     ]
-    primary_key = 'index'
-    unique_keys = [('index',), ('wbn', 'order')]
+    unique_keys = [('wbn', 'order')]
 
 # g = create_graph(GraphNode.find({'wbn': '12192078102'}))
 # g.get_active()

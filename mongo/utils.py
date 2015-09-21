@@ -1,10 +1,10 @@
 from pymongo import MongoClient
 
 HOST = '127.0.0.1'
-PORT = '27017'
+PORT = 27017
 
 
-def DBConnection(self, database, collection):
+def DBConnection(database, collection):
     client = MongoClient(HOST, PORT)
     database = client[database]
     collection = database[collection]

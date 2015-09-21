@@ -1,3 +1,4 @@
+import datetime
 import uuid
 
 
@@ -50,21 +51,21 @@ class ChoiceField(BaseField):
         if value is None and self.value is None:
             self.value = self.f_type()
         self.validate()
-        return self.value
+        return self
 
 
-class AutoField(BaseField):
+class TimeField(BaseField):
     def __init__(self):
-        super(AutoField, self).__init__(type=uuid.UUID)
+        super(TimeField, self).__init__(type=datetime.time)
 
     def valueOf(self, value=None):
         if value:
-            if isinstance(value, str):
-                value = uuid.UUID(value)
+            if isinstance(value, int):
+                value = datetime.time(int(value/60), value % 60)
             self.value = value
 
         if value is None and self.value is None:
             self.value = uuid.uuid4()
 
         self.validate()
-        return self.value
+        return self
