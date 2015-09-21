@@ -54,7 +54,8 @@ class BaseModel(dict):
                 {'_id': save_data['_id']},
                 {'$set': save_data}, upsert=True)
         else:
-            connection.insert_one(save_data)
+            result = connection.insert_one(save_data)
+            self.data['_id'] = result.inserted_id
 
 
 class DeliveryCenter(BaseModel):
