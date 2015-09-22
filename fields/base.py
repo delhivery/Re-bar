@@ -7,17 +7,27 @@ class BaseField:
     def __init__(self, *args, **kwargs):
         try:
             self.f_type = kwargs.get('type')
+            self.required = kwargs.get('required', True)
         except KeyError:
             raise TypeError('Field type is required')
         self.value = None
 
     def validate(self):
-        if not isinstance(self.value, self.f_type):
-            raise TypeError(
-                'Expected {}, {}:{} specified'.format(
-                    self.f_type, type(self.value), self.value
+        if self.required:
+            
+            if not isinstance(self.value, self.f_type):
+                raise TypeError(
+                    'Expected {}, {}:{} specified'.format(
+                        self.f_type, type(self.value), self.value
+                    )
                 )
-            )
+        elif not self.value is None:
+            if not isinstance(self.value, self.f_type):
+                raise TypeError(
+                    'Expected {}, {}:{} specified'.format(
+                        self.f_type, type(self.value), self.value
+                    )
+                )
 
 
 class ChoiceField(BaseField):
@@ -58,14 +68,14 @@ class ChoiceField(BaseField):
 
 
 class TimeField(BaseField):
-    def __init__(self):
-        super(TimeField, self).__init__(type=datetime.time)
+    def __init__(self, *args, **kwargs):
+        super(TimeField, self).__init__(type=datetime.time, *args, **kwargs)
 
     def valueOf(self, value=None):
         if value:
             if isinstance(value, int):
                 hours = int(value / 3600)
-                minutes = int((value - value * 3600) / 60)
+                minutes = int((value - hours * 3600) / 60)
                 seconds = value % 60
                 value = datetime.time(hours, minutes, seconds)
             self.value = value

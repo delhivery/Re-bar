@@ -103,10 +103,9 @@ class GraphNode(BaseModel):
 
     structure = {
         'wbn': str,
-        'order': int,
         'vertex': ForeignKey(DeliveryCenter),
-        'parent': ForeignKey('backend.models.GraphNode'),
-        'edge': ForeignKey(Connection),
+        'parent': ForeignKey('backend.models.GraphNode', required=False),
+        'edge': ForeignKey(Connection, required=False),
         'arrival': datetime.datetime,
         'departure': datetime.datetime,
         'state': ChoiceField(type=str, choices=[
@@ -115,8 +114,7 @@ class GraphNode(BaseModel):
     }
 
     required_keys = [
-        'wbn', 'order', 'vertex', 'parent', 'edge', 'arrival',
-        'departure', 'state'
+        'wbn', 'vertex', 'state'
     ]
     unique_keys = [('wbn', 'order')]
 
