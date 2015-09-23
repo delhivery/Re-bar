@@ -20,7 +20,7 @@ class BaseModel(dict):
         return connection
 
     @classmethod
-    def get(cls, value, connection=None):
+    def fetch(cls, value, connection=None):
         connection = cls.get_connection(connection)
         return cls(**connection.find_one({'_id': value}))
 
