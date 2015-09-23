@@ -3,6 +3,7 @@ import datetime
 from fields.relational import ForeignKey
 from fields.base import ChoiceField, TimeField
 from mongo.utils import DBConnection, serialize
+from parser.utils import recurse_get_attr, recurse_set_attr
 
 
 class BaseModel(dict):
@@ -25,13 +26,25 @@ class BaseModel(dict):
 
     @property
     def pkey(self):
-        return self.data.get('_id')
+        return self.get('_id')
+
+    def __setattr__(self, attribute, value):
+        attributes = attribute.split('.')
+        recurse_set_attr(attributes, self)
+
+    def __getattr__(self, attribute):
+        attributes = attribute.split('.')
+        return recurse_get_attr(attributes, self)
+
+    def validate(self):
+        for key, value in self.items():
+            if key in self.required_keys:
+                if not value:
+                    raise ValueError('Value for {} is required'.format(key))
 
     def __init__(self, **kwargs):
-        self.data = {}
-
         if '_id' in kwargs:
-            self.data['_id'] = kwargs['_id']
+            self['_id'] = kwargs['_id']
 
         for key, key_type in self.structure.items():
             value = kwargs.get(key, None)
@@ -43,7 +56,9 @@ class BaseModel(dict):
             else:
                 value = key_type.valueOf(value)
 
-            self.data[key] = value
+            self[key] = value
+
+        self.validate()
 
     def save(self, connection=None):
         connection = self.__class__.get_connection(connection)
@@ -55,7 +70,7 @@ class BaseModel(dict):
                 {'$set': save_data}, upsert=True)
         else:
             result = connection.insert_one(save_data)
-            self.data['_id'] = result.inserted_id
+            self['_id'] = result.inserted_id
 
 
 class DeliveryCenter(BaseModel):
@@ -82,6 +97,7 @@ class Connection(BaseModel):
         'destination': ForeignKey(DeliveryCenter),
         'departure': TimeField(),
         'duration': TimeField(),
+        'active': bool,
         'type': ChoiceField(type=str, choices=[
             'Local', 'Surface', 'Railroad', 'Air'
         ])
@@ -109,8 +125,9 @@ class GraphNode(BaseModel):
         'arrival': datetime.datetime,
         'departure': datetime.datetime,
         'state': ChoiceField(type=str, choices=[
-            'active', 'reached', 'future'
+            'active', 'reached', 'future', 'failed',
         ]),
+        'destination': bool,
     }
 
     required_keys = [

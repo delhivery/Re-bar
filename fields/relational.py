@@ -36,9 +36,9 @@ class ForeignKey(BaseField):
                 self.value = self.f_type(**value)
             else:
                 raise TypeError(
-                        'ForeignKey expects values of type {}. Got {}'.format(
-                            self.f_type, value
-                        )
+                    'ForeignKey expects values of type {}. Got {}'.format(
+                        self.f_type, value
+                    )
                 )
         else:
             self.value = value
@@ -46,4 +46,4 @@ class ForeignKey(BaseField):
         return self
 
     def serialize(self):
-        return self.value.data
+        return self.value

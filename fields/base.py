@@ -8,20 +8,25 @@ class BaseField:
         try:
             self.f_type = kwargs.get('type')
             self.required = kwargs.get('required', True)
+            if not isinstance(self.required, bool):
+                try:
+                    self.required = bool(self.required)
+                except TypeError:
+                    self.required = True
         except KeyError:
             raise TypeError('Field type is required')
         self.value = None
 
     def validate(self):
         if self.required:
-            
+
             if not isinstance(self.value, self.f_type):
                 raise TypeError(
                     'Expected {}, {}:{} specified'.format(
                         self.f_type, type(self.value), self.value
                     )
                 )
-        elif not self.value is None:
+        elif self.value is not None:
             if not isinstance(self.value, self.f_type):
                 raise TypeError(
                     'Expected {}, {}:{} specified'.format(

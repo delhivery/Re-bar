@@ -14,7 +14,7 @@ def DBConnection(database, collection):
 def serialize(obj):
     data = {}
 
-    for key, value in obj.data.items():
+    for key, value in obj.items():
 
         if hasattr(value, 'serialize'):
             data[key] = value.serialize()
