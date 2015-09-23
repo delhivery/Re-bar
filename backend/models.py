@@ -1,5 +1,7 @@
 import datetime
 # from .utils.graph import create_graph
+
+from bson import ObjectId
 from fields.relational import ForeignKey
 from fields.base import ChoiceField, TimeField
 from mongo.utils import DBConnection, serialize
@@ -7,8 +9,8 @@ from parser.utils import recurse_get_attr, recurse_set_attr
 
 
 class BaseModel(dict):
-    collection = ''
-    database = ''
+    collection = None
+    database = 'easypeasy'
     structure = ''
     required_keys = []
     unique_keys = []
@@ -20,9 +22,19 @@ class BaseModel(dict):
         return connection
 
     @classmethod
-    def fetch(cls, value, connection=None):
+    def find_one(cls, value, connection=None):
         connection = cls.get_connection(connection)
-        return cls(**connection.find_one({'_id': value}))
+
+        if isinstance(value, str):
+            value = ObjectId(value)
+
+        if isinstance(value, ObjectId):
+            return cls(**connection.find_one({'_id': value}))
+        elif isinstance(value, dict):
+            cursor = connection.find(value)
+            if cursor.count() == 1:
+                return cls(**cursor[0])
+        raise ValueError('Multiple or no results found')
 
     @property
     def pkey(self):
@@ -76,7 +88,6 @@ class BaseModel(dict):
 class DeliveryCenter(BaseModel):
 
     collection = 'nodes'
-    database = 'easypeasy'
 
     structure = {
         'code': str,
@@ -89,7 +100,6 @@ class DeliveryCenter(BaseModel):
 
 class Connection(BaseModel):
     collection = 'edges'
-    database = 'easypeasy'
 
     structure = {
         'name': str,
@@ -115,7 +125,6 @@ class GraphNode(BaseModel):
         Represents a single leg of a path for a waybill
     '''
     collection = 'paths'
-    database = 'easypeasy'
 
     structure = {
         'wbn': str,

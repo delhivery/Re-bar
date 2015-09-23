@@ -15,6 +15,9 @@ class ForeignKey(BaseField):
             fkey_to = fkey_to
             super(ForeignKey, self).__init__(type=fkey_to, *args, **kwargs)
 
+    def __getattr__(self, attribute):
+        return getattr(self.value, attribute)
+
     def _lazy_load(self):
         self.lazy_load = False
         fullpath = self.fkey_to.split('.')

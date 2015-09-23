@@ -7,8 +7,10 @@ PORT = 27017
 def DBConnection(database, collection):
     client = MongoClient(HOST, PORT)
     database = client[database]
-    collection = database[collection]
-    return collection
+
+    if collection:
+        return database[collection]
+    return database
 
 
 def serialize(obj):
