@@ -5,7 +5,7 @@ from bson import ObjectId
 from fields.relational import ForeignKey
 from fields.base import ChoiceField, TimeField
 from mongo.utils import DBConnection, serialize
-from parser.utils import recurse_get_attr, recurse_set_attr
+from manager.utils import recurse_get_attr, recurse_set_attr
 
 
 class BaseModel(dict):
