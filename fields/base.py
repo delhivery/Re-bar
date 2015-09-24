@@ -68,7 +68,7 @@ class ChoiceField(BaseField):
         self.validate()
         return self
 
-    def serialize(self):
+    def serialize(self, recurse=True):
         return self.value
 
 
@@ -91,7 +91,7 @@ class TimeField(BaseField):
         self.validate()
         return self
 
-    def serialize(self):
+    def serialize(self, recurse=True):
         return (
             self.value.hour * 3600 + self.value.minute * 60 +
             self.value.second

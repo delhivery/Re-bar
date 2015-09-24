@@ -35,6 +35,19 @@ class BaseModel(dict):
                 return cls(**cursor[0])
         raise ValueError('Multiple or no results found')
 
+    @classmethod
+    def find(cls, value, connection=None):
+        connection = cls.get_connection(connection)
+
+        if not isinstance(value, dict):
+            raise TypeError(
+                'Expected query string, found {}: {} instead'.format(
+                    type(value), value
+                )
+            )
+
+        return connection.find(value)
+
     @property
     def pkey(self):
         return self.get('_id')
@@ -152,7 +165,29 @@ class GraphNode(BaseModel):
 
         super(GraphNode, self).__init__(*args, **kwargs)
 
+    @property
+    def parent(self):
+        return self.find_one(self.parent._id)
 
+    @classmethod
+    def find_by_parent(cls, parent):
+        return cls.find_one({'parent._id': parent._id, 'state': 'future'})
+
+    def activate(self):
+        pass
+
+    def deactivate(self):
+        pass
+
+    def fail_misroute(self):
+        pass
+
+    def fail_delayed_arrival(self):
+        pass
+
+    def update_parent(self, parent):
+        self.parent = parent
+        self.save()
 # g = create_graph(GraphNode.find({'wbn': '12192078102'}))
 # g.get_active()
 # if g.active.connects_with(13):
