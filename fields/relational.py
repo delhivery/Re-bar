@@ -2,6 +2,8 @@ import importlib
 
 from .base import BaseField
 
+from mongo.utils import serialize
+
 
 class ForeignKey(BaseField):
 
@@ -49,4 +51,4 @@ class ForeignKey(BaseField):
         return self
 
     def serialize(self):
-        return self.value
+        return serialize(self.value)

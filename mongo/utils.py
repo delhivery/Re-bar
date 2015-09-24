@@ -18,9 +18,11 @@ def serialize(obj):
 
     for key, value in obj.items():
 
-        if hasattr(value, 'serialize'):
-            data[key] = value.serialize()
-        else:
-            data[key] = value
+        if key != 'structure':
+
+            if hasattr(value, 'serialize'):
+                data[key] = value.serialize()
+            else:
+                data[key] = value
 
     return data

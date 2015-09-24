@@ -77,7 +77,7 @@ class TimeField(BaseField):
         super(TimeField, self).__init__(type=datetime.time, *args, **kwargs)
 
     def valueOf(self, value=None):
-        if value:
+        if value is not None:
             if isinstance(value, int):
                 hours = int(value / 3600)
                 minutes = int((value - hours * 3600) / 60)

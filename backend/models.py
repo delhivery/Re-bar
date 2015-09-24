@@ -11,7 +11,6 @@ from manager.utils import recurse_get_attr, recurse_set_attr
 class BaseModel(dict):
     collection = None
     database = 'easypeasy'
-    structure = ''
     required_keys = []
     unique_keys = []
 
@@ -42,7 +41,7 @@ class BaseModel(dict):
 
     def __setattr__(self, attribute, value):
         attributes = attribute.split('.')
-        recurse_set_attr(attributes, self)
+        recurse_set_attr(attributes, self, value)
 
     def __getattr__(self, attribute):
         attributes = attribute.split('.')
@@ -71,6 +70,7 @@ class BaseModel(dict):
             self[key] = value
 
         self.validate()
+        super(BaseModel, self).__init__()
 
     def save(self, connection=None):
         connection = self.__class__.get_connection(connection)
@@ -89,35 +89,39 @@ class DeliveryCenter(BaseModel):
 
     collection = 'nodes'
 
-    structure = {
-        'code': str,
-        'active': bool,
-    }
-
     required_keys = ['code']
     unique_keys = [('code', ), ]
+
+    def __init__(self, *args, **kwargs):
+        self.structure = {
+            'code': str,
+            'active': bool,
+        }
+        super(DeliveryCenter, self).__init__(*args, **kwargs)
 
 
 class Connection(BaseModel):
     collection = 'edges'
-
-    structure = {
-        'name': str,
-        'origin': ForeignKey(DeliveryCenter),
-        'destination': ForeignKey(DeliveryCenter),
-        'departure': TimeField(),
-        'duration': TimeField(),
-        'active': bool,
-        'type': ChoiceField(type=str, choices=[
-            'Local', 'Surface', 'Railroad', 'Air'
-        ])
-    }
 
     required_keys = [
         'name', 'origin', 'destination', 'departure', 'duration',
         'type'
     ]
     unique_keys = []
+
+    def __init__(self, *args, **kwargs):
+        self.structure = {
+            'name': str,
+            'origin': ForeignKey(DeliveryCenter),
+            'destination': ForeignKey(DeliveryCenter),
+            'departure': TimeField(),
+            'duration': TimeField(),
+            'active': bool,
+            'type': ChoiceField(type=str, choices=[
+                'Local', 'Surface', 'Railroad', 'Air'
+            ])
+        }
+        super(Connection, self).__init__(*args, **kwargs)
 
 
 class GraphNode(BaseModel):
@@ -126,23 +130,28 @@ class GraphNode(BaseModel):
     '''
     collection = 'paths'
 
-    structure = {
-        'wbn': str,
-        'vertex': ForeignKey(DeliveryCenter),
-        'parent': ForeignKey('backend.models.GraphNode', required=False),
-        'edge': ForeignKey(Connection, required=False),
-        'arrival': datetime.datetime,
-        'departure': datetime.datetime,
-        'state': ChoiceField(type=str, choices=[
-            'active', 'reached', 'future', 'failed',
-        ]),
-        'destination': bool,
-    }
-
     required_keys = [
         'wbn', 'vertex', 'state'
     ]
+
     unique_keys = [('wbn', 'order')]
+
+    def __init__(self, *args, **kwargs):
+        self.structure = {
+            'wbn': str,
+            'vertex': ForeignKey(DeliveryCenter, required=False),
+            'parent': ForeignKey('backend.models.GraphNode', required=False),
+            'edge': ForeignKey(Connection, required=False),
+            'arrival': datetime.datetime,
+            'departure': datetime.datetime,
+            'state': ChoiceField(type=str, choices=[
+                'active', 'reached', 'future', 'failed',
+            ]),
+            'destination': bool,
+        }
+
+        super(GraphNode, self).__init__(*args, **kwargs)
+
 
 # g = create_graph(GraphNode.find({'wbn': '12192078102'}))
 # g.get_active()
