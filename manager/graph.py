@@ -1,10 +1,11 @@
-# from done.marg import Marg
-from backend.models import GraphNode
+from done.marg import Marg
+from backend.models import Connection, GraphNode
 
 
 class Graph:
     def __init__(self, wbn):
         self.wbn = wbn
+        self.marg = Marg(Connection.all())
 
     def get_active(self):
         return GraphNode.find({'wbn': self.wbn, 'state': 'active'})
@@ -63,49 +64,126 @@ class Graph:
     def parser(
             self, waybill, location, destination, scan_datetime, action,
             connection):
-        has_path = False
 
         if GraphNode.find_one({'wbn': waybill}) is None:
             if action in [None, 'inscan']:
-                root_node = empty_root(waybill)
-                newpath = Marg.shortest_path(location, scan_datetime)[destination]
+                newpath = self.marg.shortest_path(location, scan_datetime)[
+                    destination
+                ]
                 # Convert path to GraphNode and save it to database
                 # Also set first node to active, root node to root_node and
                 # last node to Destination
-                newpath.transform(root_node)
-                has_path = True
-        else:
-            has_path = True
+                newpath.transform()
         self.update_path(
             waybill, location, destination, scan_datetime, action, connection
         )
 
+    def handle_outscan(
+            self, active, location, destination, scan_datetime, connection
+    ):
+
+        if (
+                connection == active.connection and
+                scan_datetime > active.departure
+        ):
+            active.record_soft_failure()
+
+    def handle_inscan(
+            self, active, location, destination, scan_datetime, connection
+    ):
+        expected_at = GraphNode.find_by_parent(active)
+
+        if location != expected_at.vertex.code:
+            # Mark prior active node as failed(since it also carries the
+            # forwarding connection to expected node). Mark the expected
+            # node as failed and create a new route from this point onwards
+            # specifying the parent as reached node
+            active.deactivate()
+
+            # Mark expected node as failed due to manual reroute to a different
+            # center
+            expected_at.fail_misroute()
+
+            # Find new path from current location to destination
+            newpath = self.marg.shortest_path(location, scan_datetime)[
+                destination
+            ]
+            newpath.transform(active.parent)
+
+        else:
+            if connection != active.connection:
+                # Reached the expected destination albeit via a different
+                # connection than intended due to missing a connection or due
+                # to manual override
+
+                # Mark the expected node as failed due to failed
+                # connection. If the reached time is less than
+                # expected.outtime then just specify a new active as
+                # reached and change parent for expected from active to
+                # newactive, otherwise populate a new path and specify
+                # parent as newactive
+
+                # Mark last reached node as inactive(since it also carries
+                # the forwarding connection to expected node).
+                active.deactivate()
+
+                # Duplicate active node specifying the used connection
+                used_connection = Connection.find_one(connection)
+                newactive = GraphNode(
+                    wbn=active.wbn, vertex=active.vertex,
+                    parent=active.parent, edge=used_connection,
+                    departure=active.departure, arrival=scan_datetime)
+                newactive.save()
+                active = newactive
+
+            active.reached()
+            if scan_datetime > expected_at.departure:
+                newpath = self.marg.shortest_path(
+                    expected_at.vertex.code, scan_datetime
+                )[destination]
+                newpath.transform(active)
+                expected_at.fail_delayed_arrival()
+            else:
+                expected_at.update_parent(active)
+                expected_at.activate()
+
+    def handle_destination(
+            self, active, location, destination, scan_datetime
+    ):
+        try:
+            # Validate that destination is unchanged
+            GraphNode.find_one({
+                'wbn': active.wbn,
+                'vertex.code': destination,
+                'destination': True
+            })
+        except ValueError:
+            GraphNode.update(
+                {'wbn': active.wbn, 'destination': True},
+                {'$set': {'destination': False}}
+            )
+            active_parent = active.parent
+            active.deactivate()
+            newpath = self.marg.shortest_path(location, scan_datetime)[
+                destination
+            ]
+            newpath.transform(active_parent)
+
     def update_path(
             self, waybill, location, destination, scan_datetime, action,
-            connection):
+            connection
+    ):
+        active = GraphNode.find_one({'wbn': waybill, 'status': 'active'})
 
         if not action:
-            current_destination = GraphNode.find_one({'wbn': waybill, 'destination': True})
-
-            if current_destination != destination:
-                GraphNode.update(
-                    {'wbn': waybill, 'destination': True},
-                    {'$set': {'destination': False}}
-                )
-                active = GraphNode.find_one({'wbn': waybill, 'status': 'active'})
-                active_parent = active.parent
-                avtice.deactivate()
-                newpath = Marg.shortest_path(location, scan_datetime)[destination]
-                newpath.transform(active_parent)
+            self.handle_destination(
+                active, location, destination, scan_datetime
+            )
         elif action == 'inscan':
-            active = GraphNode.find_one({'wbn': waybill, 'state': 'active'})
-            expected = GraphNode.find_by_parent(active)
-
-            if location != expected['vertex']['code']:
-                active.reached()
-                expected.fail_misroute()
-                newpath = Marg.shortest_path(location, scan_datetime)[destination]
-                newpath.transform(active)
-            elif connection != active.connection:
-                active.deactivate()
-                newactive = GraphNode(wbn=waybill, vertex=active.vertex, parent=active.parent, edge=Connection.find_one({'_id': connection}), arrival=scan_datetime, departure=
+            self.handle_inscan(
+                active, location, destination, scan_datetime, connection
+            )
+        elif action == 'Outscan':
+            self.handle_outscan(
+                active, location, destination, scan_datetime, connection
+            )
