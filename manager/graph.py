@@ -1,3 +1,5 @@
+import datetime
+
 from done.marg import Marg
 from backend.models import Connection, DeliveryCenter, GraphNode
 
@@ -5,18 +7,15 @@ from backend.models import Connection, DeliveryCenter, GraphNode
 class Graph:
     def __init__(self, wbn):
         self.wbn = wbn
-        connections = Connection.all()
+        connections = [Connection(**data) for data in Connection.find({})]
         connections = [{
             'id': connection._id,
             'cutoff_departure': connection.departure.value,
-            'cutoff_arrival': (
-                connection.departure.value +
-                connection.duration.value
-            ),
+            'duration': connection.duration.value,
             'origin': connection.origin.code,
             'destination': connection.destination.code
-        } for connection in Connection.find({})]
-        self.marg = Marg(connections)
+        } for connection in connections]
+        self.marg = Marg(connections, json=True)
 
     def handle_outscan(
             self, active, location, destination, scan_datetime, connection
@@ -32,36 +31,40 @@ class Graph:
 
         if parent is None:
             parent = GraphNode(
-                wbn=self.wbn, arrival=0, departure=0, state='Reached',
+                wbn=self.wbn, arrival=datetime.datetime(1970, 1, 1),
+                departure=datetime.datetime(1970, 1, 1), state='reached',
                 destination=False
             )
             parent.save()
+            parent = parent._id
 
         active = None
 
         for index, path in enumerate(paths):
             state = 'future'
-            is_destination = False
 
             if index == 0:
                 state = 'active'
 
-            if index == len(paths) - 1:
-                is_destination = True
-
             element = GraphNode(
-                wbn=self.wbn, arrival=path.arrival, departure=path.departure,
-                state=state, destination=is_destination,
-                vertex=DeliveryCenter.find_one({'code': path.origin}),
-                parent=parent, edge=Connection.find_one(path.connection),
+                wbn=self.wbn, arrival=path['arrival'], departure=path['departure'],
+                state=state, destination=False,
+                vertex=DeliveryCenter.find_one({'code': path['origin']}),
+                parent=parent, edge=Connection.find_one(path['connection']),
             )
             element.save()
 
             if active is None:
-                active = element
+                active = GraphNode.find_one(element._id)
 
-            parent = element
-            return active
+            parent = element._id
+        last_element = GraphNode(
+            wbn=self.wbn, arrival=datetime.datetime(2099, 10, 10),
+            departure=datetime.datetime(2099, 12, 12), state='future',
+            destination=True, parent=parent
+        )
+        last_element.save()
+        return active
 
     def handle_inscan(
             self, active, location, destination, scan_datetime, connection
@@ -83,7 +86,7 @@ class Graph:
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            self.transform(path, active.parent)
+            self.transform(path, active.parent.value)
 
         else:
             if connection != active.connection:
@@ -106,7 +109,7 @@ class Graph:
                 used_connection = Connection.find_one(connection)
                 newactive = GraphNode(
                     wbn=active.wbn, vertex=active.vertex,
-                    parent=active.parent, edge=used_connection,
+                    parent=active.parent.value, edge=used_connection,
                     departure=active.departure, arrival=scan_datetime)
                 newactive.save()
                 active = newactive
@@ -127,17 +130,17 @@ class Graph:
     ):
         try:
             # Validate that destination is unchanged
-            GraphNode.find_one({
-                'wbn': active.wbn,
-                'vertex.code': destination,
-                'destination': True
-            })
+            if GraphNode.find_one({
+                    'wbn': active.wbn,
+                    'destination': True
+                }).vertex.code != destination:
+                    raise ValueError('Mismatched destination')
         except ValueError:
             GraphNode.update(
                 {'wbn': active.wbn, 'destination': True},
                 {'$set': {'destination': False}}
             )
-            active_parent = active.parent
+            active_parent = active.parent.value
             active.deactivate()
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
@@ -154,7 +157,7 @@ class Graph:
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            self.transform(path)
+            active = self.transform(path)
 
         if not action:
             self.handle_destination(

@@ -1,5 +1,7 @@
 import importlib
 
+from bson import ObjectId
+
 from .base import BaseField
 
 from mongo.utils import serialize
@@ -15,7 +17,7 @@ class ForeignKey(BaseField):
             self.lazy_load = True
         else:
             fkey_to = fkey_to
-            super(ForeignKey, self).__init__(type=fkey_to, *args, **kwargs)
+        super(ForeignKey, self).__init__(type=fkey_to, *args, **kwargs)
 
     def __getattr__(self, attribute):
         return getattr(self.value, attribute)
@@ -28,7 +30,7 @@ class ForeignKey(BaseField):
         module = importlib.import_module(module_path)
         f_type = getattr(module, attr_path)
         del(self.fkey_to)
-        super(ForeignKey, self).__init__(type=f_type)
+        super(ForeignKey, self).__init__(type=f_type, required=self.required)
 
     def valueOf(self, value=None):
         if self.lazy_load:
@@ -39,6 +41,8 @@ class ForeignKey(BaseField):
                 self.value = value
             elif isinstance(value, dict):
                 self.value = self.f_type(**value)
+            elif isinstance(value, ObjectId):
+                self.value = self.f_type.find_one(value)
             else:
                 raise TypeError(
                     'ForeignKey expects values of type {}. Got {}'.format(
@@ -53,5 +57,8 @@ class ForeignKey(BaseField):
     def serialize(self, recurse=True):
         if recurse:
             return serialize(self.value)
+
+        if self.value is None:
+            return None
 
         return self.value._id

@@ -28,9 +28,13 @@ class BaseModel(dict):
             value = ObjectId(value)
 
         if isinstance(value, ObjectId):
-            return cls(**connection.find_one({'_id': value}))
+            value = connection.find_one({'_id': value})
+
+            if value is not None:
+                return cls(**value)
         elif isinstance(value, dict):
             cursor = connection.find(value)
+
             if cursor.count() == 1:
                 return cls(**cursor[0])
         raise ValueError('Multiple or no results found')
@@ -144,7 +148,7 @@ class GraphNode(BaseModel):
     collection = 'paths'
 
     required_keys = [
-        'wbn', 'vertex', 'state'
+        'wbn', 'state'
     ]
 
     unique_keys = [('wbn', 'order')]
@@ -164,10 +168,6 @@ class GraphNode(BaseModel):
         }
 
         super(GraphNode, self).__init__(*args, **kwargs)
-
-    @property
-    def parent(self):
-        return self.find_one(self.parent._id)
 
     @classmethod
     def find_by_parent(cls, parent):

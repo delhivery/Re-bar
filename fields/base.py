@@ -19,7 +19,6 @@ class BaseField:
 
     def validate(self):
         if self.required:
-
             if not isinstance(self.value, self.f_type):
                 raise TypeError(
                     'Expected {}, {}:{} specified'.format(
