@@ -31,8 +31,8 @@ class Graph:
 
         if parent is None:
             parent = GraphNode(
-                wbn=self.wbn, arrival=datetime.datetime(1970, 1, 1),
-                departure=datetime.datetime(1970, 1, 1), state='reached',
+                wbn=self.wbn, arrival=paths[0]['departure'],
+                departure=paths[0]['departure'], state='reached',
                 destination=False
             )
             parent.save()
@@ -59,9 +59,12 @@ class Graph:
 
             parent = element._id
         last_element = GraphNode(
-            wbn=self.wbn, arrival=datetime.datetime(2099, 10, 10),
-            departure=datetime.datetime(2099, 12, 12), state='future',
-            destination=True, parent=parent
+            wbn=self.wbn, arrival=paths[-1]['arrival'],
+            departure=paths[-1]['arrival'], state='future',
+            destination=True, parent=parent,
+            vertex = DeliveryCenter.find_one({
+                'code': paths[-1]['destination']
+            })
         )
         last_element.save()
         return active
@@ -152,7 +155,7 @@ class Graph:
             connection
     ):
         try:
-            active = GraphNode.find_one({'wbn': self.wbn, 'status': 'active'})
+            active = GraphNode.find_one({'wbn': self.wbn, 'state': 'active'})
         except ValueError:
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
