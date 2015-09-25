@@ -21,7 +21,10 @@ def serialize(obj):
         if key != 'structure':
 
             if hasattr(value, 'serialize'):
-                data[key] = value.serialize(recurse=False)
+                if key == 'parent':
+                    data[key] = value.serialize(recurse=False)
+                else:
+                    data[key] = value.serialize()
             else:
                 data[key] = value
 
