@@ -1,5 +1,8 @@
 from done.marg import Marg
-from backend.models import Connection, DeliveryCenter, GraphNode
+from backend.models import (
+    Connection, DeliveryCenter, GraphNode, CenterFailure,
+    ConnectionFailure
+)
 
 
 class Graph:
@@ -84,11 +87,18 @@ class Graph:
             self, active, location, destination, scan_datetime, connection
     ):
 
-        if (
-                connection == active.connection and
-                scan_datetime > active.e_dep
-        ):
-            active.record_soft_failure()
+        if connection == active.connection:
+            if scan_datetime > active.e_dep:
+                active.record_soft_failure(scan_datetime)
+            else:
+                active.a_dep = scan_datetime
+                active.save()
+        elif active.a_arr < active.e_dep:
+            cf = CenterFailure(center=active.node, mroute=True)
+            cf.save()
+        else:
+            cf = CenterFailure(center=active.node, cfail=True)
+            cf.save()
 
     def handle_inscan(
             self, active, location, destination, scan_datetime, connection
@@ -96,22 +106,23 @@ class Graph:
         expected_at = GraphNode.find_by_parent(active)
 
         if location != expected_at.vertex.code:
-            # Mark prior active node as failed(since it also carries the
-            # forwarding connection to expected node). Mark the expected
-            # node as failed and create a new route from this point onwards
-            # specifying the parent as reached node
             active.deactivate()
 
-            # Mark expected node as failed due to manual reroute to a different
-            # center
-            expected_at.fail_misroute()
-
-            # Find new path from current location to destination
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            self.transform(path, active.parent.value)
 
+            active = GraphNode(
+                wbn=active.wbn, vertex=active.vertex.value,
+                parent=active.parent.value,
+                edge=Connection.find_one(connection), e_arr=active.e_arr,
+                e_dep=active.e_arr, a_arr=active.a_arr,
+                a_dep=active.a_dep, state='reached'
+            )
+            active.save()
+            active = self.transform(path, active)
+            active.a_arr = scan_datetime
+            active.save()
         else:
             if connection != active.connection:
                 # Reached the expected destination albeit via a different
@@ -134,18 +145,25 @@ class Graph:
                 newactive = GraphNode(
                     wbn=active.wbn, vertex=active.vertex,
                     parent=active.parent.value, edge=used_connection,
-                    departure=active.departure, arrival=scan_datetime)
+                    e_dep=active.departure, e_arr=scan_datetime,
+                    a_dep=active.a_dep, a_arr=active.a_arr)
                 newactive.save()
                 active = newactive
 
             active.reached()
+            expected_at.a_arr = scan_datetime
+            expected_at.save()
 
             if scan_datetime > expected_at.departure:
                 path = self.marg.shortest_path(
                     expected_at.vertex.code, scan_datetime
                 )[destination]
+                expected_at.deactivate()
+                cf = ConnectionFailure(
+                    connection=active.edge.value, fail_in=True, hard=True
+                )
+                cf.save()
                 self.transform(path, active)
-                expected_at.fail_delayed_arrival()
             else:
                 expected_at.update_parent(active)
                 expected_at.activate()

@@ -201,8 +201,11 @@ class GraphNode(BaseModel):
         return cls.find_one({'parent._id': parent._id, 'state': 'future'})
 
     def deactivate(self):
+        # Update all children in future
+        # Uses id to ensure children only given ordered nature of node
+        # creation
         self.update(
-            {'wbn': self.wbn, 'state': 'future'},
+            {'wbn': self.wbn, 'state': 'future', '_id': {'$gt': self._id}},
             {'$set': {'state': 'inactive'}}
         )
         self.state = 'failed'
@@ -212,11 +215,10 @@ class GraphNode(BaseModel):
         self.state = 'reached'
         self.save()
 
-    def fail_misroute(self):
-        pass
-
-    def fail_delayed_arrival(self):
-        pass
+    def record_soft_failure_outscan(self, scan_datetime):
+        self.a_dep = scan_datetime
+        c = ConnectionFailure(connection=self.edge, fail_out=True)
+        c.save()
 
     def update_parent(self, parent):
         self.parent = parent
@@ -256,7 +258,9 @@ class CenterFailure:
     def __init__(self, *args, **kwargs):
         self.structure = {
             'center': ForeignKey(DeliveryCenter),
+            # Center failed to connect
             'cfail': bool,
+            # Center misrouted
             'mroute': bool,
         }
         super(CenterFailure, self).__init__(*args, **kwargs)
