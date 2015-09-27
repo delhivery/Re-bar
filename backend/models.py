@@ -1,9 +1,6 @@
-import datetime
-# from .utils.graph import create_graph
-
 from bson import ObjectId
 from fields.relational import ForeignKey
-from fields.base import ChoiceField, TimeField
+from fields.base import ChoiceField, TimeField, DateTimeField
 from mongo.utils import DBConnection, serialize
 from manager.utils import recurse_get_attr, recurse_set_attr
 
@@ -40,17 +37,44 @@ class BaseModel(dict):
         raise ValueError('Multiple or no results found')
 
     @classmethod
-    def find(cls, value, connection=None):
+    def find(cls, filters, fields=[], connection=None):
         connection = cls.get_connection(connection)
 
-        if not isinstance(value, dict):
+        if not isinstance(filters, dict):
             raise TypeError(
                 'Expected query string, found {}: {} instead'.format(
-                    type(value), value
+                    type(filters), filters
                 )
             )
 
-        return connection.find(value)
+        f_dict = {}
+
+        for field in fields:
+            f_dict[field] = 1
+
+        if f_dict:
+            return connection.find(filters, f_dict)
+
+        return connection.find(filters)
+
+    def update(cls, filters, update, connection=None):
+        connection = cls.get_connection(connection)
+
+        if not isinstance(filters, dict):
+            raise TypeError(
+                'Expected query dict, found {}: {} instead'.format(
+                    type(filters), filters
+                )
+            )
+
+        if not isinstance(update, dict):
+            raise TypeError(
+                'Expected update dict, found {}: {} instead'.format(
+                    type(update), update
+                )
+            )
+
+        connection.update(filters, update)
 
     @property
     def pkey(self):
@@ -124,7 +148,7 @@ class Connection(BaseModel):
         'name', 'origin', 'destination', 'departure', 'duration',
         'type'
     ]
-    unique_keys = []
+    unique_keys = [('index',)]
 
     def __init__(self, *args, **kwargs):
         self.structure = {
@@ -136,7 +160,8 @@ class Connection(BaseModel):
             'active': bool,
             'type': ChoiceField(type=str, choices=[
                 'Local', 'Surface', 'Railroad', 'Air'
-            ])
+            ]),
+            'index': int,
         }
         super(Connection, self).__init__(*args, **kwargs)
 
@@ -159,12 +184,14 @@ class GraphNode(BaseModel):
             'vertex': ForeignKey(DeliveryCenter, required=False),
             'parent': ForeignKey('backend.models.GraphNode', required=False),
             'edge': ForeignKey(Connection, required=False),
-            'arrival': datetime.datetime,
-            'departure': datetime.datetime,
+            'e_arr': DateTimeField(required=False),
+            'e_dep':  DateTimeField(required=False),
             'state': ChoiceField(type=str, choices=[
                 'active', 'reached', 'future', 'failed',
             ]),
             'destination': bool,
+            'a_arr':  DateTimeField(required=False),
+            'a_dep':  DateTimeField(required=False),
         }
 
         super(GraphNode, self).__init__(*args, **kwargs)
@@ -173,11 +200,17 @@ class GraphNode(BaseModel):
     def find_by_parent(cls, parent):
         return cls.find_one({'parent._id': parent._id, 'state': 'future'})
 
-    def activate(self):
-        pass
-
     def deactivate(self):
-        pass
+        self.update(
+            {'wbn': self.wbn, 'state': 'future'},
+            {'$set': {'state': 'inactive'}}
+        )
+        self.state = 'failed'
+        self.save()
+
+    def reached(self):
+        self.state = 'reached'
+        self.save()
 
     def fail_misroute(self):
         pass
@@ -188,7 +221,42 @@ class GraphNode(BaseModel):
     def update_parent(self, parent):
         self.parent = parent
         self.save()
-# g = create_graph(GraphNode.find({'wbn': '12192078102'}))
-# g.get_active()
-# if g.active.connects_with(13):
-#     g.active.destination.activate()
+
+
+class ConnectionFailure(BaseModel):
+    '''
+    Failures when connections connection late or arrived late
+
+    The failure is considered hard only if the connection arrived late
+    enough to impact connectivity with future connections.
+    '''
+
+    collection = 'failcon'
+
+    def __init__(self, *args, **kwargs):
+        self.structure = {
+            'connection': ForeignKey(Connection),
+            'fail_out': bool,
+            'fail_in': bool,
+            'hard': bool
+        }
+
+        super(ConnectionFailure, self).__init__(*args, **kwargs)
+
+
+class CenterFailure:
+    '''
+    Records failures for a center when it is unable to connect to the right
+    connection in time despite having the shipment arrived in a safe time for
+    a future connection
+    '''
+
+    collection = 'epic_fail'
+
+    def __init__(self, *args, **kwargs):
+        self.structure = {
+            'center': ForeignKey(DeliveryCenter),
+            'cfail': bool,
+            'mroute': bool,
+        }
+        super(CenterFailure, self).__init__(*args, **kwargs)

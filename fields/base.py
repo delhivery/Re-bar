@@ -95,3 +95,27 @@ class TimeField(BaseField):
             self.value.hour * 3600 + self.value.minute * 60 +
             self.value.second
         )
+
+
+class DateTimeField(BaseField):
+    dt_format = '%Y-%m-%dT%H:%M:%S.%f'
+
+    def __init__(self, *args, **kwargs):
+        super(DateTimeField, self).__init__(
+            type=datetime.datetime, *args, **kwargs
+        )
+
+    def valueOf(self, value=None):
+
+        if value is not None:
+
+            if isinstance(value, str):
+                self.value = datetime.datetime.strptime(value, self.dt_format)
+            self.value = value
+
+        self.validate()
+        return self
+
+    def serialize(self, recurse=True):
+        if self.value:
+            return self.value.strftime(self.dt_format)
