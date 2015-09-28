@@ -166,6 +166,18 @@ class Graph:
             connection
     ):
         try:
+            connection = int(connection)
+        except ValueError:
+            pass
+
+        if isinstance(connection, int):
+            try:
+                connection = Connection.find_one({'index': connection})
+            except ValueError:
+                print('Ignoring connection {}'.format(connection))
+                raise
+
+        try:
             is_complete = GraphNode.find({
                 'wbn': self.wbn, 'state': 'reached', 'destination': True
             })
