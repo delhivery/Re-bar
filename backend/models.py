@@ -57,6 +57,7 @@ class BaseModel(dict):
 
         return connection.find(filters)
 
+    @classmethod
     def update(cls, filters, update, connection=None):
         connection = cls.get_connection(connection)
 
@@ -74,7 +75,7 @@ class BaseModel(dict):
                 )
             )
 
-        connection.update(filters, update)
+        connection.update(filters, update, multi=True)
 
     @property
     def pkey(self):
@@ -198,15 +199,16 @@ class GraphNode(BaseModel):
 
     @classmethod
     def find_by_parent(cls, parent):
-        return cls.find_one({'parent._id': parent._id, 'state': 'future'})
+        return cls.find_one({'parent': parent._id, 'state': 'future'})
 
     def deactivate(self):
         # Update all children in future
         # Uses id to ensure children only given ordered nature of node
         # creation
+
         self.update(
             {'wbn': self.wbn, 'state': 'future', '_id': {'$gt': self._id}},
-            {'$set': {'state': 'inactive'}}
+            {'$set': {'state': 'inactive', 'destination': False}}
         )
         self.state = 'failed'
         self.save()
@@ -246,7 +248,7 @@ class ConnectionFailure(BaseModel):
         super(ConnectionFailure, self).__init__(*args, **kwargs)
 
 
-class CenterFailure:
+class CenterFailure(BaseModel):
     '''
     Records failures for a center when it is unable to connect to the right
     connection in time despite having the shipment arrived in a safe time for

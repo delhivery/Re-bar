@@ -19,10 +19,14 @@ def serialize(obj):
     for key, value in obj.items():
 
         if key != 'structure':
-
-            if hasattr(value, 'serialize'):
+            if value is None:
+                data[key] = value
+            elif hasattr(value, 'serialize'):
                 if key == 'parent':
-                    data[key] = value.serialize(recurse=False)
+                    if value.serialize is None:
+                        data[key] = value._id
+                    else:
+                        data[key] = value.serialize(recurse=False)
                 else:
                     data[key] = value.serialize()
             else:

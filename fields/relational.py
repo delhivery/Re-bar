@@ -55,10 +55,10 @@ class ForeignKey(BaseField):
         return self
 
     def serialize(self, recurse=True):
-        if recurse:
-            return serialize(self.value)
-
         if self.value is None:
             return None
+
+        if recurse:
+            return serialize(self.value)
 
         return self.value._id

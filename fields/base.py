@@ -84,9 +84,6 @@ class TimeField(BaseField):
                 value = datetime.time(hours, minutes, seconds)
             self.value = value
 
-        if value is None and self.value is None:
-            self.value = uuid.uuid4()
-
         self.validate()
         return self
 
@@ -117,5 +114,4 @@ class DateTimeField(BaseField):
         return self
 
     def serialize(self, recurse=True):
-        if self.value:
-            return self.value.strftime(self.dt_format)
+        return self.value
