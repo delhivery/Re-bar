@@ -173,7 +173,9 @@ class Graph:
 
             if isinstance(connection, int):
                 try:
-                    connection = Connection.find_one({'index': connection})
+                    connection = '{}'.format(
+                        Connection.find_one({'index': connection})._id
+                    )
                 except ValueError:
                     print('Ignoring connection {}'.format(connection))
                     raise
