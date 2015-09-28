@@ -165,17 +165,18 @@ class Graph:
             self, location, destination, scan_datetime, action,
             connection
     ):
-        try:
-            connection = int(connection)
-        except ValueError:
-            pass
-
-        if isinstance(connection, int):
+        if connection:
             try:
-                connection = Connection.find_one({'index': connection})
+                connection = int(connection)
             except ValueError:
-                print('Ignoring connection {}'.format(connection))
-                raise
+                pass
+
+            if isinstance(connection, int):
+                try:
+                    connection = Connection.find_one({'index': connection})
+                except ValueError:
+                    print('Ignoring connection {}'.format(connection))
+                    raise
 
         try:
             is_complete = GraphNode.find({
