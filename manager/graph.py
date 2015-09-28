@@ -4,8 +4,6 @@ from backend.models import (
     ConnectionFailure
 )
 
-from mongo.utils import serialize
-
 
 class Graph:
     def __init__(self, wbn):
@@ -74,12 +72,8 @@ class Graph:
                     'wbn': active.wbn,
                     'destination': True
             }).vertex.value.code != destination:
-                print('Destination change detected')
                 raise ValueError('Mismatched destination')
         except ValueError:
-            import ipdb
-            ipdb.set_trace()
-            print('Destination change detected')
             GraphNode.update(
                 {'wbn': active.wbn, 'destination': True},
                 {'$set': {'destination': False}}
@@ -89,9 +83,6 @@ class Graph:
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            print('Creating a new path from {} to {} at {}'.format(
-                location, destination, scan_datetime
-            ))
             self.transform(path, active_parent)
 
     def handle_outscan(
@@ -99,20 +90,15 @@ class Graph:
     ):
 
         if connection == active.connection:
-            print('Connection taken same as active')
             if scan_datetime > active.e_dep.value:
-                print('Connected post expected departure')
                 active.record_soft_failure(scan_datetime)
             else:
-                print('Connected in time')
                 active.a_dep.valueOf(scan_datetime)
                 active.save()
         elif active.a_arr.value < active.e_dep.value:
-            print('Connection taken not same as recommended but shipment arrived in time for outbound')
             cf = CenterFailure(center=active.vertex.value, mroute=True)
             cf.save()
         else:
-            print('Connection taken not same as recommended but shipment did not arrive in time for outbound')
             cf = CenterFailure(center=active.vertex.value, cfail=True)
             cf.save()
 
@@ -120,18 +106,13 @@ class Graph:
             self, active, location, destination, scan_datetime, connection
     ):
         expected_at = GraphNode.find_by_parent(active)
-        print('Expected at: {}. Reached {}'.format(expected_at.vertex.value.code, location))
-        print('Expected via: {} Reached via {}'.format(active.edge.value._id, connection))
 
         if location != expected_at.vertex.value.code:
-            print('Location mismatch. Expected {} vs {}'.format(expected_at.vertex.value.code, location))
-            print('Deactivating last active: {}'.format(active.vertex.value.code))
             active.deactivate()
 
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            print('Generated new path from {} to {} at {}'.format(location, destination, scan_datetime))
 
             active = GraphNode(
                 wbn=active.wbn, vertex=active.vertex.value,
@@ -140,15 +121,12 @@ class Graph:
                 e_dep=active.e_arr.value, a_arr=active.a_arr.value,
                 a_dep=active.a_dep.value, state='reached'
             )
-            print('Duplicated active for connection {}'.format(connection))
             active.save()
             active = self.transform(path, active)
             active.a_arr.valueOf(scan_datetime)
             active.save()
         else:
             if connection != '{}'.format(active.edge.value._id):
-                print('Mismatched connection expected {} vs {}'.format(active.edge.value._id, connection))
-                print('Deactivating last active: {}'.format(active.vertex.value.code))
                 active.state = 'failed'
                 active.save()
 
@@ -162,74 +140,54 @@ class Graph:
                 newactive.save()
                 active = newactive
 
-            print('Marking active node as reached')
             active.reached()
-            print('Marking arrival time at expected node')
             expected_at.a_arr.valueOf(scan_datetime)
             expected_at.save()
 
             if expected_at.destination:
                 expected_at.state = 'reached'
                 expected_at.update_parent(active)
-                print('Traversal Complete')
             elif scan_datetime > expected_at.e_dep.value:
-                print('Connection arrived too late to depart in time')
                 path = self.marg.shortest_path(
                     expected_at.vertex.value.code, scan_datetime
                 )[destination]
-                print('Populating new path from {} to {} at {}'.format(expected_at.vertex.value.code, destination, scan_datetime))
                 expected_at.deactivate()
-                print('Deactivating old expected. Recording connection failure for connection to expected node')
                 cf = ConnectionFailure(
                     connection=active.edge.value, fail_in=True, hard=True
                 )
                 cf.save()
                 self.transform(path, parent=active, sd=scan_datetime)
-                print('Saved new path')
             else:
-                print('Changed parent for expected node {} to {} and marked it as active'.format(expected_at.vertex.value.code, active.vertex.value.code))
                 expected_at.state = 'active'
                 expected_at.update_parent(active)
-                print('New active is: {}'.format(serialize(expected_at)))
 
     def update_path(
             self, location, destination, scan_datetime, action,
             connection
     ):
-        print()
-        print()
-        print('Scanning for status')
         try:
-            is_complete = GraphNode.find({'wbn': self.wbn, 'state': 'reached', 'destination': True})
+            is_complete = GraphNode.find({
+                'wbn': self.wbn, 'state': 'reached', 'destination': True
+            })
 
             if is_complete.count() > 0:
-                print('Traversal for this waybill is already complete')
                 return
 
             active = GraphNode.find_one({'wbn': self.wbn, 'state': 'active'})
-            print('Found an active node')
         except ValueError:
-            print(
-                'No graph found. Created a new one from {} to {} at {}'.format(
-                    location, destination, scan_datetime
-                )
-            )
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
             active = self.transform(path, sd=scan_datetime)
-        print('Current active node: {}'.format(active.vertex.value.code))
         if not action:
             self.handle_destination(
                 active, location, destination, scan_datetime
             )
         elif action == '<L':
-            print('Inbound detected.')
             self.handle_inscan(
                 active, location, destination, scan_datetime, connection
             )
         elif action == '+L':
-            print('Outbound detected.')
             self.handle_outscan(
                 active, location, destination, scan_datetime, connection
             )
