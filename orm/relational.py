@@ -35,7 +35,9 @@ class ForeignKey(BaseField):
         return super(ForeignKey, self).value_of()
 
     def save_as(self):
-        return self.value.save(save=False)
+        if self.value is not None:
+            return self.value.save(save=False)
+        return self.value
 
 
 class ForeignOidKey(ForeignKey):
