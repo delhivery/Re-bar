@@ -173,33 +173,32 @@ class GraphManager:
     def parse_path(
         self, location, destination, scan_datetime, action, connection
     ):
-        if connection:
-            try:
-                connection = int(connection)
-            except ValueError:
-                pass
-
-            if isinstance(connection, int):
-                try:
-                    connection = Connection.find_one({'index': connection})
-                except ValueError:
-                    print('Ignoring connection {}'.format(connection))
-                    raise
         try:
-            is_complete = GraphNode.count(
-                {'wbn': self.waybill, 'state': 'reached', 'destination': True}
-            )
-
-            if is_complete > 0:
-                print('Waybill {} has already reached destination'.format(
-                    self.waybill
-                ))
-                return
-
-            active = GraphNode.find_one(
-                {'wbn': self.waybill, 'state': 'active'}
-            )
+            connection = int(connection)
         except ValueError:
+            pass
+
+        if isinstance(connection, int):
+            connection = Connection.find_one({'index': connection})
+            if not connection:
+                print('Ignoring connection {}'.format(connection))
+                raise ValueError()
+
+        is_complete = GraphNode.count(
+            {'wbn': self.waybill, 'state': 'reached', 'destination': True}
+        )
+
+        if is_complete > 0:
+            print('Waybill {} has already reached destination'.format(
+                self.waybill
+            ))
+            return
+
+        active = GraphNode.find_one(
+            {'wbn': self.waybill, 'state': 'active'}
+        )
+
+        if active is None:
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
