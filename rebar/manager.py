@@ -23,7 +23,7 @@ class GraphManager:
     def transform(self, paths, parent=None, scan_date=None):
 
         if parent is None:
-            parent = GraphNode(wbn=self.waybill, state='reached')
+            parent = GraphNode(wbn=self.waybill, st='reached')
             parent.save()
 
         active = None
@@ -40,7 +40,7 @@ class GraphManager:
                 a_arr = scan_date
             graphnode = GraphNode(
                 wbn=self.waybill, e_arr=e_arr, a_arr=a_arr,
-                e_dep=path['departure'], state=state, parent=parent,
+                e_dep=path['departure'], st=state, parent=parent,
                 vertex={'code': path['origin']},
                 edge={'_id': path['connection']}
             )
@@ -52,7 +52,7 @@ class GraphManager:
             parent = graphnode
 
         destination_node = GraphNode(
-            wbn=self.waybill, e_arr=paths[-1]['arrival'], state='future',
+            wbn=self.waybill, e_arr=paths[-1]['arrival'], st='future',
             dst=True, parent=parent, vertex={
                 'code': paths[-1]['destination']
             }
@@ -95,7 +95,7 @@ class GraphManager:
 
             active = GraphNode(
                 vertex=active.vertex, e_arr=active.e_arr, a_arr=active.a_arr,
-                e_dep=active.e_dep, state='reached'
+                e_dep=active.e_dep, st='reached'
             )
             active.save()
             return self.transform(path, active)
@@ -103,15 +103,15 @@ class GraphManager:
     def handle_outscan(
         self, active, location, destination, scan_datetime, connection
     ):
-        if active.connection.idx != connection:
+        print('Added to outbound. Current location: {}'.format(active.vertex.code))
+        if active.edge.index != connection.index:
             if active.a_arr < active.e_dep:
                 # Hard failure, center missed connection
                 active.deactivate('hard', 'center')
             else:
                 # Hard failure, connection arrived too late
                 active.deactivate('hard', 'cin')
-
-            connection = Connection.find_one({'idx': connection})
+            print('Added to non recommended connnection aimed at {}'.format(connection.destination.code))
             e_arr = active.e_arr
             e_dep = e_arr.replace(
                 hour=connection.departure.hour,
@@ -125,7 +125,7 @@ class GraphManager:
             active = GraphNode(
                 vertex=active.vertex, e_arr=active.e_arr, a_arr=active.a_arr,
                 e_dep=e_dep, a_dep=scan_datetime, edge=connection,
-                state='reached'
+                st='reached'
             )
             active.save()
 
@@ -133,7 +133,10 @@ class GraphManager:
             path = self.marg.shortest_path(connection.destination.code, e_arr)[
                 destination
             ]
-            return self.transform(path, parent=active)
+            active = self.transform(path, parent=active)
+            active.e_arr = e_arr
+            active.a_arr = scan_datetime
+            active.save()
         else:
             active.a_dep = scan_datetime
             if active.a_dep > active.e_dep:
@@ -142,32 +145,42 @@ class GraphManager:
                 active.reached()
             active = GraphNode.find_by_parent(active)
             active.activate()
+            print('Expected Destination: {}'.format(active.vertex.code))
             return active
 
     def handle_inscan(
         self, active, location, destination, scan_datetime, connection
     ):
         active.a_arr = scan_datetime
-
+        print('Inscanned at location {}.'.format(location))
         if active.vertex.code != location:
+            print('Misroute')
             active.deactivate('mroute', 'center')
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            return self.transform(active.parent, scan_datetime)
+            print('New path found from {} to {}'.format(location, destination))
+            return self.transform(path, active.parent, scan_datetime)
 
-        if active.e_dep < active.a_arr:
+        if active.e_dep is None and active.dst:
+            if active.a_arr > active.e_arr:
+                active.reached('soft', 'cin')
+            else:
+                active.reached()
+        elif active.e_dep < active.a_arr:
             path = self.marg.shortest_path(active.vertex.code, active.a_arr)[
                 destination
             ]
             active.deactivate('hard', 'cin')
-            return self.transform(path, parent=active.parent)
+            active = self.transform(path, parent=active.parent, scan_date=active.e_arr)
+            active.a_arr = scan_datetime
+            active.save()
         elif active.a_arr > active.e_arr:
-            active.reached('soft', 'cin')
+            active['stc'] = 'soft'
+            active['f_at'] = 'cin'
+            active.save()
         else:
-            active.reached()
-        active = GraphNode.find_by_parent(active)
-        active.activate()
+            active.save()
         return active
 
     def parse_path(
@@ -185,7 +198,7 @@ class GraphManager:
                 raise ValueError()
 
         is_complete = GraphNode.count(
-            {'wbn': self.waybill, 'state': 'reached', 'destination': True}
+            {'wbn': self.waybill, 'st': 'reached', 'destination': True}
         )
 
         if is_complete > 0:
@@ -195,7 +208,7 @@ class GraphManager:
             return
 
         active = GraphNode.find_one(
-            {'wbn': self.waybill, 'state': 'active'}
+            {'wbn': self.waybill, 'st': 'active'}
         )
 
         if active is None:
@@ -212,7 +225,7 @@ class GraphManager:
             self.handle_inscan(
                 active, location, destination, scan_datetime, connection
             )
-        elif action == '>L':
+        elif action == '+L':
             self.handle_outscan(
                 active, location, destination, scan_datetime, connection
             )

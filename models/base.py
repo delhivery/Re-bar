@@ -194,7 +194,7 @@ class GraphNode(BaseModel):
 
     @classmethod
     def find_by_parent(cls, parent):
-        return cls.find_one({'parent._id': parent._id})
+        return cls.find_one({'parent._id': parent._id, 'st': 'future'})
 
     def deactivate(self, stc=None, f_at=None):
         self['st'] = 'failed'
