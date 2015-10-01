@@ -114,4 +114,5 @@ class DateTimeField(BaseField):
                         return
                     except ValueError:
                         continue
-        raise ValueError()
+        self.value = value
+        self.validate()
