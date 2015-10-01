@@ -46,7 +46,7 @@ class BaseModel(dict):
         try:
             return cls(**connection.find_one(filter_dict))
         except TypeError:
-            raise
+            return None
 
     @classmethod
     def find(cls, filter_dict):
