@@ -175,7 +175,7 @@ class GraphManager:
     ):
         try:
             connection = int(connection)
-        except ValueError:
+        except (TypeError, ValueError):
             pass
 
         if isinstance(connection, int):
