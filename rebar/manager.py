@@ -202,7 +202,7 @@ class GraphManager:
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            active = self.transform(path, sd=scan_datetime)
+            active = self.transform(path, scan_date=scan_datetime)
 
         if not action:
             self.handle_location_scan(
