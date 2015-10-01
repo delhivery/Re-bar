@@ -154,7 +154,7 @@ class GraphManager:
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            return self.transform(path.parent, scan_datetime)
+            return self.transform(active.parent, scan_datetime)
 
         if active.e_dep < active.a_arr:
             path = self.marg.shortest_path(active.vertex.code, active.a_arr)[
