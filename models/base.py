@@ -49,7 +49,7 @@ class BaseModel(dict):
             raise
 
     @classmethod
-    def find(cls, filter_dict, count=False):
+    def find(cls, filter_dict):
 
         if not isinstance(filter_dict, dict):
             raise ValueError()
@@ -57,11 +57,16 @@ class BaseModel(dict):
         connection = cls.get_connection()
         results = connection.find(filter_dict)
 
-        if count:
-            return results.count()
-
         for result in results:
             yield cls(**result)
+
+    @classmethod
+    def count(cls, filter_dict):
+        if not isinstance(filter_dict, dict):
+            raise ValueError()
+
+        connection = cls.get_connection()
+        return connection.find(filter_dict).count()
 
     @classmethod
     def all(cls):

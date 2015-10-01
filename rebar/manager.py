@@ -186,9 +186,8 @@ class GraphManager:
                     print('Ignoring connection {}'.format(connection))
                     raise
         try:
-            is_complete = GraphNode.find(
-                {'wbn': self.waybill, 'state': 'reached', 'destination': True},
-                count=True
+            is_complete = GraphNode.count(
+                {'wbn': self.waybill, 'state': 'reached', 'destination': True}
             )
 
             if is_complete > 0:
