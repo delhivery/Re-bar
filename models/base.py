@@ -49,13 +49,16 @@ class BaseModel(dict):
             raise
 
     @classmethod
-    def find(cls, filter_dict):
+    def find(cls, filter_dict, count=False):
 
         if not isinstance(filter_dict, dict):
             raise ValueError()
 
         connection = cls.get_connection()
         results = connection.find(filter_dict)
+
+        if count:
+            return results.count()
 
         for result in results:
             yield cls(**result)
@@ -175,13 +178,13 @@ class GraphNode(BaseModel):
         'dst': GenericField(type=bool),
         'st': ChoiceField(type=str, choices=[
             'reached', 'active', 'failed', 'future', 'inactive'
-        ]), # Statuses
+        ]),  # Statuses
         'f_at': ChoiceField(type=str, choices=[
             'center', 'cin', 'cout'
-        ]), # Failure At: Center, Connection In/Out
+        ]),  # Failure At: Center, Connection In/Out
         'stc': ChoiceField(type=str, choices=[
             'regen', 'dmod', 'hard', 'soft', 'mroute'
-        ]), # Status Cause: Regen, Destination Mod, Hard/Soft Fail
+        ]),  # Status Cause: Regen, Destination Mod, Hard/Soft Fail
     }
 
     @classmethod
