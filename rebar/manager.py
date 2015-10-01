@@ -1,6 +1,8 @@
+import datetime
+
 from done.marg import Marg
 
-from backend.models import Connection, GraphNode
+from models.base import Connection, GraphNode
 
 
 class GraphManager:
@@ -73,7 +75,7 @@ class GraphManager:
                 destination
             ]
             active.deactivate('dmod')
-            return self.transform(active.parent)
+            return self.transform(path, active.parent)
 
     def handle_location_scan(
         self, active, location, destination, scan_datetime
@@ -96,7 +98,7 @@ class GraphManager:
                 e_dep=active.e_dep, state='reached'
             )
             active.save()
-            return self.transform(active)
+            return self.transform(path, active)
 
     def handle_outscan(
         self, active, location, destination, scan_datetime, connection
@@ -185,10 +187,11 @@ class GraphManager:
                     raise
         try:
             is_complete = GraphNode.find(
-                {'wbn': self.waybill, 'state': 'reached', 'destination': True}
+                {'wbn': self.waybill, 'state': 'reached', 'destination': True},
+                count=True
             )
 
-            if is_complete.count() > 0:
+            if is_complete > 0:
                 print('Waybill {} has already reached destination'.format(
                     self.waybill
                 ))

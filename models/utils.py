@@ -6,12 +6,15 @@ def recurse_set_attribute(obj, attributes, value):
             obj[attributes[0]], attributes[1:], value
         )
 
+
 def recurse_get_attribute(obj, attributes):
     if not isinstance(attributes, list):
         raise ValueError()
 
     if not attributes:
-        return obj if obj else None
+        if isinstance(obj, dict) and not obj:
+            return None
+        return obj
 
     return recurse_get_attribute(
         obj.get(attributes[0], {}), attributes[1:]
