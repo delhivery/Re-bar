@@ -198,7 +198,7 @@ class GraphManager:
                 raise ValueError()
 
         is_complete = GraphNode.count(
-            {'wbn': self.waybill, 'st': 'reached', 'destination': True}
+            {'wbn': self.waybill, 'st': 'reached', 'dst': True}
         )
 
         if is_complete > 0:
