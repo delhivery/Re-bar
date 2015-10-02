@@ -103,7 +103,9 @@ class GraphManager:
     def handle_outscan(
         self, active, location, destination, scan_datetime, connection
     ):
-        print('Added to outbound. Current location: {}'.format(active.vertex.code))
+        print('Added to outbound. Current location: {}'.format(
+            active.vertex.code
+        ))
         if active.edge.index != connection.index:
             if active.a_arr < active.e_dep:
                 # Hard failure, center missed connection
@@ -111,7 +113,9 @@ class GraphManager:
             else:
                 # Hard failure, connection arrived too late
                 active.deactivate('hard', 'cin')
-            print('Added to non recommended connnection aimed at {}'.format(connection.destination.code))
+            print('Added to non recommended connnection aimed at {}'.format(
+                connection.destination.code
+            ))
             e_arr = active.e_arr
             e_dep = e_arr.replace(
                 hour=connection.departure.hour,
@@ -130,9 +134,10 @@ class GraphManager:
             active.save()
 
             e_arr = e_dep + datetime.timedelta(seconds=connection.duration)
-            path = self.marg.shortest_path(connection.destination.code, e_arr)[
-                destination
-            ]
+            path = self.marg.shortest_path(
+                connection.destination.code, e_arr).get(
+                destination, []
+            )
             active = self.transform(path, parent=active)
             active.e_arr = e_arr
             active.a_arr = scan_datetime
@@ -172,7 +177,9 @@ class GraphManager:
                 destination
             ]
             active.deactivate('hard', 'cin')
-            active = self.transform(path, parent=active.parent, scan_date=active.e_arr)
+            active = self.transform(
+                path, parent=active.parent, scan_date=active.e_arr
+            )
             active.a_arr = scan_datetime
             active.save()
         elif active.a_arr > active.e_arr:
