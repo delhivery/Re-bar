@@ -134,13 +134,21 @@ class GraphManager:
             active.save()
 
             e_arr = e_dep + datetime.timedelta(seconds=connection.duration)
-            path = self.marg.shortest_path(
-                connection.destination.code, e_arr).get(
-                destination, []
-            )
-            active = self.transform(path, parent=active)
+
+            if connection.destination.code != destination:
+                path = self.marg.shortest_path(
+                    connection.destination.code, e_arr).get(
+                    destination, []
+                )
+                active = self.transform(path, parent=active)
+            else:
+                active = GraphNode(
+                    vertex=connection.destination, e_arr=e_arr, st='active',
+                    wbn=self.waybill, parent=active, dst=True
+                )
+                active.save()
+
             active.e_arr = e_arr
-            active.a_arr = scan_datetime
             active.save()
         else:
             active.a_dep = scan_datetime
