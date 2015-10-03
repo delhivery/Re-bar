@@ -6,19 +6,22 @@ from models.base import Connection, GraphNode
 
 
 class GraphManager:
-    def __init__(self, waybill):
+    def __init__(self, waybill, marg=None):
         self.waybill = waybill
-        connections = []
 
-        for connection in Connection.all():
-            connections.append({
-                'id': connection._id,
-                'cutoff_departure': connection.departure,
-                'duration': connection.duration,
-                'origin': connection.origin.code,
-                'destination': connection.destination.code
-            })
-        self.marg = Marg(connections, json=True)
+        if marg is None:
+            connections = []
+            for connection in Connection.all():
+                connections.append({
+                    'id': connection._id,
+                    'cutoff_departure': connection.departure,
+                    'duration': connection.duration,
+                    'origin': connection.origin.code,
+                    'destination': connection.destination.code
+                })
+            self.marg = Marg(connections, json=True)
+        else:
+            self.marg = Marg
 
     def transform(self, paths, parent=None, scan_date=None):
 
