@@ -97,8 +97,8 @@ class GraphManager:
             active.deactivate('regen')
 
             active = GraphNode(
-                vertex=active.vertex, e_arr=active.e_arr, a_arr=active.a_arr,
-                e_dep=active.e_dep, st='reached'
+                wbn=self.waybill, vertex=active.vertex, e_arr=active.e_arr,
+                a_arr=active.a_arr, e_dep=active.e_dep, st='reached'
             )
             active.save()
             return self.transform(path, active)
@@ -130,9 +130,9 @@ class GraphManager:
                 e_dep = e_dep + datetime.timedelta(days=1)
 
             active = GraphNode(
-                vertex=active.vertex, e_arr=active.e_arr, a_arr=active.a_arr,
-                e_dep=e_dep, a_dep=scan_datetime, edge=connection,
-                parent=active.parent, st='reached'
+                wbn=self.waybill, vertex=active.vertex, e_arr=active.e_arr,
+                a_arr=active.a_arr, e_dep=e_dep, a_dep=scan_datetime,
+                edge=connection, parent=active.parent, st='reached'
             )
             active.save()
 
@@ -146,8 +146,8 @@ class GraphManager:
                 active = self.transform(path, parent=active)
             else:
                 active = GraphNode(
-                    vertex=connection.destination, e_arr=e_arr, st='active',
-                    wbn=self.waybill, parent=active, dst=True
+                    wbn=self.waybill, vertex=connection.destination,
+                    e_arr=e_arr, st='active', parent=active, dst=True
                 )
                 active.save()
 
