@@ -132,7 +132,7 @@ class GraphManager:
             active = GraphNode(
                 vertex=active.vertex, e_arr=active.e_arr, a_arr=active.a_arr,
                 e_dep=e_dep, a_dep=scan_datetime, edge=connection,
-                st='reached'
+                parent=active.parent, st='reached'
             )
             active.save()
 

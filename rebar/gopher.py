@@ -2,13 +2,13 @@ import datetime
 from graphviz import Digraph
 
 
-def plot_graph(nodes, name=None):
+def plot_graph(nodes):
     waybill = None
 
     if nodes:
         waybill = nodes[0].wbn
 
-    dot = Digraph(comment='{}'.format(waybill))
+    dot = Digraph(comment='{}'.format(waybill), format='png')
 
     vertex_map = {}
 
@@ -18,19 +18,25 @@ def plot_graph(nodes, name=None):
         if node.vertex:
             vertex_code = node.vertex.code
 
-        if node._id not in vertex_map:
-            vertex_map[node._id] = (
-                dot.node(node._id, label=vertex_code), node
+        if '{}'.format(node._id) not in vertex_map:
+            vertex_map['{}'.format(node._id)] = (
+                dot.node('{}'.format(node._id), label=vertex_code), node
             )
 
     for node in nodes:
         if node.parent:
-            parent_node, parent = vertex_map[node.parent._id]
-            dot.edge(node.parent._id, node._id, label=parent.connection.name)
+            parent_node, parent = vertex_map['{}'.format(node.parent['_id'])]
 
-    if not name:
-        name = '{}_{}'.format(
-            waybill, datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
-        )
+            connection_name = parent.connection.get('name', 'NULL')
+
+            dot.edge(
+                '{}'.format(node.parent['_id']),
+                '{}'.format(node._id),
+                label=connection_name
+            )
+
+    name = '{}_{}'.format(
+        waybill, datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
+    )
     name = 'graphs/{}'.format(name)
     dot.render(name, view=False)
