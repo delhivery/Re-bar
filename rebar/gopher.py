@@ -1,6 +1,14 @@
 import datetime
 from graphviz import Digraph
 
+COLOR_MAP = {
+    'active': '#00A0B0',
+    'reached': '#6A4A3C',
+    'failed': '#CC333F',
+    'future': '#EDC951',
+    'inactive': '#E0E4CC'
+}
+
 
 def plot_graph(nodes):
     waybill = None
@@ -20,7 +28,11 @@ def plot_graph(nodes):
 
         if '{}'.format(node._id) not in vertex_map:
             vertex_map['{}'.format(node._id)] = (
-                dot.node('{}'.format(node._id), label=vertex_code), node
+                dot.node('{}'.format(
+                    node._id, color=COLOR_MAP[node.st]),
+                    label=vertex_code
+                ),
+                node
             )
 
     for node in nodes:
