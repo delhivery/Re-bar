@@ -2,11 +2,11 @@ import datetime
 from graphviz import Digraph
 
 COLOR_MAP = {
-    'active': '#00A0B0',
-    'reached': '#6A4A3C',
-    'failed': '#CC333F',
-    'future': '#EDC951',
-    'inactive': '#E0E4CC'
+    'active': 'darkgreen',
+    'reached': 'chocolate4',
+    'failed': 'crimson',
+    'future': 'gold1',
+    'inactive': 'gray87'
 }
 
 
@@ -27,18 +27,16 @@ def plot_graph(nodes):
             vertex_code = node.vertex.code
 
         if '{}'.format(node._id) not in vertex_map:
-            vertex_map['{}'.format(node._id)] = (
-                dot.node('{}'.format(
-                    node._id, color=COLOR_MAP[node.st]),
-                    label=vertex_code
-                ),
-                node
+            dot.node(
+                '{}'.format(node._id),
+                label=vertex_code,
+                color=COLOR_MAP[node.st]
             )
+            vertex_map['{}'.format(node._id)] = node
 
     for node in nodes:
         if node.parent:
-            parent_node, parent = vertex_map['{}'.format(node.parent['_id'])]
-
+            parent = vertex_map['{}'.format(node.parent['_id'])]
             edge_name = 'NULL'
 
             if parent.edge:
