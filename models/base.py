@@ -144,6 +144,7 @@ class DeliveryCenter(BaseModel):
 
     structure = {
         'code': GenericField(type=str),
+        'name': GenericField(type=str, required=False),
         'active': GenericField(type=bool)
     }
 

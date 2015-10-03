@@ -1,4 +1,5 @@
 import datetime
+
 from graphviz import Digraph
 
 COLOR_MAP = {
@@ -10,7 +11,7 @@ COLOR_MAP = {
 }
 
 
-def plot_graph(nodes):
+def plot_graph(nodes, center_mapping={}):
     waybill = None
 
     if nodes:
@@ -29,7 +30,7 @@ def plot_graph(nodes):
         if '{}'.format(node._id) not in vertex_map:
             dot.node(
                 '{}'.format(node._id),
-                label=vertex_code,
+                label=center_mapping.get(vertex_code, vertex_code),
                 color=COLOR_MAP[node.st]
             )
             vertex_map['{}'.format(node._id)] = node
