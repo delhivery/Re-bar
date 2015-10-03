@@ -21,7 +21,7 @@ class GraphManager:
                 })
             self.marg = Marg(connections, json=True)
         else:
-            self.marg = Marg
+            self.marg = marg
 
     def transform(self, paths, parent=None, scan_date=None):
 
