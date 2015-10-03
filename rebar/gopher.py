@@ -10,17 +10,23 @@ def plot_graph(nodes, name=None):
 
     dot = Digraph(comment='{}'.format(waybill))
 
+    vertex_map = {}
+
     for node in nodes:
         vertex_code = 'NULL'
-        edge_name = 'NULL'
 
         if node.vertex:
             vertex_code = node.vertex.code
 
-        if node.edge:
-            edge_name = node.edge.name
+        if node._id not in vertex_map:
+            vertex_map[node._id] = (
+                dot.node(node._id, label=vertex_code), node
+            )
 
-        dot.node(vertex_code, edge_name)
+    for node in nodes:
+        if node.parent:
+            parent_node, parent = vertex_map[node.parent._id]
+            dot.edge(node.parent._id, node._id, label=parent.connection.name)
 
     if not name:
         name = '{}_{}'.format(
