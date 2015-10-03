@@ -17,7 +17,7 @@ def plot_graph(waybill, nodes, center_mapping={}):
 
     if not center_mapping:
         for dc in DeliveryCenter.all():
-            center_mapping[dc.code] = center_mapping[dc.name]
+            center_mapping[dc.code] = dc.name
 
     dot = Digraph(comment='{}'.format(waybill), format='png')
 
