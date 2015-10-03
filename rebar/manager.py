@@ -69,11 +69,6 @@ class GraphManager:
         node = GraphNode.find_one({'wbn': self.waybill, 'dst': True})
 
         if node.vertex.code != destination:
-            print(
-                'Destination Changed from {} to {}'.format(
-                    node.vertex.code, destination
-                )
-            )
             path = self.marg.shortest_path(active.vertex.code, scan_datetime)[
                 destination
             ]
@@ -88,9 +83,6 @@ class GraphManager:
         )
 
         if active.vertex.code != location:
-            print('Vertex jump without IST from {} to {}'.format(
-                active.vertex.code, location
-            ))
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
@@ -106,9 +98,6 @@ class GraphManager:
     def handle_outscan(
         self, active, location, destination, scan_datetime, connection
     ):
-        print('Added to outbound. Current location: {}'.format(
-            active.vertex.code
-        ))
         if active.edge.index != connection.index:
             if active.a_arr < active.e_dep:
                 # Hard failure, center missed connection
@@ -116,9 +105,6 @@ class GraphManager:
             else:
                 # Hard failure, connection arrived too late
                 active.deactivate('hard', 'cin')
-            print('Added to non recommended connnection aimed at {}'.format(
-                connection.destination.code
-            ))
             e_arr = active.e_arr
             e_dep = e_arr.replace(
                 hour=connection.departure.hour,
@@ -161,21 +147,17 @@ class GraphManager:
                 active.reached()
             active = GraphNode.find_by_parent(active)
             active.activate()
-            print('Expected Destination: {}'.format(active.vertex.code))
             return active
 
     def handle_inscan(
         self, active, location, destination, scan_datetime, connection
     ):
         active.a_arr = scan_datetime
-        print('Inscanned at location {}.'.format(location))
         if active.vertex.code != location:
-            print('Misroute')
             active.deactivate('mroute', 'center')
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            print('New path found from {} to {}'.format(location, destination))
             return self.transform(path, active.parent, scan_datetime)
 
         if active.e_dep is None and active.dst:
@@ -212,7 +194,6 @@ class GraphManager:
         if isinstance(connection, int):
             connection = Connection.find_one({'index': connection})
             if not connection:
-                print('Ignoring connection {}'.format(connection))
                 raise ValueError()
 
         is_complete = GraphNode.count(
@@ -220,9 +201,6 @@ class GraphManager:
         )
 
         if is_complete > 0:
-            print('Waybill {} has already reached destination'.format(
-                self.waybill
-            ))
             return
 
         active = GraphNode.find_one(
