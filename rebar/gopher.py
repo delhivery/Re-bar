@@ -1,6 +1,8 @@
 import datetime
 
 from graphviz import Digraph
+from models.base import DeliveryCenter
+
 
 COLOR_MAP = {
     'active': 'darkgreen',
@@ -11,11 +13,11 @@ COLOR_MAP = {
 }
 
 
-def plot_graph(nodes, center_mapping={}):
-    waybill = None
+def plot_graph(waybill, nodes, center_mapping={}):
 
-    if nodes:
-        waybill = nodes[0].wbn
+    if not center_mapping:
+        for dc in DeliveryCenter.all():
+            center_mapping[dc.code] = center_mapping[dc.name]
 
     dot = Digraph(comment='{}'.format(waybill), format='png')
 
@@ -23,31 +25,32 @@ def plot_graph(nodes, center_mapping={}):
 
     for node in nodes:
         vertex_code = 'NULL'
+        node_id = '{}'.format(node._id)
 
         if node.vertex:
             vertex_code = node.vertex.code
 
-        if '{}'.format(node._id) not in vertex_map:
-            dot.node(
-                '{}'.format(node._id),
-                label=center_mapping.get(vertex_code, vertex_code),
-                color=COLOR_MAP[node.st]
-            )
-            vertex_map['{}'.format(node._id)] = node
+        label = '{} EArr: {} EDep: {} Arr: {} Dep: {}'.format(
+            center_mapping.get(vertex_code, vertex_code),
+            node.e_arr, node.e_dep, node.a_arr, node.a_dep
+        )
+        dot.node(
+            node_id, label=label, color=COLOR_MAP[node.st]
+        )
+        vertex_map[node_id] = node
 
     for node in nodes:
         if node.parent:
-            parent = vertex_map['{}'.format(node.parent['_id'])]
+            node_id = '{}'.format(node._id)
+            parent_id = '{}'.format(node.parent['_id'])
+
+            parent = vertex_map[parent_id]
             edge_name = 'NULL'
 
             if parent.edge:
                 edge_name = parent.edge.get('name', 'NULL')
 
-            dot.edge(
-                '{}'.format(node.parent['_id']),
-                '{}'.format(node._id),
-                label=edge_name
-            )
+            dot.edge(parent_id, node_id, label=edge_name)
 
     name = '{}_{}'.format(
         waybill, datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
