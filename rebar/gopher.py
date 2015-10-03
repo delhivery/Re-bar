@@ -37,5 +37,5 @@ def plot_graph(nodes, name=None):
         name = '{}_{}'.format(
             waybill, datetime.datetime.now().strftime('%Y%m%dT%H%M%S')
         )
-
+    name = 'graphs/{}'.format(name)
     dot.render(name, view=False)
