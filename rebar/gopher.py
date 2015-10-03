@@ -39,12 +39,15 @@ def plot_graph(nodes):
         if node.parent:
             parent_node, parent = vertex_map['{}'.format(node.parent['_id'])]
 
-            connection_name = parent.connection.get('name', 'NULL')
+            edge_name = 'NULL'
+
+            if parent.edge:
+                edge_name = parent.edge.get('name', 'NULL')
 
             dot.edge(
                 '{}'.format(node.parent['_id']),
                 '{}'.format(node._id),
-                label=connection_name
+                label=edge_name
             )
 
     name = '{}_{}'.format(
