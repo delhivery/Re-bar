@@ -13,11 +13,7 @@ COLOR_MAP = {
 }
 
 
-def plot_graph(waybill, nodes, center_mapping={}):
-
-    if not center_mapping:
-        for dc in DeliveryCenter.all():
-            center_mapping[dc.code] = dc.name
+def plot_graph(waybill, nodes):
 
     dot = Digraph(comment='{}'.format(waybill), format='png')
 
@@ -28,11 +24,10 @@ def plot_graph(waybill, nodes, center_mapping={}):
         node_id = '{}'.format(node._id)
 
         if node.vertex:
-            vertex_code = node.vertex.code
+            vertex_code = node.vertex.name
 
         label = '{} EArr: {} EDep: {} Arr: {} Dep: {}'.format(
-            center_mapping.get(vertex_code, vertex_code),
-            node.e_arr, node.e_dep, node.a_arr, node.a_dep
+            vertex_code, node.e_arr, node.e_dep, node.a_arr, node.a_dep
         )
         dot.node(
             node_id, label=label, color=COLOR_MAP[node.st]
