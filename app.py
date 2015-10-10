@@ -1,3 +1,4 @@
+import datetime
 import json
 import os
 import socket
@@ -63,6 +64,12 @@ class DeckardCain:
                 if dstream:
                     try:
                         payload = json.loads(dstream)
+                        payload['location'] = self.dc_map[payload['location']]
+                        payload['destination'] = self.dc_map[
+                            payload['destination']
+                        ]
+                        payload['scan_datetime'] = datetime.datetime.strptime(
+                            payload['scan_datetime'], '%Y-%m-%dT%H:%M:%S.%f')
                         call = threading.Thread(
                             target=manage_wrapper,
                             args=(
@@ -72,10 +79,11 @@ class DeckardCain:
                             name='ep_{}'.format(payload.get('waybill', None))
                         )
                         call.start()
-                    except TypeError:
+                    except (TypeError, KeyError) as e:
                         print(
-                            'Unable to parse payload: {}. Skipping'.format(
-                                dstream
+                            'Unable to parse payload: {}. Error : {} '
+                            'Skipping'.format(
+                                dstream, e
                             ),
                             file=sys.stderr
                         )
