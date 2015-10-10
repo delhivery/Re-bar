@@ -26,7 +26,18 @@ class DeckardCain:
 
     def __init__(self):
         super(DeckardCain, self).__init__()
-        self.solver = Marg(Connection.find({'active': True}))
+
+        connections = []
+
+        for connection in Connection.find({'active': True}):
+            connections.append({
+                'id': connection._id,
+                'cutoff_departure': connection.departure,
+                'duration': connection.duration,
+                'origin': connection.origin.code,
+                'destination': connection.destination.code
+            })
+        self.solver = Marg(connections, json=True)
         self.dc_map = {}
         self.solver_lock = threading.Lock()
         self._target = manage_wrapper
