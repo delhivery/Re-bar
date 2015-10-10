@@ -1,0 +1,2 @@
+pymongo
+amazon_kclpy
