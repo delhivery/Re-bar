@@ -1,4 +1,4 @@
-from pydisque import Client
+from pydisque.client import Client
 
 from config import DISQUE_HOSTS
 
