@@ -18,10 +18,7 @@ SOCKET_FILE = '/var/run/fap/socket'
 def manage_wrapper(solver, solver_lock, **kwargs):
     waybill = kwargs.pop('waybill')
     g = GraphManager(waybill, solver, solver_lock)
-    try:
-        g.parse_path(**kwargs)
-    except KeyError as err:
-        print('Missing key in kwargs: {} Error: {}'.format(kwargs, err))
+    g.parse_path(**kwargs)
 
 
 class DeckardCain:
