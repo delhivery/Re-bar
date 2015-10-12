@@ -21,7 +21,7 @@ def manage_wrapper(solver, solver_lock, **kwargs):
     try:
         g.parse_path(**kwargs)
     except KeyError as err:
-        print('Missing key in kwargs: {} Error: {}'.format(err))
+        print('Missing key in kwargs: {} Error: {}'.format(kwargs, err))
 
 
 class DeckardCain:
