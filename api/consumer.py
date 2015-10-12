@@ -13,6 +13,7 @@ from database.disque import DBConnection
 
 class PackageStatusProcessor(kcl.RecordProcessorBase):
     def __init__(self):
+        self.initialized = False
         self.SLEEP_SECONDS = 5
         self.CHECKPOINT_RETRIES = 5
         self.CHECKPOINT_FREQ_SECONDS = 60
@@ -20,6 +21,7 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
     def initialize(self, shard_id):
         self.largest_seq = None
         self.last_checkpoint_time = time.time()
+        self.initialized = True
 
     def checkpoint(self, checkpointer, sequence_number=None):
 
@@ -136,7 +138,8 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
         try:
             if reason == 'TERMINATE':
                 print('Konsumer: Shutdown requested. Attempting checkpoint.')
-                self.checkpoint(checkpointer, None)
+                if self.initialized:
+                    self.checkpoint(checkpointer, None)
             else:
                 print('Konsumer: Error occurred. Shutting down')
         except:
