@@ -123,3 +123,9 @@ class DateTimeField(BaseField):
 
         self.value = value
         self.validate()
+
+    def value_of(self):
+
+        if self.value is None and self.auto_add_now:
+            self.validate = datetime.datetime.now()
+        return super(DateTimeField, self).value_of()
