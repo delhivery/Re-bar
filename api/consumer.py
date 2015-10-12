@@ -101,7 +101,8 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
             'destination': destination,
             'scan_datetime': scan_datetime,
             'action': action,
-            'connection': connection
+            'connection': connection,
+            'pickup_date': data['pd'],
         }).encode('utf-8')
 
         try:

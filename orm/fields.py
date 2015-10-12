@@ -87,6 +87,9 @@ class DateTimeField(BaseField):
     def __init__(self, *args, **kwargs):
         self.formats = kwargs.pop('formats', ['%Y-%m-%dT%H:%M:%S'])
         kwargs['type'] = datetime.datetime
+
+        self.auto_add_now = kwargs.pop('auto_add_now', False)
+
         super(DateTimeField, self).__init__(*args, **kwargs)
 
     def __default__(self):
@@ -114,5 +117,9 @@ class DateTimeField(BaseField):
                         return
                     except ValueError:
                         continue
+
+            if value is None and self.auto_add_now:
+                value = datetime.datetime.now()
+
         self.value = value
         self.validate()

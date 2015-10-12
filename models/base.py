@@ -174,6 +174,7 @@ class GraphNode(BaseModel):
 
     structure = {
         'wbn': GenericField(type=str),
+        'pd': DateTimeField(required=False),
         'vertex': ForeignKey(type=DeliveryCenter, required=False),
         'edge': ForeignKey(type=Connection, required=False),
         'parent': ForeignOidKey(type='models.base.GraphNode', required=False),
@@ -191,6 +192,7 @@ class GraphNode(BaseModel):
         'stc': ChoiceField(type=str, choices=[
             'regen', 'dmod', 'hard', 'soft', 'mroute'
         ]),  # Status Cause: Regen, Destination Mod, Hard/Soft Fail
+        'cr_at': DateTimeField(auto_add_now=True, required=True),
     }
 
     @classmethod

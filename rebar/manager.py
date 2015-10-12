@@ -25,10 +25,10 @@ class GraphManager:
 
         self.shared_lock = shared_lock
 
-    def transform(self, paths, parent=None, scan_date=None):
+    def transform(self, paths, parent=None, scan_date=None, pd=None):
 
         if parent is None:
-            parent = GraphNode(wbn=self.waybill, st='reached')
+            parent = GraphNode(wbn=self.waybill, st='reached', pd=pd)
             parent.save()
 
         active = None
@@ -47,7 +47,8 @@ class GraphManager:
                 wbn=self.waybill, e_arr=e_arr, a_arr=a_arr,
                 e_dep=path['departure'], st=state, parent=parent,
                 vertex={'code': path['origin']},
-                edge={'_id': path['connection']}
+                edge={'_id': path['connection']},
+                pd=pd
             )
             graphnode.save()
 
@@ -60,13 +61,13 @@ class GraphManager:
             wbn=self.waybill, e_arr=paths[-1]['arrival'], st='future',
             dst=True, parent=parent, vertex={
                 'code': paths[-1]['destination']
-            }
+            }, pd=pd
         )
         destination_node.save()
         return active
 
     def handle_destination_scan(
-        self, active, location, destination, scan_datetime
+        self, active, location, destination, scan_datetime, pd=None
     ):
         node = GraphNode.find_one({'wbn': self.waybill, 'dst': True})
 
@@ -76,10 +77,10 @@ class GraphManager:
                     active.vertex.code, scan_datetime
                 )[destination]
             active.deactivate('dmod')
-            return self.transform(path, active.parent)
+            return self.transform(path, active.parent, pd=pd)
 
     def handle_location_scan(
-        self, active, location, destination, scan_datetime
+        self, active, location, destination, scan_datetime, pd=None
     ):
         self.handle_destination_scan(
             active, location, destination, scan_datetime
@@ -94,13 +95,13 @@ class GraphManager:
 
             active = GraphNode(
                 wbn=self.waybill, vertex=active.vertex, e_arr=active.e_arr,
-                a_arr=active.a_arr, e_dep=active.e_dep, st='reached'
+                a_arr=active.a_arr, e_dep=active.e_dep, st='reached', pd=pd
             )
             active.save()
-            return self.transform(path, active)
+            return self.transform(path, active, pd=pd)
 
     def handle_outscan(
-        self, active, location, destination, scan_datetime, connection
+        self, active, location, destination, scan_datetime, connection, pd=None
     ):
         if active.edge.index != connection.index:
             if active.a_arr < active.e_dep:
@@ -122,7 +123,7 @@ class GraphManager:
             active = GraphNode(
                 wbn=self.waybill, vertex=active.vertex, e_arr=active.e_arr,
                 a_arr=active.a_arr, e_dep=e_dep, a_dep=scan_datetime,
-                edge=connection, parent=active.parent, st='reached'
+                edge=connection, parent=active.parent, st='reached', pd=pd
             )
             active.save()
 
@@ -134,11 +135,12 @@ class GraphManager:
                         connection.destination.code, e_arr).get(
                         destination, []
                     )
-                active = self.transform(path, parent=active)
+                active = self.transform(path, parent=active, pd=pd)
             else:
                 active = GraphNode(
                     wbn=self.waybill, vertex=connection.destination,
-                    e_arr=e_arr, st='active', parent=active, dst=True
+                    e_arr=e_arr, st='active', parent=active, dst=True,
+                    pd=pd
                 )
                 active.save()
 
@@ -155,7 +157,7 @@ class GraphManager:
             return active
 
     def handle_inscan(
-        self, active, location, destination, scan_datetime, connection
+        self, active, location, destination, scan_datetime, connection, pd=None
     ):
         active.a_arr = scan_datetime
         if active.vertex.code != location:
@@ -164,7 +166,7 @@ class GraphManager:
                 path = self.marg.shortest_path(location, scan_datetime)[
                     destination
                 ]
-            return self.transform(path, active.parent, scan_datetime)
+            return self.transform(path, active.parent, scan_datetime, pd=pd)
 
         if active.e_dep is None and active.dst:
             if active.a_arr > active.e_arr:
@@ -178,7 +180,7 @@ class GraphManager:
                 )[destination]
             active.deactivate('hard', 'cin')
             active = self.transform(
-                path, parent=active.parent, scan_date=active.e_arr
+                path, parent=active.parent, scan_date=active.e_arr, pd=pd
             )
             active.a_arr = scan_datetime
             active.save()
@@ -191,8 +193,10 @@ class GraphManager:
         return active
 
     def parse_path(
-        self, location, destination, scan_datetime, action, connection
+        self, location=None, destination=None, scan_datetime=None,
+        action=None, connection=None, pickup_date=None
     ):
+
         try:
             connection = int(connection)
         except (TypeError, ValueError):
@@ -219,17 +223,21 @@ class GraphManager:
                 path = self.marg.shortest_path(
                     location, scan_datetime
                 )[destination]
-            active = self.transform(path, scan_date=scan_datetime)
+            active = self.transform(
+                path, scan_date=scan_datetime, pd=pickup_date
+            )
 
         if not action:
             self.handle_location_scan(
-                active, location, destination, scan_datetime
+                active, location, destination, scan_datetime, pd=pickup_date
             )
         elif action == '<L':
             self.handle_inscan(
-                active, location, destination, scan_datetime, connection
+                active, location, destination, scan_datetime, connection,
+                pd=pickup_date
             )
         elif action == '+L':
             self.handle_outscan(
-                active, location, destination, scan_datetime, connection
+                active, location, destination, scan_datetime, connection,
+                pd=pickup_date
             )

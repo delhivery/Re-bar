@@ -19,7 +19,7 @@ def manage_wrapper(solver, solver_lock, **kwargs):
     waybill = kwargs.pop('waybill')
     g = GraphManager(waybill, solver, solver_lock)
     try:
-        g.parse_path(kwargs)
+        g.parse_path(**kwargs)
     except KeyError as err:
         print('Missing key in kwargs: {} Error: {}'.format(err))
 
@@ -102,6 +102,21 @@ class DeckardCain:
                                 'scan_datetime'
                             ] = datetime.datetime.strptime(
                                 payload['scan_datetime'],
+                                '%Y-%m-%dT%H:%M:%S'
+                            )
+
+                        try:
+                            payload[
+                                'pickup_date'
+                            ] = datetime.datetime.strptime(
+                                payload['pickup_date'],
+                                '%Y-%m-%dT%H:%M:%S.%f'
+                            )
+                        except ValueError:
+                            payload[
+                                'pickup_date'
+                            ] = datetime.datetime.strptime(
+                                payload['pickup_date'],
                                 '%Y-%m-%dT%H:%M:%S'
                             )
 
