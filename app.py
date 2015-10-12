@@ -10,16 +10,18 @@ from done.marg import Marg
 
 from models.base import Connection, DeliveryCenter
 
-from .rebar.manager import GraphManager
+from rebar.manager import GraphManager
 
 SOCKET_FILE = '/var/run/fap/socket'
 
 
 def manage_wrapper(solver, solver_lock, **kwargs):
-    print('Got kwargs: {}'.format(kwargs))
     waybill = kwargs.pop('waybill')
     g = GraphManager(waybill, solver, solver_lock)
-    g.parse_path(kwargs)
+    try:
+        g.parse_path(kwargs)
+    except KeyError as err:
+        print('Missing key in kwargs: {} Error: {}'.format(err))
 
 
 class DeckardCain:
@@ -55,6 +57,7 @@ class DeckardCain:
             self.dc_map[delivery_center.name] = delivery_center.code
 
         self.socket.listen(1)
+        print('Started listening')
 
     def serve(self):
         while True:
@@ -75,12 +78,33 @@ class DeckardCain:
                 if dstream:
                     try:
                         payload = json.loads(dstream)
-                        payload['location'] = self.dc_map[payload['location']]
-                        payload['destination'] = self.dc_map[
-                            payload['destination']
+                        payload['location'] = self.dc_map[
+                            payload['location'].split(' (')[0]
                         ]
-                        payload['scan_datetime'] = datetime.datetime.strptime(
-                            payload['scan_datetime'], '%Y-%m-%dT%H:%M:%S.%f')
+
+                        if payload['destination'] is None:
+                            raise ValueError(
+                                'Skipping package. Missing destination'
+                            )
+                        payload['destination'] = self.dc_map[
+                            payload['destination'].split(' (')[0]
+                        ]
+
+                        try:
+                            payload[
+                                'scan_datetime'
+                            ] = datetime.datetime.strptime(
+                                payload['scan_datetime'],
+                                '%Y-%m-%dT%H:%M:%S.%f'
+                            )
+                        except ValueError:
+                            payload[
+                                'scan_datetime'
+                            ] = datetime.datetime.strptime(
+                                payload['scan_datetime'],
+                                '%Y-%m-%dT%H:%M:%S'
+                            )
+
                         call = threading.Thread(
                             target=manage_wrapper,
                             args=(
@@ -90,11 +114,11 @@ class DeckardCain:
                             name='ep_{}'.format(payload.get('waybill', None))
                         )
                         call.start()
-                    except (TypeError, KeyError) as e:
+                    except (TypeError, KeyError, ValueError) as err:
                         print(
                             'Unable to parse payload: {}. Error : {} '
                             'Skipping'.format(
-                                dstream, e
+                                dstream, err
                             ),
                             file=sys.stderr
                         )
