@@ -1,5 +1,5 @@
 MONGO_HOSTS = [
-    'mongo-fap-01.internal.sdb'
+    'mongo-fap-01.internal.sdb',
     'mongo-fap-02.internal.sdb'
 ]
 
