@@ -47,6 +47,7 @@ class DeckardCain:
 
     def process(self):
         client = DBConnection()
+        print('Waiting on jobs')
 
         while True:
             jobs = client.get_job(
@@ -98,6 +99,7 @@ class DeckardCain:
                     )
                 manage_wrapper(self.solver, **payload)
                 client.ack_job(job_id)
+                print('Processed Job: {}'.format(job_id), file=sys.stderr)
 
 if __name__ == '__main__':
     listener = DeckardCain()
