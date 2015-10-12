@@ -1,3 +1,5 @@
+import sys
+
 from .utils import recurse_get_attribute, recurse_set_attribute
 
 from bson import ObjectId
@@ -87,13 +89,20 @@ class BaseModel(dict):
     def __init__(self, *args, **kwargs):
 
         for key, key_type in self.structure.items():
+            try:
+                key_type.reset()
+                value = None
 
-            key_type.reset()
+                if key in kwargs:
+                    value = kwargs.pop(key)
+                    key_type.setval(value)
 
-            if key in kwargs:
-                key_type.setval(kwargs.pop(key))
-
-            self[key] = key_type.value_of()
+                self[key] = key_type.value_of()
+            except (TypeError, ValueError) as err:
+                print('Error in setting value {} for key {}: '.format(
+                    value, key, err
+                ), file=sys.stderr)
+                raise
 
         for key in kwargs.keys():
             self[key] = kwargs[key]
