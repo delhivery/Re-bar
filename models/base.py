@@ -4,7 +4,7 @@ from .utils import recurse_get_attribute, recurse_set_attribute
 
 from bson import ObjectId
 
-from mongo import DBConnection
+from database.mongo import DBConnection
 
 from orm.fields import GenericField, TimeField, ChoiceField, DateTimeField
 from orm.relational import ForeignKey, ForeignOidKey

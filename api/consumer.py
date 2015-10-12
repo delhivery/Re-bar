@@ -2,13 +2,13 @@
 
 import base64
 import json
-import socket
 import sys
 import time
 
 from amazon_kclpy import kcl
 
-SOCKET_FILE = '/var/run/fap/socket'
+from config import FAP_QUEUE
+from database.disque import DBConnection
 
 
 class PackageStatusProcessor(kcl.RecordProcessorBase):
@@ -66,7 +66,6 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
             time.sleep(self.SLEEP_SECONDS)
 
     def process_record(self, data, partition_key, sequence_number):
-        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         data = json.loads(data)
         status = data['cs']
         action = status.get('act', None)
@@ -94,6 +93,7 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
         destination = data['cn']
         waybill = data['wbn']
         scan_datetime = status['sd']
+        pickup_date = data['pd']
 
         payload = json.dumps({
             'waybill': waybill,
@@ -102,14 +102,11 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
             'scan_datetime': scan_datetime,
             'action': action,
             'connection': connection,
-            'pickup_date': data['pd'],
+            'pickup_date': pickup_date,
         }).encode('utf-8')
 
-        try:
-            sock.connect(SOCKET_FILE)
-            sock.sendall(payload)
-        finally:
-            sock.close()
+        client = DBConnection()
+        client.add_job(FAP_QUEUE, payload, timeout=100)
 
     def process_records(self, records, checkpointer):
         try:

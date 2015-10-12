@@ -6,7 +6,7 @@ from models.base import Connection, GraphNode
 
 
 class GraphManager:
-    def __init__(self, waybill, marg=None, shared_lock=None):
+    def __init__(self, waybill, marg=None):
         self.waybill = waybill
 
         if marg is None:
@@ -22,8 +22,6 @@ class GraphManager:
             self.marg = Marg(connections, json=True)
         else:
             self.marg = marg
-
-        self.shared_lock = shared_lock
 
     def transform(self, paths, parent=None, scan_date=None, pd=None):
 
@@ -72,10 +70,9 @@ class GraphManager:
         node = GraphNode.find_one({'wbn': self.waybill, 'dst': True})
 
         if node.vertex.code != destination:
-            with self.shared_lock:
-                path = self.marg.shortest_path(
-                    active.vertex.code, scan_datetime
-                )[destination]
+            path = self.marg.shortest_path(
+                active.vertex.code, scan_datetime
+            )[destination]
             active.deactivate('dmod')
             return self.transform(path, active.parent, pd=pd)
 
@@ -87,10 +84,9 @@ class GraphManager:
         )
 
         if active.vertex.code != location:
-            with self.shared_lock:
-                path = self.marg.shortest_path(
-                    location, scan_datetime
-                )[destination]
+            path = self.marg.shortest_path(
+                location, scan_datetime
+            )[destination]
             active.deactivate('regen')
 
             active = GraphNode(
@@ -130,11 +126,10 @@ class GraphManager:
             e_arr = e_dep + datetime.timedelta(seconds=connection.duration)
 
             if connection.destination.code != destination:
-                with self.shared_lock:
-                    path = self.marg.shortest_path(
-                        connection.destination.code, e_arr).get(
-                        destination, []
-                    )
+                path = self.marg.shortest_path(
+                    connection.destination.code, e_arr).get(
+                    destination, []
+                )
                 active = self.transform(path, parent=active, pd=pd)
             else:
                 active = GraphNode(
@@ -162,10 +157,9 @@ class GraphManager:
         active.a_arr = scan_datetime
         if active.vertex.code != location:
             active.deactivate('mroute', 'center')
-            with self.shared_lock:
-                path = self.marg.shortest_path(location, scan_datetime)[
-                    destination
-                ]
+            path = self.marg.shortest_path(location, scan_datetime)[
+                destination
+            ]
             return self.transform(path, active.parent, scan_datetime, pd=pd)
 
         if active.e_dep is None and active.dst:
@@ -174,10 +168,9 @@ class GraphManager:
             else:
                 active.reached()
         elif active.e_dep < active.a_arr:
-            with self.shared_lock:
-                path = self.marg.shortest_path(
-                    active.vertex.code, active.a_arr
-                )[destination]
+            path = self.marg.shortest_path(
+                active.vertex.code, active.a_arr
+            )[destination]
             active.deactivate('hard', 'cin')
             active = self.transform(
                 path, parent=active.parent, scan_date=active.e_arr, pd=pd
@@ -219,10 +212,9 @@ class GraphManager:
         )
 
         if active is None:
-            with self.shared_lock:
-                path = self.marg.shortest_path(
-                    location, scan_datetime
-                )[destination]
+            path = self.marg.shortest_path(
+                location, scan_datetime
+            )[destination]
             active = self.transform(
                 path, scan_date=scan_datetime, pd=pickup_date
             )
