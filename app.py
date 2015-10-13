@@ -61,9 +61,12 @@ class DeckardCain:
                 ]
 
                 if payload['destination'] is None:
-                    raise ValueError(
-                        'Skipping package. Missing destination'
+                    print(
+                        'Skipping package. Missing destination: {}'.format(
+                            payload
+                        )
                     )
+                    continue
                 payload['destination'] = self.dc_map[
                     payload['destination'].split(' (')[0]
                 ]
@@ -99,7 +102,6 @@ class DeckardCain:
                     )
                 manage_wrapper(self.solver, **payload)
                 client.ack_job(job_id)
-                print('Processed Job: {}'.format(job_id), file=sys.stderr)
 
 if __name__ == '__main__':
     listener = DeckardCain()
