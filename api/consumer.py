@@ -69,30 +69,24 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
 
     def process_record(self, data, partition_key, sequence_number):
         data = json.loads(data)
+        destination = data['cn']
         status = data['cs']
+        location = status['sl']
         action = status.get('act', None)
+        connection = status.get('cid', None)
 
-        if action == '+L':
-            connection = status.get('cid', None)
-
-        elif action == '<L':
-            pid = status['pid']
-            if pid[':3'] != 'IST':
-                return
-
-            for st in data['s']:
-
-                if st.get('act', None) == '+L' and st.get('pid', None) == pid:
-                    connection = st.get('cid', None)
-                    break
-        elif action is None or action == '':
-            connection = None
-            action = None
-        else:
+        if status['st'] == 'RT':
             return
 
-        location = status['sl']
-        destination = data['cn']
+        if location == 'NSZ' or destination == 'NSZ':
+            return
+
+        if action not in ['<L', '+L', None]:
+            return
+
+        if action == '<L' and status['ps'] != status['pid']:
+            return
+
         waybill = data['wbn']
         scan_datetime = status['sd']
         pickup_date = data['pd']

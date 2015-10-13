@@ -55,7 +55,7 @@ class DeckardCain:
             )
 
             for queue_name, job_id, job in jobs:
-                payload = json.loads(job)
+                payload = json.loads(job.decode('utf-8'))
                 payload['location'] = self.dc_map[
                     payload['location'].split(' (')[0]
                 ]
