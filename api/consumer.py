@@ -69,6 +69,10 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
 
     def process_record(self, data, partition_key, sequence_number):
         data = json.loads(data)
+
+        if not data['ivd']:
+            return
+
         destination = data['cn']
         status = data['cs']
         location = status['sl']
