@@ -58,12 +58,9 @@ class BaseModel(dict):
 
         connection = cls.get_connection()
         results = connection.find(filter_dict)
-        instances = []
 
         for result in results:
-            instances.append(cls(**result))
-
-        return instances
+            yield cls(**result)
 
     @classmethod
     def count(cls, filter_dict):
