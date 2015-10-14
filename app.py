@@ -56,6 +56,11 @@ class DeckardCain:
 
             for queue_name, job_id, job in jobs:
                 payload = json.loads(job.decode('utf-8'))
+
+                if payload['destination'] == 'NSZ':
+                    client.ack_job(job_id)
+                    continue
+
                 payload['location'] = self.dc_map[
                     payload['location'].split(' (')[0]
                 ]
