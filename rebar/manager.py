@@ -192,13 +192,12 @@ class GraphManager:
 
         try:
             connection = int(connection)
-        except (TypeError, ValueError):
-            pass
-
-        if isinstance(connection, int):
             connection = Connection.find_one({'index': connection})
+
             if not connection:
                 raise ValueError()
+        except (TypeError, ValueError):
+            pass
 
         is_complete = GraphNode.count(
             {'wbn': self.waybill, 'st': 'reached', 'dst': True}
@@ -212,6 +211,11 @@ class GraphManager:
         )
 
         if active is None:
+            # We can't parse a path at its destination
+
+            if location == destination:
+                return
+
             path = self.marg.shortest_path(
                 location, scan_datetime
             )[destination]
