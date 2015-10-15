@@ -5,6 +5,8 @@ import sys
 
 from done.marg import Marg
 
+from bson import json_util
+
 from config import FAP_QUEUE, JOBS_TO_FETCH
 from database.disque import DBConnection
 from models.base import Connection, DeliveryCenter, GraphNode
@@ -29,7 +31,7 @@ def manage_wrapper(solver, **kwargs):
         logging.debug('Scan: {}'.format(scan_record))
 
         for image in snapshot:
-            logging.debug('{}'.format(image))
+            logging.debug('{}'.format(json_util.dumps(image)))
 
     except Exception as err:
         print(
