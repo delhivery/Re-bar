@@ -224,7 +224,8 @@ class GraphNode(BaseModel):
         'pd': DateTimeField(required=False),
         'vertex': ForeignKey(type=DeliveryCenter, required=False),
         'edge': ForeignKey(type=Connection, required=False),
-        'parent': ForeignOidKey(type='models.base.GraphNode', required=False),
+        'parent': ForeignOidKey(
+            type='rebar.models.base.GraphNode', required=False),
         'p_con': ForeignKey(type=Connection, required=False),
         'e_arr': DateTimeField(required=False),
         'e_dep': DateTimeField(required=False),
