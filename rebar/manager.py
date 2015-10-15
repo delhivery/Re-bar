@@ -44,7 +44,7 @@ class GraphManager:
             graphnode = GraphNode(
                 wbn=self.waybill, e_arr=e_arr, a_arr=a_arr,
                 e_dep=path['departure'], st=state, parent=parent,
-                pcon=parent.edge,
+                p_con=parent.edge,
                 vertex={'code': path['origin']},
                 edge={'_id': path['connection']},
                 pd=pd
@@ -58,7 +58,7 @@ class GraphManager:
 
         destination_node = GraphNode(
             wbn=self.waybill, e_arr=paths[-1]['arrival'], st='future',
-            dst=True, parent=parent, pcon=parent.edge, vertex={
+            dst=True, parent=parent, p_con=parent.edge, vertex={
                 'code': paths[-1]['destination']
             }, pd=pd
         )
