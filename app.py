@@ -15,6 +15,21 @@ from rebar.manager import GraphManager
 logging.basicConfig(filename='snapshots.log', level=logging.DEBUG)
 
 
+def converter(data):
+    resp = {}
+
+    for key, value in data:
+
+        if isinstance(value, dict):
+            value = converter(value)
+
+        elif isinstance(value, datetime.time):
+            value = value.hour * 3600 + value.minute * 60 + value.second
+
+        resp[key] = value
+    return resp
+
+
 def manage_wrapper(solver, **kwargs):
     try:
         scan_record = {}
@@ -31,7 +46,7 @@ def manage_wrapper(solver, **kwargs):
         logging.debug('Scan: {}'.format(scan_record))
 
         for image in snapshot:
-            logging.debug('{}'.format(json_util.dumps(image)))
+            logging.debug('{}'.format(json_util.dumps(converter(image))))
 
     except Exception as err:
         print(
