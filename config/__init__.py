@@ -1,3 +1,8 @@
+'''
+This module defines the configurations for various backend services
+for the analyzer
+'''
+
 MONGO_HOSTS = [
     'mongo-fap-01.internal.sdb',
     'mongo-fap-02.internal.sdb'

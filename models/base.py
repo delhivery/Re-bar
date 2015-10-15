@@ -1,16 +1,25 @@
-import sys
+'''
+This module defines the various classes used to represent records
+for nodes, vertices and paths being used/populated by Expected Path
+'''
 
-from .utils import recurse_get_attribute, recurse_set_attribute
+import sys
 
 from bson import ObjectId
 
-from database.mongo import DBConnection
+from .utils import recurse_get_attribute, recurse_set_attribute
 
-from orm.fields import GenericField, TimeField, ChoiceField, DateTimeField
-from orm.relational import ForeignKey, ForeignOidKey
+from ..database.mongo import db_connection
+
+from ..orm.fields import GenericField, TimeField, ChoiceField, DateTimeField
+from ..orm.relational import ForeignKey, ForeignOidKey
 
 
 class BaseModel(dict):
+    '''
+    The base model from which all other models are derived
+    Contains accessors to read from/write to mongo db
+    '''
     __collection__ = None
     __database__ = 'rebar'
     __auth__ = None
@@ -21,8 +30,11 @@ class BaseModel(dict):
 
     @classmethod
     def get_connection(cls):
+        '''
+        Fetches a client to the database
+        '''
 
-        connect = DBConnection(cls.__database__)
+        connect = db_connection(cls.__database__)
 
         if isinstance(cls.__auth__, tuple):
             connect.authenticate(cls.__auth__[0], cls.__auth__[1])
@@ -34,6 +46,9 @@ class BaseModel(dict):
 
     @classmethod
     def find_one(cls, filter_dict):
+        '''
+        Returns a single instance matching the filter dict in the database
+        '''
 
         if isinstance(filter_dict, (str, ObjectId)):
             if isinstance(filter_dict, str):
@@ -52,6 +67,9 @@ class BaseModel(dict):
 
     @classmethod
     def find(cls, filter_dict):
+        '''
+        Returns instances matching filter dict in the database
+        '''
 
         if not isinstance(filter_dict, dict):
             raise ValueError()
@@ -64,6 +82,10 @@ class BaseModel(dict):
 
     @classmethod
     def count(cls, filter_dict):
+        '''
+        Returns the count of instances matching filter dict in the database
+        '''
+
         if not isinstance(filter_dict, dict):
             raise ValueError()
 
@@ -72,6 +94,9 @@ class BaseModel(dict):
 
     @classmethod
     def all(cls):
+        '''
+        Returns all the instances for this model in the database
+        '''
         return cls.find({})
 
     @classmethod
@@ -99,7 +124,7 @@ class BaseModel(dict):
 
                 self[key] = key_type.value_of()
             except (TypeError, ValueError) as err:
-                print('Error in setting value {} for key {}: '.format(
+                print('Error in setting value {} for key {}: {}'.format(
                     value, key, err
                 ), file=sys.stderr)
                 raise
@@ -118,6 +143,9 @@ class BaseModel(dict):
         return recurse_get_attribute(self, attributes)
 
     def save(self, save=True):
+        '''
+        Save the instance to the database ( or update it if it exists )
+        '''
         connection = self.get_connection()
 
         data = {}
@@ -148,6 +176,9 @@ class BaseModel(dict):
 
 
 class DeliveryCenter(BaseModel):
+    '''
+    Represents a vertex in a graph
+    '''
     __collection__ = 'nodes'
     __unique_keys__ = [('code', )]
 
@@ -159,6 +190,9 @@ class DeliveryCenter(BaseModel):
 
 
 class Connection(BaseModel):
+    '''
+    Represents available edges for a graph
+    '''
 
     __collection__ = 'edges'
     __unique_keys__ = [('index', )]
@@ -178,6 +212,10 @@ class Connection(BaseModel):
 
 
 class GraphNode(BaseModel):
+    '''
+    Represents a sub-path in the graph of EP
+    Each sub-path is defined by the vertex, edge, parent and parent edge
+    '''
     __collection__ = 'paths'
     __unique_keys__ = []
 
@@ -207,9 +245,16 @@ class GraphNode(BaseModel):
 
     @classmethod
     def find_by_parent(cls, parent):
-        return cls.find_one({'parent._id': parent._id, 'st': 'future'})
+        '''
+        Allows lookup of a node given the parent node
+        '''
+        return cls.find_one({'parent._id': parent.get('_id'), 'st': 'future'})
 
     def deactivate(self, stc=None, f_at=None):
+        '''
+        Deactivates a node in the graph i.e. st = 'failed'
+        Also marks all children elements as inactive i.e. st = 'inactive'
+        '''
         self['st'] = 'failed'
 
         if stc:
@@ -225,6 +270,9 @@ class GraphNode(BaseModel):
         )
 
     def reached(self, stc=None, f_at=None):
+        '''
+        Marks a node as reached in the graph i.e. st = 'Reached'
+        '''
         self['st'] = 'reached'
 
         if stc:
@@ -235,5 +283,8 @@ class GraphNode(BaseModel):
         self.save()
 
     def activate(self):
+        '''
+        Activates a node in the path i.e. st = 'Active'
+        '''
         self['st'] = 'active'
         self.save()

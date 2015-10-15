@@ -1,7 +1,10 @@
+'''
+Exposes utilities to vizualize EP data
+'''
+
 import datetime
 
 from graphviz import Digraph
-from models.base import DeliveryCenter
 
 
 COLOR_MAP = {
@@ -14,14 +17,18 @@ COLOR_MAP = {
 
 
 def plot_graph(waybill, nodes):
-
+    '''
+    Plots a png graph representing EP lifecycle of a waybill
+    Takes the waybill and list of nodes in EP lifecycle for the waybill
+    as arguments
+    '''
     dot = Digraph(comment='{}'.format(waybill), format='png')
 
     vertex_map = {}
 
     for node in nodes:
         vertex_code = 'NULL'
-        node_id = '{}'.format(node._id)
+        node_id = '{}'.format(node.get('_id'))
 
         if node.vertex:
             vertex_code = node.vertex.name
@@ -36,7 +43,7 @@ def plot_graph(waybill, nodes):
 
     for node in nodes:
         if node.parent:
-            node_id = '{}'.format(node._id)
+            node_id = '{}'.format(node.get('_id'))
             parent_id = '{}'.format(node.parent['_id'])
 
             parent = vertex_map[parent_id]

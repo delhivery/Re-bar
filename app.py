@@ -1,146 +1,115 @@
+'''
+This module is responsible for reading data from disque and processing
+the requests as scans from HQ to convert it to graph changes
+'''
+
 import datetime
 import json
-import logging
-import sys
 
 from done.marg import Marg
 
-from bson import json_util
-
-from config import FAP_QUEUE, JOBS_TO_FETCH
-from database.disque import DBConnection
-from models.base import Connection, DeliveryCenter, GraphNode
-from rebar.manager import GraphManager
-
-logging.basicConfig(filename='snapshots.log', level=logging.DEBUG)
-
-
-def converter(data):
-    resp = {}
-
-    for key, value in data.items():
-
-        if isinstance(value, dict):
-            value = converter(value)
-
-        elif isinstance(value, datetime.time):
-            value = value.hour * 3600 + value.minute * 60 + value.second
-
-        resp[key] = value
-    return resp
+from .config import FAP_QUEUE, JOBS_TO_FETCH
+from .database.disque import db_connection
+from .models.base import Connection, DeliveryCenter
+from .rebar.manager import GraphManager
 
 
 def manage_wrapper(solver, **kwargs):
-    try:
-        scan_record = {}
+    '''
+    Wrapper to process extracted payload from queue
+    '''
+    scan_record = {}
 
-        for key, value in kwargs.items():
-            scan_record[key] = value
+    for key, value in kwargs.items():
+        scan_record[key] = value
 
-        waybill = kwargs.pop('waybill')
-        g = GraphManager(waybill, solver)
-        g.parse_path(**kwargs)
+    waybill = kwargs.pop('waybill')
+    manager = GraphManager(waybill, solver)
+    manager.parse_path(**kwargs)
 
-        snapshot = GraphNode.find({'wbn': waybill})
 
-        logging.debug('Scan: {}'.format(scan_record))
+def process(dc_map, solver):
+    '''
+    Listen to the queue for jobs, extract the payload and invoke
+    the processor
+    '''
+    client = db_connection()
+    print('Waiting on jobs')
 
-        for image in snapshot:
-            logging.debug('{}'.format(json_util.dumps(converter(image))))
-
-    except Exception as err:
-        print(
-            'Error {} occurred during execution of EP for '
-            'payload {}'.format(err, kwargs),
-            file=sys.stderr
+    while True:
+        jobs = client.get_job(
+            [FAP_QUEUE], count=JOBS_TO_FETCH
         )
 
+        for _, job_id, job in jobs:
+            payload = json.loads(job.decode('utf-8'))
 
-class DeckardCain:
-
-    def __init__(self):
-        super(DeckardCain, self).__init__()
-
-        connections = []
-
-        for connection in Connection.find({'active': True}):
-            connections.append({
-                'id': connection._id,
-                'cutoff_departure': connection.departure,
-                'duration': connection.duration,
-                'origin': connection.origin.code,
-                'destination': connection.destination.code
-            })
-        self.solver = Marg(connections, json=True)
-        self.dc_map = {}
-        self._target = manage_wrapper
-
-        for delivery_center in DeliveryCenter.all():
-            self.dc_map[delivery_center.name] = delivery_center.code
-
-    def process(self):
-        client = DBConnection()
-        print('Waiting on jobs')
-
-        while True:
-            jobs = client.get_job(
-                [FAP_QUEUE], count=JOBS_TO_FETCH
-            )
-
-            for queue_name, job_id, job in jobs:
-                payload = json.loads(job.decode('utf-8'))
-
-                if payload['destination'] == 'NSZ':
-                    client.ack_job(job_id)
-                    continue
-
-                payload['location'] = self.dc_map[
-                    payload['location'].split(' (')[0]
-                ]
-
-                if payload['destination'] is None:
-                    print(
-                        'Skipping package. Missing destination: {}'.format(
-                            payload
-                        )
-                    )
-                    continue
-                payload['destination'] = self.dc_map[
-                    payload['destination'].split(' (')[0]
-                ]
-
-                try:
-                    payload[
-                        'scan_datetime'
-                    ] = datetime.datetime.strptime(
-                        payload['scan_datetime'],
-                        '%Y-%m-%dT%H:%M:%S.%f'
-                    )
-                except ValueError:
-                    payload[
-                        'scan_datetime'
-                    ] = datetime.datetime.strptime(
-                        payload['scan_datetime'],
-                        '%Y-%m-%dT%H:%M:%S'
-                    )
-
-                try:
-                    payload[
-                        'pickup_date'
-                    ] = datetime.datetime.strptime(
-                        payload['pickup_date'],
-                        '%Y-%m-%dT%H:%M:%S.%f'
-                    )
-                except ValueError:
-                    payload[
-                        'pickup_date'
-                    ] = datetime.datetime.strptime(
-                        payload['pickup_date'],
-                        '%Y-%m-%dT%H:%M:%S'
-                    )
-                manage_wrapper(self.solver, **payload)
+            if payload['destination'] == 'NSZ':
                 client.ack_job(job_id)
+                continue
+
+            payload['location'] = dc_map[
+                payload['location'].split(' (')[0]
+            ]
+
+            if payload['destination'] is None:
+                print(
+                    'Skipping package. Missing destination: {}'.format(
+                        payload
+                    )
+                )
+                continue
+            payload['destination'] = dc_map[
+                payload['destination'].split(' (')[0]
+            ]
+
+            try:
+                payload[
+                    'scan_datetime'
+                ] = datetime.datetime.strptime(
+                    payload['scan_datetime'],
+                    '%Y-%m-%dT%H:%M:%S.%f'
+                )
+            except ValueError:
+                payload[
+                    'scan_datetime'
+                ] = datetime.datetime.strptime(
+                    payload['scan_datetime'],
+                    '%Y-%m-%dT%H:%M:%S'
+                )
+
+            try:
+                payload[
+                    'pickup_date'
+                ] = datetime.datetime.strptime(
+                    payload['pickup_date'],
+                    '%Y-%m-%dT%H:%M:%S.%f'
+                )
+            except ValueError:
+                payload[
+                    'pickup_date'
+                ] = datetime.datetime.strptime(
+                    payload['pickup_date'],
+                    '%Y-%m-%dT%H:%M:%S'
+                )
+            manage_wrapper(solver, **payload)
+            client.ack_job(job_id)
 
 if __name__ == '__main__':
-    listener = DeckardCain()
-    listener.process()
+    CONNECTIONS = []
+
+    for connection in Connection.find({'active': True}):
+        CONNECTIONS.append({
+            'id': connection.get('_id'),
+            'cutoff_departure': connection.departure,
+            'duration': connection.duration,
+            'origin': connection.origin.code,
+            'destination': connection.destination.code
+        })
+    SOLVER = Marg(CONNECTIONS, json=True)
+    DC_MAP = {}
+
+    for delivery_center in DeliveryCenter.all():
+        DC_MAP[delivery_center.name] = delivery_center.code
+
+    process(DC_MAP, SOLVER)

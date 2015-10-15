@@ -1,32 +1,31 @@
+'''
+This module exposes the manager for the graph representing the EP
+lifecycle of a package
+'''
+
 import datetime
 
-from done.marg import Marg
-
-from models.base import Connection, GraphNode
+from ..models.base import Connection, GraphNode
 
 
 class GraphManager:
-    def __init__(self, waybill, marg=None):
+    '''
+    A manager class for a waybill which is responsible for parsing a scan
+    against it and then either generating or updating the graph as needed
+    '''
+
+    def __init__(self, waybill, marg):
         self.waybill = waybill
+        self.marg = marg
 
-        if marg is None:
-            connections = []
-            for connection in Connection.all():
-                connections.append({
-                    'id': connection._id,
-                    'cutoff_departure': connection.departure,
-                    'duration': connection.duration,
-                    'origin': connection.origin.code,
-                    'destination': connection.destination.code
-                })
-            self.marg = Marg(connections, json=True)
-        else:
-            self.marg = marg
-
-    def transform(self, paths, parent=None, scan_date=None, pd=None):
+    def transform(self, paths, parent=None, scan_date=None, pickup_date=None):
+        '''
+        Transform a path from done.Marg.shortest_path to list of GraphNodes
+        to be stored against the database
+        '''
 
         if parent is None:
-            parent = GraphNode(wbn=self.waybill, st='reached', pd=pd)
+            parent = GraphNode(wbn=self.waybill, st='reached', pd=pickup_date)
             parent.save()
 
         active = None
@@ -47,7 +46,7 @@ class GraphManager:
                 p_con=parent.edge,
                 vertex={'code': path['origin']},
                 edge={'_id': path['connection']},
-                pd=pd
+                pd=pickup_date
             )
             graphnode.save()
 
@@ -60,14 +59,16 @@ class GraphManager:
             wbn=self.waybill, e_arr=paths[-1]['arrival'], st='future',
             dst=True, parent=parent, p_con=parent.edge, vertex={
                 'code': paths[-1]['destination']
-            }, pd=pd
+            }, pd=pickup_date
         )
         destination_node.save()
         return active
 
     def handle_destination_scan(
-        self, active, location, destination, scan_datetime, pd=None
-    ):
+            self, active, destination, scan_datetime, pickup_date=None):
+        '''
+        Handle a change in destination of the waybill and regenerates the graph
+        '''
         node = GraphNode.find_one({'wbn': self.waybill, 'dst': True})
 
         if node.vertex.code != destination:
@@ -75,14 +76,17 @@ class GraphManager:
                 active.vertex.code, scan_datetime
             )[destination]
             active.deactivate('dmod')
-            return self.transform(path, active.parent, pd=pd)
+            return self.transform(path, active.parent, pickup_date=pickup_date)
 
     def handle_location_scan(
-        self, active, location, destination, scan_datetime, pd=None
-    ):
+            self, active, location, destination, scan_datetime, **kwargs):
+        '''
+        Handle a location scan on a waybill and update the corresponding graph
+        Also verifies if the destination of the waybill has changed
+        '''
+        pickup_date = kwargs.get('pd', None)
         self.handle_destination_scan(
-            active, location, destination, scan_datetime
-        )
+            active, destination, scan_datetime, pickup_date)
 
         if active.vertex.code != location:
             path = self.marg.shortest_path(
@@ -92,14 +96,19 @@ class GraphManager:
 
             active = GraphNode(
                 wbn=self.waybill, vertex=active.vertex, e_arr=active.e_arr,
-                a_arr=active.a_arr, e_dep=active.e_dep, st='reached', pd=pd
-            )
+                a_arr=active.a_arr, e_dep=active.e_dep, st='reached',
+                pd=pickup_date)
             active.save()
-            return self.transform(path, active, pd=pd)
+            return self.transform(path, active, pickup_date=pickup_date)
 
     def handle_outscan(
-        self, active, location, destination, scan_datetime, connection, pd=None
-    ):
+            self, active, destination, scan_datetime, connection,
+            **kwargs):
+        '''
+        Handle an outscan on a waybill and update the corresponding graph
+        '''
+        pickup_date = kwargs.get('pd', None)
+
         if active.edge.index != connection.index:
             if active.a_arr < active.e_dep:
                 # Hard failure, center missed connection
@@ -120,8 +129,8 @@ class GraphManager:
             active = GraphNode(
                 wbn=self.waybill, vertex=active.vertex, e_arr=active.e_arr,
                 a_arr=active.a_arr, e_dep=e_dep, a_dep=scan_datetime,
-                edge=connection, parent=active.parent, st='reached', pd=pd
-            )
+                edge=connection, parent=active.parent, st='reached',
+                pd=pickup_date)
             active.save()
 
             e_arr = e_dep + datetime.timedelta(seconds=connection.duration)
@@ -129,15 +138,14 @@ class GraphManager:
             if connection.destination.code != destination:
                 path = self.marg.shortest_path(
                     connection.destination.code, e_arr).get(
-                    destination, []
-                )
-                active = self.transform(path, parent=active, pd=pd)
+                        destination, [])
+                active = self.transform(
+                    path, parent=active, pickup_date=pickup_date)
             else:
                 active = GraphNode(
                     wbn=self.waybill, vertex=connection.destination,
                     e_arr=e_arr, st='active', parent=active, dst=True,
-                    pd=pd
-                )
+                    pd=pickup_date)
                 active.save()
 
             active.e_arr = e_arr
@@ -154,8 +162,11 @@ class GraphManager:
             return active
 
     def handle_inscan(
-        self, active, location, destination, scan_datetime, connection, pd=None
-    ):
+            self, active, location, destination, scan_datetime, **kwargs):
+        '''
+        Handle an inscan on a waybill and update the corresponding graph
+        '''
+        pickup_date = kwargs.get('pd', None)
         active.a_arr = scan_datetime
 
         if active.vertex.code != location:
@@ -163,7 +174,8 @@ class GraphManager:
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
-            return self.transform(path, active.parent, scan_datetime, pd=pd)
+            return self.transform(
+                path, active.parent, scan_datetime, pickup_date=pickup_date)
 
         if active.e_dep is None and active.dst:
             if active.a_arr > active.e_arr:
@@ -176,8 +188,8 @@ class GraphManager:
             )[destination]
             active.deactivate('hard', 'cin')
             active = self.transform(
-                path, parent=active.parent, scan_date=active.e_arr, pd=pd
-            )
+                path, parent=active.parent, scan_date=active.e_arr,
+                pickup_date=pickup_date)
             active.a_arr = scan_datetime
             active.save()
         elif active.a_arr > active.e_arr:
@@ -188,11 +200,16 @@ class GraphManager:
             active.save()
         return active
 
-    def parse_path(
-        self, location=None, destination=None, scan_datetime=None,
-        action=None, connection=None, pickup_date=None
-    ):
-
+    def parse_path(self, **kwargs):
+        '''
+        Parse a scan against a waybill to populate/update its graph
+        '''
+        location = kwargs.get('location', None)
+        destination = kwargs.get('destination', None)
+        scan_datetime = kwargs.get('scan_datetime', None)
+        action = kwargs.get('action', None)
+        connection = kwargs.get('connection', None)
+        pickup_date = kwargs.get('pickup_date', None)
         try:
             connection = int(connection)
             connection = Connection.find_one({'index': connection})
@@ -223,20 +240,16 @@ class GraphManager:
                 location, scan_datetime
             )[destination]
             active = self.transform(
-                path, scan_date=scan_datetime, pd=pickup_date
-            )
+                path, scan_date=scan_datetime, pickup_date=pickup_date)
 
         if not action:
             self.handle_location_scan(
-                active, location, destination, scan_datetime, pd=pickup_date
-            )
+                active, location, destination, scan_datetime, pd=pickup_date)
         elif action == '<L':
             self.handle_inscan(
-                active, location, destination, scan_datetime, connection,
-                pd=pickup_date
-            )
+                active, location, destination, scan_datetime, pd=pickup_date)
         elif action == '+L':
             self.handle_outscan(
-                active, location, destination, scan_datetime, connection,
+                active, destination, scan_datetime, connection,
                 pd=pickup_date
             )

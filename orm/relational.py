@@ -1,11 +1,24 @@
+'''
+This module exposes relational fields supported by the ORM
+'''
+
 import importlib
 
-from orm.base import BaseField
+from .base import BaseField
 
 
 class ForeignKey(BaseField):
+    '''
+    Implements a ForeignKey field for the ORM
+    It represents a foreign object and serializes
+    the foreign object for storage against the database
+    '''
 
     def lazy_load(self):
+        '''
+        Allows for loading foreign models in the orm in a lazy fashion
+        to avoid cyclic dependencies
+        '''
         module_elements = self.f_type.split('.')
         module = '.'.join(module_elements[:-1])
         module = importlib.import_module(module)
@@ -41,6 +54,11 @@ class ForeignKey(BaseField):
 
 
 class ForeignOidKey(ForeignKey):
+    '''
+    Implements a ForeignOidKey field for the ORM
+    It represents a foreign object but only stores
+    the _id attribute of the foreign object to the database
+    '''
 
     def value_of(self):
         ret = super(ForeignOidKey, self).value_of()

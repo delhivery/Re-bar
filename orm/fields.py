@@ -1,7 +1,11 @@
+'''
+This module exposes fields for more complex data types exposed by python
+'''
+
 import time
 import datetime
 
-from orm.base import BaseField
+from .base import BaseField
 
 
 class GenericField(BaseField):
@@ -12,6 +16,9 @@ class GenericField(BaseField):
 
 
 class ChoiceField(BaseField):
+    '''
+    This module implements a choicefield for the ORM
+    '''
     def __init__(self, *args, **kwargs):
         self.choices = kwargs.pop('choices', [])
         super(ChoiceField, self).__init__(*args, **kwargs)
@@ -31,6 +38,11 @@ class ChoiceField(BaseField):
 
 
 class TimeField(BaseField):
+    '''
+    This module implements a time field for the orm
+    It exports time as a time.time object for python and saves it
+    as an integer in the database
+    '''
     def __init__(self, *args, **kwargs):
         self.formats = kwargs.pop('formats', ['%H:%M:%S'])
 
@@ -83,6 +95,9 @@ class TimeField(BaseField):
 
 
 class DateTimeField(BaseField):
+    '''
+    This module implements a date time field for the orm
+    '''
 
     def __init__(self, *args, **kwargs):
         self.formats = kwargs.pop('formats', ['%Y-%m-%dT%H:%M:%S'])
@@ -125,7 +140,6 @@ class DateTimeField(BaseField):
         self.validate()
 
     def value_of(self):
-
         if self.value is None and self.auto_add_now:
             self.value = datetime.datetime.now()
         return super(DateTimeField, self).value_of()
