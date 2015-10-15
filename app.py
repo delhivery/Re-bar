@@ -1,20 +1,36 @@
 import datetime
 import json
+import logging
 import sys
 
 from done.marg import Marg
 
 from config import FAP_QUEUE, JOBS_TO_FETCH
 from database.disque import DBConnection
-from models.base import Connection, DeliveryCenter
+from models.base import Connection, DeliveryCenter, GraphNode
 from rebar.manager import GraphManager
+
+logging.basicConfig(filename='snapshots.log', level=logging.DEBUG)
 
 
 def manage_wrapper(solver, **kwargs):
     try:
+        scan_record = {}
+
+        for key, value in kwargs.items():
+            scan_record[key] = value
+
         waybill = kwargs.pop('waybill')
         g = GraphManager(waybill, solver)
         g.parse_path(**kwargs)
+
+        snapshot = GraphNode.find({'wbn': waybill})
+
+        logging.debug('Scan: {}'.format(scan_record))
+
+        for image in snapshot:
+            logging.debug('{}'.format(image))
+
     except Exception as err:
         print(
             'Error {} occurred during execution of EP for '

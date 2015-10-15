@@ -44,6 +44,7 @@ class GraphManager:
             graphnode = GraphNode(
                 wbn=self.waybill, e_arr=e_arr, a_arr=a_arr,
                 e_dep=path['departure'], st=state, parent=parent,
+                pcon=parent.edge,
                 vertex={'code': path['origin']},
                 edge={'_id': path['connection']},
                 pd=pd
@@ -57,7 +58,7 @@ class GraphManager:
 
         destination_node = GraphNode(
             wbn=self.waybill, e_arr=paths[-1]['arrival'], st='future',
-            dst=True, parent=parent, vertex={
+            dst=True, parent=parent, pcon=parent.edge, vertex={
                 'code': paths[-1]['destination']
             }, pd=pd
         )
@@ -143,6 +144,7 @@ class GraphManager:
             active.save()
         else:
             active.a_dep = scan_datetime
+
             if active.a_dep > active.e_dep:
                 active.reached('soft', 'cout')
             else:
@@ -155,6 +157,7 @@ class GraphManager:
         self, active, location, destination, scan_datetime, connection, pd=None
     ):
         active.a_arr = scan_datetime
+
         if active.vertex.code != location:
             active.deactivate('mroute', 'center')
             path = self.marg.shortest_path(location, scan_datetime)[
