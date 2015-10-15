@@ -18,7 +18,7 @@ logging.basicConfig(filename='snapshots.log', level=logging.DEBUG)
 def converter(data):
     resp = {}
 
-    for key, value in data:
+    for key, value in data.items():
 
         if isinstance(value, dict):
             value = converter(value)
