@@ -309,7 +309,7 @@ class GraphNode(BaseModel):
 
         self.save()
         self.update(
-            {'_id': {'$gt': self['_id']}},
+            {'_id': {'$gt': self['_id']}, 'wbn': self.wbn, 'st': 'future'},
             {'$set': {'st': 'inactive', 'dst': False}}
         )
 
