@@ -4,6 +4,7 @@ lifecycle of a package
 '''
 import logging
 import datetime
+import timeit
 
 from pymongo.helpers import DuplicateKeyError
 
@@ -284,7 +285,17 @@ class GraphManager:
                     break
                 except DuplicateKeyError:
                     pass
-            self.parse_scan(**kwargs)
+            try:
+                start = timeit.default_timer()
+                self.parse_scan(**kwargs)
+                end = timeit.default_timer()
+                print('EP calculated in {} seconds'.format(end - start))
+            except Exception as err:
+                logging.error(
+                    'Exception {} occurred while parsing scan against {}'.format(
+                        err, self.waybill)
+                )
+                pass
             lock.remove()
         except DuplicateKeyError:
             return

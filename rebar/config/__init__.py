@@ -10,6 +10,7 @@ MONGO_HOSTS = [
 
 MONGO_URI_OPTS = [
     'replicaSet=FAP',
+    'readPreference=primaryPreferred',
 ]
 
 MONGO_URI = 'mongodb://{}/?{}'.format(
@@ -30,4 +31,4 @@ DISQUE_HOSTS = [
 
 FAP_QUEUE = 'fap_fap_fap'
 
-JOBS_TO_FETCH = 10
+JOBS_TO_FETCH = 100
