@@ -12,8 +12,8 @@ import time
 
 from amazon_kclpy import kcl
 
-from ..config import FAP_QUEUE
-from ..database.disque import db_connection
+from rebar.config import FAP_QUEUE
+from rebar.database.disque import db_connection
 
 
 def process_record(data):
