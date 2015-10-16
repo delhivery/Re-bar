@@ -13,5 +13,5 @@ def db_connection(database, mongo_uri=MONGO_URI):
     Takes an optional parameter mongo_uri in case connection to a
     non-configured database is required
     '''
-    client = MongoClient(mongo_uri)
+    client = MongoClient(mongo_uri, maxPoolSize=None)
     return client[database]
