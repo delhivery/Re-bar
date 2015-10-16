@@ -2,10 +2,12 @@
 This module exposes the manager for the graph representing the EP
 lifecycle of a package
 '''
-
+import logging
 import datetime
 
 from ..models.base import Connection, GraphNode
+
+logging.basicConfig(filename='progress.log', level=logging.DEBUG)
 
 
 class GraphManager:
@@ -204,6 +206,8 @@ class GraphManager:
         '''
         Parse a scan against a waybill to populate/update its graph
         '''
+        logging.debug('\n\nKwargs received: {}'.format(kwargs))
+
         location = kwargs.get('location', None)
         destination = kwargs.get('destination', None)
         scan_datetime = kwargs.get('scan_datetime', None)
@@ -242,10 +246,11 @@ class GraphManager:
             active = self.transform(
                 path, scan_date=scan_datetime, pickup_date=pickup_date)
 
-        if not action:
+        if active.vertex.code != location or not action:
             self.handle_location_scan(
                 active, location, destination, scan_datetime, pd=pickup_date)
-        elif action == '<L':
+
+        if action == '<L':
             self.handle_inscan(
                 active, location, destination, scan_datetime, pd=pickup_date)
         elif action == '+L':
