@@ -208,7 +208,8 @@ class GraphManager:
         '''
         Parse a scan against a waybill to populate/update its graph
         '''
-        log_string = '\n\nKwargs received: {}'.format(kwargs)
+        log_string = 'Waybill: {} \n\nKwargs received: {}'.format(
+            self.waybill, kwargs)
         logging.debug(log_string)
 
         location = kwargs.get('location', None)

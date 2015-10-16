@@ -4,7 +4,7 @@ Exposes a connection for Disque
 
 from pydisque.client import Client
 
-from ....config import DISQUE_HOSTS
+from ...config import DISQUE_HOSTS
 
 
 def db_connection(disque_hosts=None):

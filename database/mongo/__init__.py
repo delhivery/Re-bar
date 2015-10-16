@@ -2,8 +2,9 @@
 Exposes a connection for MongoDB
 '''
 
-from ....config import MONGO_URI
 from pymongo import MongoClient
+
+from ...config import MONGO_URI
 
 
 def db_connection(database, mongo_uri=MONGO_URI):
