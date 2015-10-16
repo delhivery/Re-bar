@@ -277,14 +277,17 @@ class GraphManager:
                 record = ScanRecord(wbn=self.waybill, act=action, pid=pid)
                 record.insert_one()
 
-            lock = None
+            lock = WaybillLocker(wbn=self.waybill)
+            print('\n\nWaiting for lock on {}'.format(self.waybill))
+
             while True:
                 try:
-                    lock = WaybillLocker(wbn=self.waybill)
                     lock.insert_one()
                     break
                 except DuplicateKeyError:
                     pass
+            print('Got a lock')
+
             try:
                 start = timeit.default_timer()
                 self.parse_scan(**kwargs)
@@ -296,5 +299,6 @@ class GraphManager:
                         err, self.waybill)
                 )
             lock.remove()
+            print('Cleared Lock')
         except DuplicateKeyError:
             return

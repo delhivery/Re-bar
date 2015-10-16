@@ -10,7 +10,6 @@ MONGO_HOSTS = [
 
 MONGO_URI_OPTS = [
     'replicaSet=FAP',
-    'readPreference=primaryPreferred',
 ]
 
 MONGO_URI = 'mongodb://{}/?{}'.format(
