@@ -18,6 +18,7 @@ def manage_wrapper(solver, **kwargs):
     '''
     Wrapper to process extracted payload from queue
     '''
+    start = timeit.default_timer()
     scan_record = {}
 
     for key, value in kwargs.items():
@@ -26,6 +27,8 @@ def manage_wrapper(solver, **kwargs):
     waybill = kwargs.pop('waybill')
     manager = GraphManager(waybill, solver)
     manager.analyze_scan(**kwargs)
+    end = timeit.default_timer()
+    print('Job in {} seconds'.format(end - start))
 
 
 def process(dc_map, solver):
