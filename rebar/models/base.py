@@ -7,6 +7,8 @@ import sys
 
 from bson import ObjectId
 
+from pymongo.cursor import CursorType
+
 from .utils import recurse_get_attribute, recurse_set_attribute
 
 from ..database.mongo import db_connection
@@ -75,7 +77,7 @@ class BaseModel(dict):
             raise ValueError()
 
         connection = cls.get_connection()
-        results = connection.find(filter_dict)
+        results = connection.find(filter_dict, cursor_type=CursorType.EXHAUST)
 
         for result in results:
             yield cls(**result)
