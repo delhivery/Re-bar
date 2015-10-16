@@ -1,4 +1,0 @@
-pymongo
-amazon_kclpy
-pydisque
-graphviz

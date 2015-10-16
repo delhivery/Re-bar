@@ -8,10 +8,10 @@ import json
 
 from done.marg import Marg
 
-from .config import FAP_QUEUE, JOBS_TO_FETCH
-from .database.disque import db_connection
-from .models.base import Connection, DeliveryCenter
-from .rebar.manager import GraphManager
+from ..config import FAP_QUEUE, JOBS_TO_FETCH
+from ..database.disque import db_connection
+from ..models.base import Connection, DeliveryCenter
+from ..rebar.manager import GraphManager
 
 
 def manage_wrapper(solver, **kwargs):
