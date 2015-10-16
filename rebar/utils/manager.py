@@ -295,7 +295,6 @@ class GraphManager:
                     'Exception {} occurred while parsing scan against {}'.format(
                         err, self.waybill)
                 )
-                pass
             lock.remove()
         except DuplicateKeyError:
             return
