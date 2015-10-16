@@ -230,7 +230,7 @@ class ScanRecord(BaseModel):
 
     structure = {
         'wbn': GenericField(type=str),
-        'ist': GenericField(type=str),
+        'pid': GenericField(type=str),
         'act': GenericField(type=str),
     }
 
