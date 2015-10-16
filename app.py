@@ -25,7 +25,7 @@ def manage_wrapper(solver, **kwargs):
 
     waybill = kwargs.pop('waybill')
     manager = GraphManager(waybill, solver)
-    manager.parse_path(**kwargs)
+    manager.analyze_scan(**kwargs)
 
 
 def process(dc_map, solver):

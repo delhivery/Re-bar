@@ -5,7 +5,9 @@ lifecycle of a package
 import logging
 import datetime
 
-from ..models.base import Connection, GraphNode
+from pymongo.helpers import DuplicateKeyError
+
+from ..models.base import Connection, GraphNode, ScanRecord
 
 logging.basicConfig(filename='progress.log', level=logging.DEBUG)
 
@@ -202,11 +204,12 @@ class GraphManager:
             active.save()
         return active
 
-    def parse_path(self, **kwargs):
+    def parse_scan(self, **kwargs):
         '''
         Parse a scan against a waybill to populate/update its graph
         '''
-        logging.debug('\n\nKwargs received: {}'.format(kwargs))
+        log_string = '\n\nKwargs received: {}'.format(kwargs)
+        logging.debug(log_string)
 
         location = kwargs.get('location', None)
         destination = kwargs.get('destination', None)
@@ -214,6 +217,7 @@ class GraphManager:
         action = kwargs.get('action', None)
         connection = kwargs.get('connection', None)
         pickup_date = kwargs.get('pickup_date', None)
+
         try:
             connection = int(connection)
             connection = Connection.find_one({'index': connection})
@@ -258,3 +262,18 @@ class GraphManager:
                 active, destination, scan_datetime, connection,
                 pd=pickup_date
             )
+
+    def analyze_scan(self, **kwargs):
+        '''
+        Takes a scan as input and determines if it needs to be parsed
+        '''
+        pid = kwargs.get('pid', None)
+        action = kwargs.get('action', None)
+
+        try:
+            if action:
+                record = ScanRecord(wbn=self.waybill, act=action, pid=pid)
+                record.insert_one()
+            self.parse_scan(**kwargs)
+        except DuplicateKeyError:
+            return

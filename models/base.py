@@ -174,6 +174,14 @@ class BaseModel(dict):
         else:
             return data
 
+    def insert_one(self):
+        '''
+        Insert a singlular record into the database
+        '''
+        data = self.save(save=False)
+        connection = self.get_connection()
+        connection.insert_one(data)
+
 
 class DeliveryCenter(BaseModel):
     '''
@@ -208,6 +216,22 @@ class Connection(BaseModel):
             'Local', 'Surface', 'Railroad', 'Air'
         ]),
         'index': GenericField(type=int),
+    }
+
+
+class ScanRecord(BaseModel):
+    '''
+    This model records various scans parsed to maintain uniqueness
+    of parsed scans
+    '''
+
+    __collection__ = 'scans'
+    __unique_keys__ = [('wbn', 'ist', 'act'), ]
+
+    structure = {
+        'wbn': GenericField(type=str),
+        'ist': GenericField(type=str),
+        'act': GenericField(type=str),
     }
 
 
