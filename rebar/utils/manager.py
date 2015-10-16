@@ -7,7 +7,7 @@ import datetime
 
 from pymongo.helpers import DuplicateKeyError
 
-from ..models.base import Connection, GraphNode, ScanRecord
+from ..models.base import Connection, GraphNode, ScanRecord, WaybillLocker
 
 logging.basicConfig(filename='progress.log', level=logging.DEBUG)
 
@@ -275,6 +275,16 @@ class GraphManager:
             if action:
                 record = ScanRecord(wbn=self.waybill, act=action, pid=pid)
                 record.insert_one()
+
+            lock = None
+            while True:
+                try:
+                    lock = WaybillLocker(wbn=self.waybill)
+                    lock.insert_one()
+                    break
+                except DuplicateKeyError:
+                    pass
             self.parse_scan(**kwargs)
+            lock.remove()
         except DuplicateKeyError:
             return

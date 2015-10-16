@@ -182,6 +182,13 @@ class BaseModel(dict):
         connection = self.get_connection()
         connection.insert_one(data)
 
+    def remove(self):
+        '''
+        Delete self from records
+        '''
+        connection = self.get_connection()
+        connection.delete_one({'_id': self._id})
+
 
 class DeliveryCenter(BaseModel):
     '''
@@ -232,6 +239,18 @@ class ScanRecord(BaseModel):
         'wbn': GenericField(type=str),
         'pid': GenericField(type=str),
         'act': GenericField(type=str),
+    }
+
+
+class WaybillLocker(BaseModel):
+    '''
+    Allows a parser to lock a particular waybill
+    '''
+    __collection__ = 'wbn_locks'
+    __unique_keys__ = ['wbn']
+
+    structure = {
+        'wbn': GenericField(type=str),
     }
 
 
