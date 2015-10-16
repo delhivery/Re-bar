@@ -11,3 +11,4 @@ manifest/*
 *.reviewboardrc
 /celerybeat-schedule
 dist/* 
+rebar.egg-info/*
