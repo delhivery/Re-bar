@@ -30,6 +30,7 @@ def process_record(data):
     location = status['sl']
     action = status.get('act', None)
     connection = status.get('cid', None)
+    pid = status.get('pid', None)
 
     if status['st'] == 'RT':
         return
@@ -55,6 +56,7 @@ def process_record(data):
         'action': action,
         'connection': connection,
         'pickup_date': pickup_date,
+        'pid': pid
     }).encode('utf-8')
 
     client = db_connection()
