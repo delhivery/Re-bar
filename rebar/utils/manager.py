@@ -4,6 +4,8 @@ lifecycle of a package
 '''
 import logging
 import datetime
+import time
+import uuid
 
 from pymongo.helpers import DuplicateKeyError
 
@@ -23,6 +25,7 @@ class GraphManager:
     def __init__(self, waybill, marg):
         self.waybill = waybill
         self.marg = marg
+        self.ident = uuid.uuid4()
 
     def transform(self, paths, parent=None, scan_date=None, pickup_date=None):
         '''
@@ -278,7 +281,7 @@ class GraphManager:
                 record = ScanRecord(wbn=self.waybill, act=action, pid=pid)
                 record.insert_one()
 
-            lock = WaybillLocker(wbn=self.waybill)
+            lock = WaybillLocker(wbn=self.waybill, creator=self.ident)
 
             while True:
                 try:
@@ -287,7 +290,13 @@ class GraphManager:
                 except DuplicateKeyError:
                     pass
                 except ValueError:
-                    print('_id pre-exists for lock: {}'.format(lock))
+
+                    if WaybillLocker.find_one({
+                            'wbn': self.waybill,
+                            'creator': self.ident}):
+                        time.sleep(2)
+                        lock.remove()
+                    lock = WaybillLocker(wbn=self.waybill, creator=self.ident)
 
             try:
                 self.parse_scan(**kwargs)
