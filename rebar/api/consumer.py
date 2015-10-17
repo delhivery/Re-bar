@@ -7,7 +7,6 @@ to process records for package scans
 
 import base64
 import json
-import sys
 import time
 
 from amazon_kclpy import kcl
@@ -98,38 +97,11 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
             except kcl.CheckpointError as err:
 
                 if err.value == 'ShutdownException':
-                    print(
-                        'Konsumer: Encountered ShutdownException, skipping '
-                        'checkpoint'
-                    )
                     return
 
                 elif err.value == 'ThrottlingException':
                     if self.checkpoint_retries - 1 == attempt:
-                        print(
-                            'Konsumer: Failed to checkpoint after {attempt} '
-                            'attempts, giving up.'.format(attempt=attempt),
-                            file=sys.stderr
-                        )
                         return
-                    else:
-                        print(
-                            'Konsumer: Throttled while checkpointing. Next '
-                            'attempt in {s} seconds'.format(
-                                s=self.sleep_seconds
-                            )
-                        )
-                elif err.value == 'InvalidStateException':
-                    print(
-                        'Konsumer: MultiLangDaemon reported an invalid state '
-                        'while checkpointing.',
-                        file=sys.stderr
-                    )
-                else:
-                    print(
-                        'Konsumer: Unknown error while checkpointing: '
-                        '{error}'.format(error=err)
-                    )
             time.sleep(self.sleep_seconds)
 
     def process_records(self, records, checkpointer):
@@ -156,11 +128,8 @@ class PackageStatusProcessor(kcl.RecordProcessorBase):
         Shut down the reader
         '''
         if reason == 'TERMINATE':
-            print('Konsumer: Shutdown requested. Attempting checkpoint.')
             if self.initialized:
                 self.checkpoint(checkpointer, None)
-        else:
-            print('Konsumer: Error occurred. Shutting down')
 
 
 if __name__ == '__main__':

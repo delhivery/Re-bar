@@ -5,7 +5,6 @@ the requests as scans from HQ to convert it to graph changes
 
 import datetime
 import json
-import timeit
 
 from done.marg import Marg
 
@@ -19,7 +18,6 @@ def manage_wrapper(solver, **kwargs):
     '''
     Wrapper to process extracted payload from queue
     '''
-    start = timeit.default_timer()
     scan_record = {}
 
     for key, value in kwargs.items():
@@ -28,8 +26,6 @@ def manage_wrapper(solver, **kwargs):
     waybill = kwargs.pop('waybill')
     manager = GraphManager(waybill, solver)
     manager.analyze_scan(**kwargs)
-    end = timeit.default_timer()
-    print('Job in {} seconds'.format(end - start))
 
 
 def process(dc_map, solver):
@@ -38,7 +34,6 @@ def process(dc_map, solver):
     the processor
     '''
     client = db_connection()
-    print('Waiting on jobs')
 
     while True:
         jobs = client.get_job(

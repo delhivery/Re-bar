@@ -4,11 +4,12 @@ lifecycle of a package
 '''
 import logging
 import datetime
-import timeit
 
 from pymongo.helpers import DuplicateKeyError
 
-from ..models.base import Connection, GraphNode, ScanRecord, WaybillLocker
+from ..models.base import (
+    Connection, GraphNode, ScanRecord, WaybillLocker, DeliveryCenter
+)
 
 logging.basicConfig(filename='progress.log', level=logging.DEBUG)
 
@@ -49,8 +50,8 @@ class GraphManager:
                 wbn=self.waybill, e_arr=e_arr, a_arr=a_arr,
                 e_dep=path['departure'], st=state, parent=parent.reference,
                 p_con=parent.get('edge', None),
-                vertex={'code': path['origin']},
-                edge={'_id': path['connection']},
+                vertex=DeliveryCenter.find_one({'code': path['origin']}),
+                edge=Connection.find_one({'_id': path['connection']}),
                 pd=pickup_date
             )
             graphnode.save()
@@ -63,8 +64,8 @@ class GraphManager:
         destination_node = GraphNode(
             wbn=self.waybill, e_arr=paths[-1]['arrival'], st='future',
             dst=True, parent=parent.reference, p_con=parent.get('edge', None),
-            vertex={'code': paths[-1]['destination']}, pd=pickup_date
-        )
+            vertex=DeliveryCenter.find_one({'code': paths[-1]['destination']}),
+            pd=pickup_date)
         destination_node.save()
         return active
 
@@ -278,7 +279,6 @@ class GraphManager:
                 record.insert_one()
 
             lock = WaybillLocker(wbn=self.waybill)
-            print('\n\nWaiting for lock on {}'.format(self.waybill))
 
             while True:
                 try:
@@ -286,13 +286,11 @@ class GraphManager:
                     break
                 except DuplicateKeyError:
                     pass
-            print('Got a lock')
+                except ValueError:
+                    print('_id pre-exists for lock: {}'.format(lock))
 
             try:
-                start = timeit.default_timer()
                 self.parse_scan(**kwargs)
-                end = timeit.default_timer()
-                print('EP calculated in {} seconds'.format(end - start))
             except Exception as err:
                 logging.error(
                     'Exception {} occurred while parsing scan '
@@ -300,6 +298,5 @@ class GraphManager:
                         err, self.waybill)
                 )
             lock.remove()
-            print('Cleared Lock')
         except DuplicateKeyError:
             return
