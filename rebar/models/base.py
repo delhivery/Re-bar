@@ -182,7 +182,8 @@ class BaseModel(dict):
         '''
         data = self.save(save=False)
         connection = self.get_connection()
-        connection.insert_one(data)
+        result = connection.insert_one(data)
+        self['_id'] = result.inserted_id
 
     def remove(self):
         '''
