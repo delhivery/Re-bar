@@ -26,6 +26,8 @@ DISQUE_HOSTS = [
     'disque-fap-06.internal.sdb:7711',
     'disque-fap-07.internal.sdb:7711',
     'disque-fap-08.internal.sdb:7711',
+    'disque-fap-a.internal.sdb:7711',
+    'disque-fap-b.internal.sdb:7711',
 ]
 
 FAP_QUEUE = 'fap_fap_fap'
