@@ -46,10 +46,14 @@ def process(dc_map, solver):
             if payload['destination'] == 'NSZ':
                 client.ack_job(job_id)
                 continue
-
-            payload['location'] = dc_map[
-                payload['location'].split(' (')[0]
-            ]
+            try:
+                payload['location'] = dc_map[
+                    payload['location'].split(' (')[0]
+                ]
+            except KeyError:
+                print('Skippping package. Unidentified location: {}'.format(
+                    payload))
+                continue
 
             if payload['destination'] is None:
                 print(
@@ -58,9 +62,15 @@ def process(dc_map, solver):
                     )
                 )
                 continue
-            payload['destination'] = dc_map[
-                payload['destination'].split(' (')[0]
-            ]
+
+            try:
+                payload['destination'] = dc_map[
+                    payload['destination'].split(' (')[0]
+                ]
+            except KeyError:
+                print('Skippping package. Unidentified destination: {}'.format(
+                    payload))
+                continue
 
             try:
                 payload[

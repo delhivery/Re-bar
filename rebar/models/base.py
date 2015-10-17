@@ -7,8 +7,6 @@ from bson import ObjectId
 
 from pymongo.cursor import CursorType
 
-from .utils import recurse_get_attribute, recurse_set_attribute
-
 from ..database.mongo import db_connection
 
 
@@ -105,14 +103,6 @@ class BaseModel(dict):
 
         connection = cls.get_connection()
         connection.update(filter_dict, update_dict, multi=multi)
-
-    def __setattr__(self, attribute, value):
-        attributes = attribute.split('.')
-        recurse_set_attribute(self, attributes, value)
-
-    def __getattr__(self, attribute):
-        attributes = attribute.split('.')
-        return recurse_get_attribute(self, attributes)
 
     def save(self):
         '''
