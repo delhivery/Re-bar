@@ -135,7 +135,7 @@ class BaseModel(dict):
         '''
         connection = self.get_connection()
 
-        if ['_id'] in self:
+        if '_id' in self:
             raise ValueError('Only records lacking _id can be inserted')
         result = connection.insert_one(self)
         self['_id'] = result.inserted_id
