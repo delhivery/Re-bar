@@ -105,15 +105,15 @@ if __name__ == '__main__':
     for connection in Connection.find({'active': True}):
         CONNECTIONS.append({
             'id': connection.get('_id'),
-            'cutoff_departure': connection.departure,
-            'duration': connection.duration,
-            'origin': connection.origin.code,
-            'destination': connection.destination.code
+            'cutoff_departure': connection['departure'],
+            'duration': connection['duration'],
+            'origin': connection['origin']['code'],
+            'destination': connection['destination']['code']
         })
     SOLVER = Marg(CONNECTIONS, json=True)
     DC_MAP = {}
 
     for delivery_center in DeliveryCenter.all():
-        DC_MAP[delivery_center.name] = delivery_center.code
+        DC_MAP[delivery_center['name']] = delivery_center['code']
 
     process(DC_MAP, SOLVER)

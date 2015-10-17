@@ -47,8 +47,8 @@ class GraphManager:
                 a_arr = scan_date
             graphnode = GraphNode(
                 wbn=self.waybill, e_arr=e_arr, a_arr=a_arr,
-                e_dep=path['departure'], st=state, parent=parent,
-                p_con=parent.edge,
+                e_dep=path['departure'], st=state, parent=parent.reference,
+                p_con=parent['edge'],
                 vertex={'code': path['origin']},
                 edge={'_id': path['connection']},
                 pd=pickup_date
@@ -62,7 +62,7 @@ class GraphManager:
 
         destination_node = GraphNode(
             wbn=self.waybill, e_arr=paths[-1]['arrival'], st='future',
-            dst=True, parent=parent, p_con=parent.edge, vertex={
+            dst=True, parent=parent, p_con=parent['edge'], vertex={
                 'code': paths[-1]['destination']
             }, pd=pickup_date
         )
@@ -76,12 +76,13 @@ class GraphManager:
         '''
         node = GraphNode.find_one({'wbn': self.waybill, 'dst': True})
 
-        if node.vertex.code != destination:
+        if node['vertex']['code'] != destination:
             path = self.marg.shortest_path(
-                active.vertex.code, scan_datetime
+                active['vertex']['code'], scan_datetime
             )[destination]
             active.deactivate('dmod')
-            return self.transform(path, active.parent, pickup_date=pickup_date)
+            return self.transform(
+                path, active['parent'], pickup_date=pickup_date)
 
     def handle_location_scan(
             self, active, location, destination, scan_datetime, **kwargs):
@@ -93,16 +94,16 @@ class GraphManager:
         self.handle_destination_scan(
             active, destination, scan_datetime, pickup_date)
 
-        if active.vertex.code != location:
+        if active['vertex']['code'] != location:
             path = self.marg.shortest_path(
                 location, scan_datetime
             )[destination]
             active.deactivate('regen')
 
             active = GraphNode(
-                wbn=self.waybill, vertex=active.vertex, e_arr=active.e_arr,
-                a_arr=active.a_arr, e_dep=active.e_dep, st='reached',
-                pd=pickup_date)
+                wbn=self.waybill, vertex=active['vertex'],
+                e_arr=active['e_arr'], a_arr=active['a_arr'],
+                e_dep=active['e_dep'], st='reached', pd=pickup_date)
             active.save()
             return self.transform(path, active, pickup_date=pickup_date)
 
@@ -114,51 +115,51 @@ class GraphManager:
         '''
         pickup_date = kwargs.get('pd', None)
 
-        if active.edge.index != connection.index:
-            if active.a_arr < active.e_dep:
+        if active['edge']['index'] != connection['index']:
+            if active['a_arr'] < active['e_dep']:
                 # Hard failure, center missed connection
                 active.deactivate('hard', 'center')
             else:
                 # Hard failure, connection arrived too late
                 active.deactivate('hard', 'cin')
-            e_arr = active.e_arr
+            e_arr = active['e_arr']
             e_dep = e_arr.replace(
-                hour=connection.departure.hour,
-                minute=connection.departure.minute,
-                second=connection.departure.second
+                hour=connection['departure'].hour,
+                minute=connection['departure'].minute,
+                second=connection['departure'].second
             )
 
             if e_dep < e_arr:
                 e_dep = e_dep + datetime.timedelta(days=1)
 
             active = GraphNode(
-                wbn=self.waybill, vertex=active.vertex, e_arr=active.e_arr,
-                a_arr=active.a_arr, e_dep=e_dep, a_dep=scan_datetime,
-                edge=connection, parent=active.parent, st='reached',
-                pd=pickup_date)
+                wbn=self.waybill, vertex=active['vertex'],
+                e_arr=active['e_arr'], a_arr=active['a_arr'], e_dep=e_dep,
+                a_dep=scan_datetime, edge=connection, parent=active['parent'],
+                st='reached', pd=pickup_date)
             active.save()
 
-            e_arr = e_dep + datetime.timedelta(seconds=connection.duration)
+            e_arr = e_dep + datetime.timedelta(seconds=connection['duration'])
 
-            if connection.destination.code != destination:
+            if connection['destination']['code'] != destination:
                 path = self.marg.shortest_path(
-                    connection.destination.code, e_arr).get(
+                    connection['destination']['code'], e_arr).get(
                         destination, [])
                 active = self.transform(
                     path, parent=active, pickup_date=pickup_date)
             else:
                 active = GraphNode(
-                    wbn=self.waybill, vertex=connection.destination,
-                    e_arr=e_arr, st='active', parent=active, dst=True,
-                    pd=pickup_date)
+                    wbn=self.waybill, vertex=connection['destination'],
+                    e_arr=e_arr, st='active', parent=active.reference,
+                    dst=True, pd=pickup_date)
                 active.save()
 
-            active.e_arr = e_arr
+            active['e_arr'] = e_arr
             active.save()
         else:
-            active.a_dep = scan_datetime
+            active['a_dep'] = scan_datetime
 
-            if active.a_dep > active.e_dep:
+            if active['a_dep'] > active['e_dep']:
                 active.reached('soft', 'cout')
             else:
                 active.reached()
@@ -172,32 +173,32 @@ class GraphManager:
         Handle an inscan on a waybill and update the corresponding graph
         '''
         pickup_date = kwargs.get('pd', None)
-        active.a_arr = scan_datetime
+        active['a_arr'] = scan_datetime
 
-        if active.vertex.code != location:
+        if active['vertex']['code'] != location:
             active.deactivate('mroute', 'center')
             path = self.marg.shortest_path(location, scan_datetime)[
                 destination
             ]
             return self.transform(
-                path, active.parent, scan_datetime, pickup_date=pickup_date)
+                path, active['parent'], scan_datetime, pickup_date=pickup_date)
 
-        if active.e_dep is None and active.dst:
-            if active.a_arr > active.e_arr:
+        if active['e_dep'] is None and active['dst']:
+            if active['a_arr'] > active['e_arr']:
                 active.reached('soft', 'cin')
             else:
                 active.reached()
-        elif active.e_dep < active.a_arr:
+        elif active['e_dep'] < active['a_arr']:
             path = self.marg.shortest_path(
-                active.vertex.code, active.a_arr
+                active['vertex']['code'], active['a_arr']
             )[destination]
             active.deactivate('hard', 'cin')
             active = self.transform(
-                path, parent=active.parent, scan_date=active.e_arr,
+                path, parent=active['parent'], scan_date=active['e_arr'],
                 pickup_date=pickup_date)
-            active.a_arr = scan_datetime
+            active['a_arr'] = scan_datetime
             active.save()
-        elif active.a_arr > active.e_arr:
+        elif active['a_arr'] > active['e_arr']:
             active['stc'] = 'soft'
             active['f_at'] = 'cin'
             active.save()
@@ -252,7 +253,7 @@ class GraphManager:
             active = self.transform(
                 path, scan_date=scan_datetime, pickup_date=pickup_date)
 
-        if active.vertex.code != location or not action:
+        if active['vertex']['code'] != location or not action:
             self.handle_location_scan(
                 active, location, destination, scan_datetime, pd=pickup_date)
 
@@ -295,7 +296,8 @@ class GraphManager:
                 print('EP calculated in {} seconds'.format(end - start))
             except Exception as err:
                 logging.error(
-                    'Exception {} occurred while parsing scan against {}'.format(
+                    'Exception {} occurred while parsing scan '
+                    'against {}'.format(
                         err, self.waybill)
                 )
             lock.remove()
