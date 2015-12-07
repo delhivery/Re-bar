@@ -1,0 +1,46 @@
+project_name = 'ExPath'
+project_src = 'src'
+
+include_paths = ['/usr/include', '/home/amitprakash/.local/include', '#include']
+libraries = []
+library_paths = ['/usr/lib/', '/home/amitprakash/.local/lib/']
+cppDefines = {}
+cppFlags = ['-O2', '-pipe', '-march=native', '-Wall', '-Werror']
+cxxFlags = ['-std=c++14']
+
+common_env = Environment()
+common_env.Append(LIBS=libraries)
+common_env.Append(LIBPATH=library_paths)
+common_env.Append(CPPPATH=include_paths)
+common_env.Append(CPPDEFINES=cppDefines)
+common_env.Append(CPPFLAGS=cppFlags)
+common_env.Append(CXXFLAGS=cxxFlags)
+
+common_env.Append(CPPDEFINES={'VERSION': '1.9.1'})
+
+
+conf = Configure(common_env)
+
+if not conf.CheckLib('boost_graph'):
+   print('Did not find boost_graph')
+   Exit(1)
+
+if not conf.CheckLib('bsoncxx'):
+   print('Did not find bsoncxx')
+   Exit(1)
+
+release_env = common_env.Clone()
+release_env.Append(CPPDEFINES=['RELEASE'])
+release_env.VariantDir('build/release/src', project_src, duplicate=0)
+
+
+debug_env = common_env.Clone()
+debug_env.Append(CPPDEFINES=['DEBUG'])
+debug_env.VariantDir('build/debug/src', project_src, duplicate=0)
+
+
+for mode, env in dict(release=release_env, debug=debug_env).iteritems():
+    env.SConscript(
+        'build/{mode}/{src_dir}/sconscript'.format(mode=mode, src_dir=project_src),
+        {'env': env}
+    )
