@@ -31,3 +31,4 @@ tests/*
 outputs/*
 .scon*
 config.log
+build/*
