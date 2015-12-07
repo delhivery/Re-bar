@@ -1,7 +1,0 @@
-*ropeproject*
-*.pyc
-dist/*
-done_marg.egg-info/*
-*pycache*
-*.idea*
-*.idea/*
