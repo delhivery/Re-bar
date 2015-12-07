@@ -81,6 +81,7 @@ flags = [
 '-isystem',
 './tests/gmock/include',
 '-pedantic',
+'-Iinclude',
 '/usr/include/boost/',
 '/usr/include/mongo/',
 '-I/home/amitprakash/.local/include/bsoncxx/v0.3/',

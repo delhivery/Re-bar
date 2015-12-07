@@ -3,7 +3,7 @@ import os
 Import('env')
 env = env.Clone()
 
-projectLibs = ['ep_graph', 'rc_graph', 'sp_graph', 'ep_mongo']
+projectLibs = ['graph', 'reader', 'constrained', 'dijkstra']
 
 libraries = list()
 
@@ -17,12 +17,5 @@ for subdir in projectLibs:
     libraries.append(library)
 
 env.Append(LIBS=libraries)
-
-projects = ['solver']
-
-for subdir in projects:
-    print('Building>' + subdir)
-    env.SConscript(
-        '{folderName}/sconscript'.format(folderName=subdir),
-        {'env': env}
-    )
+env.Append(LIBS=['boost_graph', 'bsoncxx', 'mongocxx', 'mongoc-1.0'])
+env.Program('solver', ['solver.cxx'])

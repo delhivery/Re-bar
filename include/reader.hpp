@@ -1,17 +1,16 @@
-#ifndef MONGOCLIENT_DEFINED
-#define MONGOCLIENT_DEFINED
+#ifndef READER_HPP_INCLUDED
+#define READER_HPP_INCLUDED
 
 #include <experimental/string_view>
 
 #include <bsoncxx/builder/stream/document.hpp>
-#include <bsoncxx/json.hpp>
 
 #include <mongocxx/uri.hpp>
 #include <mongocxx/client.hpp>
 #include <mongocxx/instance.hpp>
 
 
-class MongoClient {
+class MongoReader {
     private:
         std::string database;
         std::vector<std::string> hosts;
@@ -26,10 +25,10 @@ class MongoClient {
         bsoncxx::builder::stream::document document;
 
     public:
-        MongoClient(std::string database, std::vector<std::string> hosts, std::string username, std::string password, std::string auth_database, std::string replica_set="");
-        MongoClient(std::string database, std::vector<std::string> hosts, std::string username, std::string password, std::string replica_set="");
-        MongoClient(std::string database, std::vector<std::string> hosts, std::string replica_set="");
-        MongoClient(std::string database, std::string replica_set="");
+        MongoReader(std::string database, std::vector<std::string> hosts, std::string username, std::string password, std::string auth_database, std::string replica_set="");
+        MongoReader(std::string database, std::vector<std::string> hosts, std::string username, std::string password, std::string replica_set="");
+        MongoReader(std::string database, std::vector<std::string> hosts, std::string replica_set="");
+        MongoReader(std::string database, std::string replica_set="");
 
         void init();
 

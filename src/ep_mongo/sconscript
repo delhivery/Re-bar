@@ -1,5 +1,0 @@
-Import('env')
-
-env = env.Clone()
-lib = env.StaticLibrary('ep_mongo', ['mongo.cxx'])
-Return("lib")

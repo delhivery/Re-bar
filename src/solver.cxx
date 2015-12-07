@@ -1,23 +1,16 @@
-#include "mongo.hpp"
-#include "graph.hpp"
-#include "rcsp.hpp"
+#include <reader.hpp>
+#include <dijkstra.hpp>
+#include <constrained.hpp>
+
+#include <bsoncxx/builder/stream/document.hpp>
 
 #include <iostream>
 
-struct Edge {
-    std::string origin;
-    std::string destination;
-    double departure, duration, cost;
-
-    Edge(std::string o, std::string d, double dep, double dur, double c) : origin(o), destination(d), departure(dep), duration(dur), cost(c) {}
-};
-
 int main() {
-    MongoClient mc{"rebar"};
+    MongoReader mc{"rebar"};
     mc.init();
 
-    expath::RCExpath path_finder;
-    // expath::Expath path_finder;
+    ConstrainedEP path_finder;
     bsoncxx::builder::stream::document filter;
     filter << "active" << true;
     std::string code, name;

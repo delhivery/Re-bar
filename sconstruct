@@ -1,14 +1,14 @@
 project_name = 'ExPath'
 project_src = 'src'
 
-include_paths = ['/usr/include', '/home/amitprakash/.local/include', '#include']
+include_paths = ['/usr/include', '#include']
 libraries = []
-library_paths = ['/usr/lib/', '/home/amitprakash/.local/lib/']
+library_paths = ['/usr/lib/']
 cppDefines = {}
 cppFlags = ['-O2', '-pipe', '-march=native', '-Wall', '-Werror']
 cxxFlags = ['-std=c++14']
 
-common_env = Environment()
+common_env = Environment(tools=['default', 'mongocxx'])
 common_env.Append(LIBS=libraries)
 common_env.Append(LIBPATH=library_paths)
 common_env.Append(CPPPATH=include_paths)
@@ -25,9 +25,11 @@ if not conf.CheckLib('boost_graph'):
    print('Did not find boost_graph')
    Exit(1)
 
+'''
 if not conf.CheckLib('bsoncxx'):
    print('Did not find bsoncxx')
    Exit(1)
+'''
 
 release_env = common_env.Clone()
 release_env.Append(CPPDEFINES=['RELEASE'])
