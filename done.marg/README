@@ -1,0 +1,4 @@
+This project allows one to view the shortest path for linehaul connections. Following modes are supported
+
+* Retrieve the shortest path while minimizing the # of hops.
+* Retrieve the shortest path while minimizing the duration of transit.
