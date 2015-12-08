@@ -3,7 +3,7 @@ import os
 Import('env')
 env = env.Clone()
 
-projectLibs = ['graph', 'reader', 'constrained', 'dijkstra']
+projectLibs = ['graph', 'reader', 'constrained', 'dijkstra', 'distributor', 'kinesis']
 
 libraries = list()
 

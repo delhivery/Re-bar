@@ -1,14 +1,14 @@
 project_name = 'ExPath'
 project_src = 'src'
 
-include_paths = ['/usr/include', '#include']
+include_paths = ['/usr/include', '/home/amitprakash/.local/include','#include']
 libraries = []
-library_paths = ['/usr/lib/']
+library_paths = ['/usr/lib/', '/home/amitprakash/.local/lib/']
 cppDefines = {}
 cppFlags = ['-O2', '-pipe', '-march=native', '-Wall', '-Werror']
 cxxFlags = ['-std=c++14']
 
-common_env = Environment(tools=['default', 'mongocxx'])
+common_env = Environment()
 common_env.Append(LIBS=libraries)
 common_env.Append(LIBPATH=library_paths)
 common_env.Append(CPPPATH=include_paths)

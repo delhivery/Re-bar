@@ -84,8 +84,7 @@ flags = [
 '-Iinclude',
 '/usr/include/boost/',
 '/usr/include/mongo/',
-'-I/home/amitprakash/.local/include/bsoncxx/v0.3/',
-'-I/home/amitprakash/.local/include/mongocxx/v0.3/',
+'-I/home/amitprakash/.local/include/',
 ]
 
 
