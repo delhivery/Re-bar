@@ -3,7 +3,7 @@ project_src = 'src'
 
 include_paths = ['/usr/include', '/home/amitprakash/.local/include','#include']
 libraries = []
-library_paths = ['/usr/lib/', '/home/amitprakash/.local/lib/']
+library_paths = ['/usr/lib/', '/home/amitprakash/.local/lib/', '/home/amitprakash/.local/lib/linux/intel64/']
 cppDefines = {}
 cppFlags = ['-O2', '-pipe', '-march=native', '-Wall', '-Werror']
 cxxFlags = ['-std=c++14']
@@ -25,11 +25,17 @@ if not conf.CheckLib('boost_graph'):
    print('Did not find boost_graph')
    Exit(1)
 
-'''
 if not conf.CheckLib('bsoncxx'):
    print('Did not find bsoncxx')
    Exit(1)
-'''
+
+if not conf.CheckLib('aws-cpp-sdk-core'):
+    print('Did not find aws-cpp-sdk-core')
+    Exit(1)
+
+if not conf.CheckLib('aws-cpp-sdk-kinesis'):
+    print('Did not find aws-cpp-sdk-kinesis')
+    Exit(1)
 
 release_env = common_env.Clone()
 release_env.Append(CPPDEFINES=['RELEASE'])
@@ -38,6 +44,7 @@ release_env.VariantDir('build/release/src', project_src, duplicate=0)
 
 debug_env = common_env.Clone()
 debug_env.Append(CPPDEFINES=['DEBUG'])
+debug_env.Append(CPPFLAGS=['-g'])
 debug_env.VariantDir('build/debug/src', project_src, duplicate=0)
 
 

@@ -1,5 +1,7 @@
+#include <iostream>
 #include <thread>
 
+#include <aws/core/client/ClientConfiguration.h>
 #include <aws/core/http/HttpClient.h>
 #include <aws/core/http/HttpResponse.h>
 #include <aws/core/http/HttpClientFactory.h>
@@ -12,31 +14,25 @@
 #include <aws/kinesis/model/GetShardIteratorRequest.h>
 #include <aws/kinesis/model/GetRecordsRequest.h>
 
-/*
-Aws::Kinesis::Model::DescribeStreamOutcome Aws::Kinesis::KinesisClient::DescribeStream(
-        const Aws::Kinesis::Model::DescribeStreamRequest& request) const {
-    Aws::StringStream ss;
-    ss << m_uri << "/";
-    Aws::Client::JsonOutcome outcome = MakeRequest(ss.str(), request, Aws::Http::HttpMethod::HTTP_POST);
-
-    if (outcome.IsSuccess()) {
-        return Aws::Kinesis::Model::DescribeStreamOutcome(Aws::Kinesis::Model::DescribeStreamResult(outcome.GetResult()));
-    }
-    else {
-        return Aws::Kinesis::Model::DescribeStreamOutcome(outcome.GetError());
-    }
-}*/
-
-
 class Consumer {
     private:
         Aws::Kinesis::KinesisClient client;
         std::string stream;
+        Aws::Region region;
 
     public:
 
-        //Consumer(Aws::Region region=Aws::Region::AP_SOUTHEAST_1) {
-        //}
+        Consumer(std::string stream, Aws::Region region=Aws::Region::AP_SOUTHEAST_1) : stream(stream), region(region) {
+            std::cout << "Set stream and region" << std::endl;
+            Aws::Client::ClientConfiguration conf;
+            conf.region = region;
+            conf.scheme = Aws::Http::Scheme::HTTPS;
+            client = Aws::Kinesis::KinesisClient{conf};
+        }
+
+        void show_record(Aws::Kinesis::Model::Record record) {
+            std::cout << "Record: " << record.GetData().GetUnderlyingData() << std::endl;
+        }
 
         void get_records(std::string shard_iterator) {
 
@@ -47,6 +43,11 @@ class Consumer {
 
                 auto get_records_result = client.GetRecords(get_records_request).GetResult();
                 auto records = get_records_result.GetRecords();
+
+                for (auto record: records) {
+                    std::thread threaded = std::thread([this, record](){ show_record(record); });
+                    threaded.detach();
+                }
                 std::this_thread::sleep_for(std::chrono::milliseconds(10000));
                 shard_iterator = get_records_result.GetNextShardIterator();
 
@@ -84,6 +85,7 @@ class Consumer {
         }
 
         void get_shards() {
+            std::cout << "Trying to get shards" << std::endl;
 
             while(true) {
                 std::vector<Aws::Kinesis::Model::Shard> shards;
@@ -107,8 +109,7 @@ class Consumer {
                     }
                 } while(start_shard_id != "");
 
-                for (auto shard: shards) {
-                }
+                iterate_shards(shards);
             }
         }
 };
