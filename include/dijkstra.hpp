@@ -1,7 +1,7 @@
 #ifndef DIJKSTRA_HPP_INCLUDED
 #define DIJKSTRA_HPP_INCLUDED
 
-#include "graph.hpp"
+#include "solver_graph.hpp"
 
 bool smaller(Cost first, Cost second);
 

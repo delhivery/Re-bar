@@ -14,17 +14,19 @@
 #include <aws/kinesis/model/GetShardIteratorRequest.h>
 #include <aws/kinesis/model/GetRecordsRequest.h>
 
+#include <zmq.hpp>
+
+
 class Consumer {
     private:
         Aws::Kinesis::KinesisClient client;
+        Aws::Client::ClientConfiguration conf;
         std::string stream;
-        Aws::Region region;
 
     public:
 
-        Consumer(std::string stream, Aws::Region region=Aws::Region::AP_SOUTHEAST_1) : stream(stream), region(region) {
+        Consumer(std::string stream, Aws::Region region=Aws::Region::AP_SOUTHEAST_1) : stream(stream) {
             std::cout << "Set stream and region" << std::endl;
-            Aws::Client::ClientConfiguration conf;
             conf.region = region;
             conf.scheme = Aws::Http::Scheme::HTTPS;
             client = Aws::Kinesis::KinesisClient{conf};
@@ -41,24 +43,34 @@ class Consumer {
                 get_records_request.SetShardIterator(shard_iterator);
                 get_records_request.SetLimit(100);
 
-                auto get_records_result = client.GetRecords(get_records_request).GetResult();
-                auto records = get_records_result.GetRecords();
+                auto get_records = client.GetRecords(get_records_request);
+                if (get_records.IsSuccess()) {
+                    auto get_records_result = get_records.GetResult();
+                    auto records = get_records_result.GetRecords();
 
-                for (auto record: records) {
-                    std::thread threaded = std::thread([this, record](){ show_record(record); });
-                    threaded.detach();
+                    for (auto record: records) {
+                        std::thread threaded = std::thread([this, record](){ show_record(record); });
+                        threaded.detach();
+                    }
+                    std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+                    shard_iterator = get_records_result.GetNextShardIterator();
+
+                    if (shard_iterator == "") {
+                        break;
+                    }
                 }
-                std::this_thread::sleep_for(std::chrono::milliseconds(10000));
-                shard_iterator = get_records_result.GetNextShardIterator();
-
-                if (shard_iterator == "") {
-                    break;
+                else {
+                    auto get_records_error = get_records.GetError();
+                    std::cout << "Unable to get records from shard iterator " << shard_iterator << ": ";
+                    std::cout << get_records_error.GetMessage() << std::endl;
+                    return;
                 }
             }
         }
 
         void iterate_shards(std::vector<Aws::Kinesis::Model::Shard> shards) {
             std::vector<std::string> shard_iterators;
+
             for (auto shard: shards) {
                 std::string shard_iterator;
                 Aws::Kinesis::Model::GetShardIteratorRequest get_shard_iterator_request;
@@ -67,8 +79,14 @@ class Consumer {
                 get_shard_iterator_request.SetShardIteratorType(Aws::Kinesis::Model::ShardIteratorType::TRIM_HORIZON);
 
                 auto get_shard_iterator_result = client.GetShardIterator(get_shard_iterator_request);
-                shard_iterator = get_shard_iterator_result.GetResult().GetShardIterator();
-                shard_iterators.push_back(shard_iterator);
+
+                if (get_shard_iterator_result.IsSuccess()) {
+                    shard_iterator = get_shard_iterator_result.GetResult().GetShardIterator();
+                    shard_iterators.push_back(shard_iterator);
+                }
+                else {
+                    std::cout << "Unable to get shard iterators: " << get_shard_iterator_result.GetError().GetMessage() << std::endl;
+                }
             }
 
             std::thread *threads = new std::thread[shard_iterators.size()];
@@ -94,18 +112,28 @@ class Consumer {
                 std::string start_shard_id = "";
 
                 do {
-                    describe_stream_request.SetExclusiveStartShardId(start_shard_id);
-                    auto describe_stream_result = client.DescribeStream(describe_stream_request).GetResult();
+                    if (start_shard_id != "")
+                        describe_stream_request.SetExclusiveStartShardId(start_shard_id);
 
-                    for (auto shard: describe_stream_result.GetStreamDescription().GetShards()) {
-                        shards.push_back(shard);
-                    }
+                    auto describe_stream = client.DescribeStream(describe_stream_request);
 
-                    if (describe_stream_result.GetStreamDescription().GetHasMoreShards() and shards.size() > 0) {
-                        start_shard_id = shards[shards.size() - 1].GetShardId();
-                    }
-                    else {
-                        start_shard_id = "";
+                    if (describe_stream.IsSuccess()) {
+                        auto describe_stream_result = describe_stream.GetResult();
+                        for (auto shard: describe_stream_result.GetStreamDescription().GetShards()) {
+                            shards.push_back(shard);
+                        }
+
+                        std::cout << shards.size() << " shards found." << std::endl;
+
+                        if (describe_stream_result.GetStreamDescription().GetHasMoreShards() and shards.size() > 0) {
+                            start_shard_id = shards[shards.size() - 1].GetShardId();
+                        }
+                        else {
+                            start_shard_id = "";
+                        }
+                    } else {
+                        auto describe_stream_error = describe_stream.GetError();
+                        std::cout << "Unable to describe stream: " << describe_stream_error.GetMessage() << std::endl;
                     }
                 } while(start_shard_id != "");
 

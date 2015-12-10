@@ -1,7 +1,7 @@
 #ifndef CONSTRAINED_HPP_INCLUDED
 #define CONSTRAINED_HPP_INCLUDED
 
-#include "graph.hpp"
+#include "solver_graph.hpp"
 
 struct Traversal {
     double cost;

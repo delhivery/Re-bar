@@ -1,5 +1,5 @@
-#ifndef GRAPH_HPP_INCLUDED
-#define GRAPH_HPP_INCLUDED
+#ifndef SOLVER_GRAPH_HPP_INCLUDED
+#define SOLVER_GRAPH_HPP_INCLUDED
 
 #include <string>
 
@@ -16,18 +16,7 @@
 
 const int HOURS_IN_DAY = 24 * 3600;
 
-struct DeliveryCenter;
-struct Connection;
-
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, DeliveryCenter, Connection> Graph;
-typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
-typedef boost::graph_traits<Graph>::edge_descriptor Edge;
 typedef std::pair<double, double> Cost;
-
-typedef std::vector<Cost> DistanceMap;
-typedef std::vector<std::pair<Vertex, Connection> > PredecessorMap;
-
-const Cost UNRECHEABLE = Cost(std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity());
 
 struct DeliveryCenter {
     std::size_t index;
@@ -56,6 +45,12 @@ struct Path {
     std::string origin, destination, connection;
     double arrival, cost;
 };
+
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, DeliveryCenter, Connection> Graph;
+typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
+typedef boost::graph_traits<Graph>::edge_descriptor Edge;
+typedef std::vector<Cost> DistanceMap;
+typedef std::vector<std::pair<Vertex, Connection> > PredecessorMap;
 
 class EPGraph {
     protected:
