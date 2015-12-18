@@ -48,6 +48,8 @@ class DominanceTraversal {
 };
 
 class ConstrainedEP : public EPGraph {
+    public:
+        virtual std::vector<Path> find_path(std::string src, std::string dst, double t_start, double t_max);
 };
 
 #endif

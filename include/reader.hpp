@@ -33,9 +33,12 @@ class MongoReader {
         void init();
 
         std::vector<std::map<std::string, std::string> > query(
-            std::string collection, bsoncxx::builder::stream::document& filter, std::vector<std::string> fields);
+            std::string collection,
+            bsoncxx::builder::stream::document& filter,
+            std::vector<std::string> fields,
+            mongocxx::options::find options = mongocxx::options::find{}
+        );
         const std::vector<std::string> split(const std::string& s, const char& c);
         std::string fetch_field(bsoncxx::document::view view, std::vector<std::string> field);
 };
-
 #endif

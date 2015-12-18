@@ -4,7 +4,7 @@ Import('env')
 env = env.Clone()
 newenv = env.Clone()
 
-projectLibs = ['graph', 'reader', 'constrained', 'dijkstra', 'distributor', 'kinesis']
+projectLibs = ['utils', 'marge', 'rebar']
 
 libraries = list()
 
@@ -18,8 +18,4 @@ for subdir in projectLibs:
     libraries.append(library)
 
 env.Append(LIBS=libraries)
-env.Append(LIBS=['boost_graph', 'bsoncxx', 'mongocxx', 'mongoc-1.0'])
-env.Program('solver', ['solver.cxx'])
-
-newenv.Append(LIBS=['aws-cpp-sdk-kinesis', 'aws-cpp-sdk-core'])
-newenv.Program('fletcher', ['fletcher.cxx'])
+env.Program('fletcher', ['fletcher.cxx'])

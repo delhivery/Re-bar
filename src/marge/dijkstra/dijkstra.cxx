@@ -12,33 +12,9 @@ bool smaller(Cost first, Cost second) {
     return (first.first < second.first) ? true : ((first.first > second.first) ? false : (first.second < second.second));
 }
 
-std::vector<std::string> SimpleEP::EPGraph::time_dependent_shortest_path(
-        std::string src, std::string dest, double t_start, double t_max) {
-
-    if (vertex_map.find(src) == vertex_map.end()) {
-        std::cout << "Unable to find source in vertex map" << std::endl;
-    }
-
-    if (vertex_map.find(dest) == vertex_map.end()) {
-        std::cout << "Unable to find destination in vertex map" << std::endl;
-    }
-
-    Vertex source = vertex_map[src];
-    Vertex destination = vertex_map[dest];
-    Cost zero = std::pair<double, double>{t_start, 0};
-    Cost inf = std::pair<double, double>{std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity()};
-
-    DistanceMap distances(boost::num_vertices(g));
-    PredecessorMap predecessors(boost::num_vertices(g));
-
-    time_dependent_shortest_path(source, destination, distances, predecessors, smaller, inf, zero, t_max);
-
-    std::vector<std::string> response = std::vector<std::string>{""};
-    return response;
-}
-
-template <typename Compare> void SimpleEP::EPGraph::time_dependent_shortest_path(
-        Vertex source, Vertex destination, DistanceMap& distances, PredecessorMap& predecessors, Compare& cmp, Cost inf, Cost zero, double t_max) {
+template <typename Compare> void SimpleEP::run_dijkstra(
+        Vertex source, Vertex destination, DistanceMap& distances, PredecessorMap& predecessors,
+        Compare& cmp, Cost inf, Cost zero, double t_max) {
     typedef typename boost::graph_traits<Graph>::vertex_iterator v_iter;
     typedef typename boost::graph_traits<Graph>::out_edge_iterator o_e_iter;
 
@@ -91,55 +67,34 @@ template <typename Compare> void SimpleEP::EPGraph::time_dependent_shortest_path
     }
 }
 
-std::pair<DistanceMap, PredecessorMap> SimpleEP::tdsp_wrapper(std::string src, std::string dst, double t_start, double t_max) {
-    DistanceMap distances(boost::num_vertices(g));
-    PredecessorMap predecessors(boost::num_vertices(g));
+std::vector<Path> SimpleEP::find_path(std::string src, std::string dest, double t_start, double t_max) {
 
-    if (vertex_map.find(src) == vertex_map.end()){
-        std::cout << "Unable to find source " << src << " in vertex map" << std::endl;
-        throw "No source matching code";
+    if (vertex_map.find(src) == vertex_map.end()) {
+        throw std::invalid_argument("Unable to find source<" + src + "> in known vertices");
     }
 
-    if (vertex_map.find(dst) == vertex_map.end()) {
-        std::cout << "Unable to find destination " << dst << " in vertex map" << std::endl;
+    if (vertex_map.find(dest) == vertex_map.end()) {
+        throw std::invalid_argument("Unable to find destination<" + dest + "> in known vertices");
     }
 
     Vertex source = vertex_map[src];
-    Vertex destination = vertex_map[dst];
+    Vertex destination = vertex_map[dest];
 
-    Cost zero = std::pair<double, double>(0, t_start);
+    Cost zero = std::pair<double, double>{0, t_start};
+    Cost inf = std::pair<double, double>{std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity()};
 
-    time_dependent_shortest_path(source, destination, distances, predecessors, smaller, UNRECHEABLE, zero, t_max);
+    DistanceMap distances(boost::num_vertices(g));
+    PredecessorMap predecessors(boost::num_vertices(g));
 
-    std::pair<DistanceMap, PredecessorMap> result;
-    result.first = distances;
-    result.second = predecessors;
-    return result;
-}
+    run_dijkstra(source, destination, distances, predecessors, smaller, inf, zero, t_max);
 
-std::vector<std::pair<Cost, std::pair<std::string, std::string> > > SimpleEP::get_path(
-        std::string src, std::string dst, double t_start, double t_max) {
+    Vertex target = vertex_map[dest];
+    std::vector<Path> path;
 
-
-    std::vector<std::pair<Cost, std::pair<std::string, std::string> > > path;
-    std::pair<DistanceMap, PredecessorMap> result = tdsp_wrapper(src, dst, t_start, t_max);
-    std::string code = dst;
-
-    while(true) {
-        std::pair<Cost, std::pair<std::string, std::string> > segment;
-        segment.first = result.first[vertex_map[code]];
-
-        std::pair<std::string, std::string> vertex_edge;
-        vertex_edge.first = code;
-        vertex_edge.second = result.second[vertex_map[code]].second.name;
-
-        segment.second = vertex_edge;
-        path.push_back(segment);
-
-        if ((segment.first == UNRECHEABLE) || ( code == src)) {
-            break;
-        }
-        code = g[result.second[vertex_map[code]].first].code;
+    while(target != source) {
+        path.push_back(Path{g[target].name, predecessors[target].second.name, distances[target].second, distances[target].first});
+        target = predecessors[target].first;
     }
+
     return path;
 }

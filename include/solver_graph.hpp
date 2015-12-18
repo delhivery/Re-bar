@@ -16,6 +16,7 @@
 
 const int HOURS_IN_DAY = 24 * 3600;
 
+// Cost is shipping_cost, time_cost
 typedef std::pair<double, double> Cost;
 
 struct DeliveryCenter {
@@ -30,7 +31,8 @@ struct DeliveryCenter {
 struct Connection {
     std::size_t index;
 
-    double departure, duration, cost;
+    double departure, duration;
+    double cost;
     std::string name;
     
     Connection();
@@ -42,8 +44,11 @@ struct Connection {
 };
 
 struct Path {
-    std::string origin, destination, connection;
-    double arrival, cost;
+    std::string destination, connection;
+    double arrival;
+    double cost;
+
+    Path(std::string destination, std::string connection, double arrival, double cost) : destination(destination), connection(connection), arrival(arrival), cost(cost) {}
 };
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, DeliveryCenter, Connection> Graph;
@@ -66,12 +71,6 @@ class EPGraph {
 
         void add_edge(std::string src, std::string dest, double dep, double dur, double cost);
 
-        std::vector<Path> find_path(std::string src, std::string dst, double t_start, double t_max);
-
-        std::vector<std::string> time_dependent_shortest_path(
-            std::string src, std::string dest, double t_start, double t_max);
-
-        template <typename Compare> void time_dependent_shortest_path(
-            Vertex source, Vertex destination, DistanceMap& d, PredecessorMap& p, Compare& cmp, Cost inf, Cost zero, double t_max);
+        virtual std::vector<Path> find_path(std::string src, std::string dst, double t_start, double t_max) = 0;
 };
 #endif

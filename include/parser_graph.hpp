@@ -3,86 +3,135 @@
 
 #include <string>
 #include <limits>
+#include <memory>
 
-#include <boost/graph/adjacency_list.hpp>
-#include <boost/graph/graph_traits.hpp>
-#include <boost/property_map/property_map.hpp>
+#include <boost/date_time.hpp>
+#include <boost/multi_index_container.hpp>
+#include <boost/multi_index/ordered_index.hpp>
+#include <boost/multi_index/identity.hpp>
+#include <boost/multi_index/member.hpp>
 
-#ifdef BOOST_NO_EXCEPTIONS
-    void boost::throw_exception(std::exception const& exc) {
-            std::cout << exc.what() << std::endl;
-    }
-#endif
+#include <enum.h>
+#include <marge.hpp>
+#include <utils.cxx>
 
 const double P_INF = std::numeric_limits<double>::infinity();
-const double M_INF = -1 * P_INF;
+const double N_INF = -1 * P_INF;
 
 // State of the nodes
-enum class State {
-    REACHED,                                // Node has been visited
-    ACTIVE,                                 // Shipment is currently at this node or outbound from it
-    FUTURE,                                 // Shipment is expected at this node in the future
-    FAIL,                                   // Node inbound or outbound failed
-    INACTIVE                                // Node has been deactivated since a parent node has failed
-};
+BETTER_ENUM(
+    State, char,
+    // Node has been visited
+    REACHED = 0,
+    // Shipment is currently at this node or outbound from it
+    ACTIVE,
+    // Shipment is expected at this node in the future
+    FUTURE,
+    // Node inbound or outbound failed
+    FAIL,
+    // Node has been deactivated since a parent node has failed
+    INACTIVE
+);
 
-// Reasons behind the state of the nodes
-enum class Comment {
-    SUCCESS_SEGMENT_TRAVERSED,              // Segment has been traversed successfully
-    FAILURE_CENTER_OVERRIDE_CONNECTION,     // Center connected via a different connection
-    WARNING_CENTER_DELAYED_CONNECTION,      // Center delayed connection outbound
-    FAILURE_CONNECTION_LATE_ARRIVAL,        // Connection arrived to late to outbound
-    WARNING_CONNECTION_LATE_ARRIVAL,        // Connection arrived late but allows outbound
-    INFO_REGEN_TAT_CHANGE,                  // Regenerated due to change in TAT
-    INFO_REGEN_DC_CHANGE,                   // Regenerated due to change in Destination
+BETTER_ENUM(
+    Comment, char,
+    // Segment has been traversed successfully
+    SUCCESS_SEGMENT_TRAVERSED=0,
+    // Center connected via a different connection
+    FAILURE_CENTER_OVERRIDE_CONNECTION,
+    // Center delayed connection outbound
+    WARNING_CENTER_DELAYED_CONNECTION,
+    // Connection arrived to late to outbound
+    FAILURE_CONNECTION_LATE_ARRIVAL,
+    // Connection arrived late but allows outbound
+    WARNING_CONNECTION_LATE_ARRIVAL,
+    // Regenerated due to change in TAT
+    INFO_REGEN_TAT_CHANGE,
+    // Regenerated due to change in Destination
+    INFO_REGEN_DC_CHANGE,
+    // Segment has been predicted
     INFO_SEGMENT_PREDICTED
-};
+);
 
-// The outbound connection for the segment
-struct Connection {
-    // Unique identifier for the connection
-    std::string name;
-    // Predicted arrival date time
-    // Predicted departure date time
-    // Actual arrival date time
-    // Actual departure date time
-    // Time taken to process inbound
-    // Time taken to aggregate/bag shipments
-    // Time taken to process outbound
-    double p_arr, p_dep, a_arr, a_dep, cost, t_inb_proc, t_agg_proc, t_out_proc;
-
-    Connection(
-        std::string name, double p_arr, double p_dep, double a_arr, double a_dep,
-        double cost, double t_inb_proc, double t_agg_proc, double t_out_proc);
-};
-
-// A path for a shipments consists of multiple segments
 struct Segment {
-    std::size_t index;
-    std::string ucode;
+    std::string index, code, cname;
+    double p_arr, p_dep, a_arr, a_dep, t_inb_proc, t_agg_proc, t_out_proc;
+    double cost;
 
-    Connection edge;
-    State state;
-    Comment comment;
+    State state = State::ACTIVE;
+    Comment comment = Comment::INFO_SEGMENT_PREDICTED;
 
-    Segment(std::size_t index, std::string ucode, Connection edge, State state=State::FUTURE, Comment comment=Comment::INFO_SEGMENT_PREDICTED);
+    std::shared_ptr<Segment> parent;
+
+    Segment(
+        std::string index, std::string code, std::string cname,
+        double p_arr, double p_dep, double a_arr, double a_dep,
+        double t_inb_proc, double t_agg_proc, double t_out_proc,
+        double cost,
+        State state, Comment comment, std::shared_ptr<Segment> parent=NULL
+    );
+
+    Segment(
+        std::string index, std::string code, std::string cname,
+        double p_arr, double p_dep, double a_arr, double a_dep,
+        double t_inb_proc, double t_agg_proc, double t_out_proc,
+        double cost,
+        std::string state, std::string comment, std::shared_ptr<Segment> parent=NULL
+    );
+
+
+    bool operator < (Segment& segment) {
+        return index < segment.index;
+    }
+
+    bool match(std::string cname, double a_dep);
 };
 
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::bidirectionalS, Segment> Graph;
-typedef boost::graph_traits<Graph>::vertex_descriptor Node;
+struct SegmentId{};
+struct SegmentCode{};
+struct SegmentState{};
+
+typedef boost::multi_index::ordered_unique<
+    boost::multi_index::tag<SegmentId>,
+    boost::multi_index::member<Segment, std::string, &Segment::index>
+> SegmentIdIndex;
+
+typedef boost::multi_index::ordered_non_unique<
+    boost::multi_index::tag<SegmentCode>,
+    boost::multi_index::member<Segment, std::string, &Segment::code>
+> SegmentCodeIndex;
+
+typedef boost::multi_index::ordered_non_unique<
+    boost::multi_index::tag<SegmentState>,
+    boost::multi_index::member<Segment, State, &Segment::state>
+> SegmentStateIndex;
+
+typedef boost::multi_index_container<Segment, boost::multi_index::indexed_by<SegmentIdIndex, SegmentCodeIndex, SegmentStateIndex> > SegmentContainer;
+
+typedef SegmentContainer::index<SegmentId>::type SegmentByIndex;
+typedef SegmentContainer::index<SegmentCode>::type SegmentByCode;
+typedef SegmentContainer::index<SegmentState>::type SegmentByState;
 
 class ParserGraph {
-    protected:
-        Graph g;
+    private:
+        std::string waybill;
+        std::shared_ptr<Solver> solver;
+        SegmentContainer path;
+        SegmentByIndex& path_by_index = path.get<SegmentId>();
+        SegmentByCode& path_by_code = path.get<SegmentCode>();
+        SegmentByState& path_by_state = path.get<SegmentState>();
 
     public:
-        void add_segment(
-            std::string cname, std::string ucode,
-            double p_arr=M_INF, double p_dep=P_INF, double a_arr=M_INF, double a_dep=P_INF,
-            double cost=0, double t_inb_proc=0, double t_agg_proc=0, double t_out_proc=0);
+        ParserGraph(std::string waybill, std::shared_ptr<Solver> solver);
 
-        void add_edge(Node origin, Node destination);
+        void load_path();
 
-        Node get_active();
+        void make_root();
+
+        void make_path(std::string origin, std::string destination, double start_dt, double promise_dt, std::shared_ptr<Segment> parent);
+
+        void read_scan(std::string location, std::string destination, std::string action, std::string scan_dt, std::string promise_dt);
+
+        void parse_scan(std::string location, std::string destination, std::string action, double scan_dt, double promise_dt);
 };
 #endif

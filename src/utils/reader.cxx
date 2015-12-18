@@ -99,14 +99,18 @@ std::string MongoReader::fetch_field(bsoncxx::document::view view, std::vector<s
     }
 }
 
-std::vector<std::map<std::string, std::string> > MongoReader::query(std::string collection, bsoncxx::builder::stream::document& filter, std::vector<std::string> fields) {
+std::vector<std::map<std::string, std::string> > MongoReader::query(
+        std::string collection,
+        bsoncxx::builder::stream::document& filter,
+        std::vector<std::string> fields,
+        mongocxx::options::find options
+) {
     std::vector<std::map<std::string, std::string> > values;
     auto mongos_client = mongocxx::client{mongo_uri};
     auto db = mongos_client[database];
 
     auto coll = db[collection];
-
-    auto cursor = coll.find(filter);
+    auto cursor = coll.find(filter, options);
 
     for (auto&& doc : cursor) {
         std::map<std::string, std::string> value;
