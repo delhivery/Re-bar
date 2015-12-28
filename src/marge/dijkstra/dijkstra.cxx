@@ -5,11 +5,14 @@
 #include <dijkstra.hpp>
 
 bool smaller(Cost first, Cost second) {
-    if (second.second == std::numeric_limits<double>::infinity()) {
+    if (second.second == P_INF) {
         return true;
     }
 
     return (first.first < second.first) ? true : ((first.first > second.first) ? false : (first.second < second.second));
+}
+
+SimpleEP::~SimpleEP() {
 }
 
 template <typename Compare> void SimpleEP::run_dijkstra(
@@ -81,7 +84,7 @@ std::vector<Path> SimpleEP::find_path(std::string src, std::string dest, double 
     Vertex destination = vertex_map[dest];
 
     Cost zero = std::pair<double, double>{0, t_start};
-    Cost inf = std::pair<double, double>{std::numeric_limits<double>::infinity(), std::numeric_limits<double>::infinity()};
+    Cost inf = std::pair<double, double>{P_INF, P_INF};
 
     DistanceMap distances(boost::num_vertices(g));
     PredecessorMap predecessors(boost::num_vertices(g));
@@ -92,7 +95,7 @@ std::vector<Path> SimpleEP::find_path(std::string src, std::string dest, double 
     std::vector<Path> path;
 
     while(target != source) {
-        path.push_back(Path{g[target].name, predecessors[target].second.name, distances[target].second, distances[target].first});
+        path.push_back(Path{g[target].name, predecessors[target].second, distances[target].second, distances[target].first});
         target = predecessors[target].first;
     }
 

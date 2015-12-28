@@ -110,7 +110,7 @@ std::vector<std::map<std::string, std::string> > MongoReader::query(
     auto db = mongos_client[database];
 
     auto coll = db[collection];
-    auto cursor = coll.find(filter, options);
+    auto cursor = coll.find(filter.view(), options);
 
     for (auto&& doc : cursor) {
         std::map<std::string, std::string> value;

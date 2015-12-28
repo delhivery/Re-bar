@@ -9,7 +9,9 @@ class SimpleEP : public EPGraph {
     private:
         template <typename Compare> void run_dijkstra(Vertex source, Vertex destination, DistanceMap& distances, PredecessorMap& predecessors, Compare& cmp, Cost inf, Cost zero, double t_max);
     public:
-        virtual std::vector<Path> find_path(std::string src, std::string dst, double t_start, double t_max);
+        ~SimpleEP();
+
+        std::vector<Path> find_path(std::string src, std::string dst, double t_start, double t_max) override;
 };
 
 #endif

@@ -10,13 +10,18 @@
 #include <boost/multi_index/ordered_index.hpp>
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/member.hpp>
+#include <boost/multi_index/composite_key.hpp>
 
 #include <enum.h>
 #include <marge.hpp>
-#include <utils.cxx>
+#include <utils.hpp>
+#include <constants.hpp>
 
-const double P_INF = std::numeric_limits<double>::infinity();
-const double N_INF = -1 * P_INF;
+enum Actions{
+    LOCATION,
+    INSCAN,
+    OUTSCAN
+};
 
 // State of the nodes
 BETTER_ENUM(
@@ -50,7 +55,9 @@ BETTER_ENUM(
     // Regenerated due to change in Destination
     INFO_REGEN_DC_CHANGE,
     // Segment has been predicted
-    INFO_SEGMENT_PREDICTED
+    INFO_SEGMENT_PREDICTED,
+    // Segment invalid due to missing scan
+    INFO_SEGMENT_BAD_DATA
 );
 
 struct Segment {
@@ -90,6 +97,7 @@ struct Segment {
 struct SegmentId{};
 struct SegmentCode{};
 struct SegmentState{};
+struct SegmentStateAndParent{};
 
 typedef boost::multi_index::ordered_unique<
     boost::multi_index::tag<SegmentId>,
@@ -106,32 +114,44 @@ typedef boost::multi_index::ordered_non_unique<
     boost::multi_index::member<Segment, State, &Segment::state>
 > SegmentStateIndex;
 
-typedef boost::multi_index_container<Segment, boost::multi_index::indexed_by<SegmentIdIndex, SegmentCodeIndex, SegmentStateIndex> > SegmentContainer;
+typedef boost::multi_index::ordered_non_unique<
+    boost::multi_index::tag<SegmentStateAndParent>,
+    boost::multi_index::composite_key<
+        Segment,
+        boost::multi_index::member<Segment, State, &Segment::state>,
+        boost::multi_index::member<Segment, std::shared_ptr<Segment>, &Segment::parent>
+    >
+> SegmentStateAndParentIndex;
 
+typedef boost::multi_index_container<Segment, boost::multi_index::indexed_by<SegmentIdIndex, SegmentCodeIndex, SegmentStateIndex, SegmentStateAndParentIndex> > SegmentContainer;
 typedef SegmentContainer::index<SegmentId>::type SegmentByIndex;
 typedef SegmentContainer::index<SegmentCode>::type SegmentByCode;
 typedef SegmentContainer::index<SegmentState>::type SegmentByState;
+typedef SegmentContainer::index<SegmentStateAndParent>::type SegmentByStateAndParent;
 
 class ParserGraph {
     private:
         std::string waybill;
         std::shared_ptr<Solver> solver;
-        SegmentContainer path;
-        SegmentByIndex& path_by_index = path.get<SegmentId>();
-        SegmentByCode& path_by_code = path.get<SegmentCode>();
-        SegmentByState& path_by_state = path.get<SegmentState>();
+        SegmentContainer segment;
+        SegmentByIndex& segment_by_index = segment.get<SegmentId>();
+        SegmentByCode& segment_by_code = segment.get<SegmentCode>();
+        SegmentByState& segment_by_state = segment.get<SegmentState>();
+        SegmentByStateAndParent& segment_by_state_and_parent = segment.get<SegmentStateAndParent>();
 
     public:
         ParserGraph(std::string waybill, std::shared_ptr<Solver> solver);
 
-        void load_path();
+        void load_segment();
 
         void make_root();
 
-        void make_path(std::string origin, std::string destination, double start_dt, double promise_dt, std::shared_ptr<Segment> parent);
+        bool make_path(std::string origin, std::string destination, double start_dt, double promise_dt, std::shared_ptr<Segment> parent);
 
-        void read_scan(std::string location, std::string destination, std::string action, std::string scan_dt, std::string promise_dt);
+        std::shared_ptr<Segment> make_duplicate_active(Segment& seg, std::shared_ptr<Connection> conn, std::shared_ptr<Segment> parent, double scan_dt);
 
-        void parse_scan(std::string location, std::string destination, std::string action, double scan_dt, double promise_dt);
+        void read_scan(std::string location, std::string destination, std::string connection, std::string action, std::string scan_dt, std::string promise_dt);
+
+        void parse_scan(std::string location, std::string destination, std::string connection, Actions action, double scan_dt, double promise_dt);
 };
 #endif

@@ -23,7 +23,9 @@ bool operator < (const Traversal& first, const Traversal& second) {
 
 TATExtension::TATExtension() {}
 
-virtual std::vector<Path> ConstrainedEP::EPGraph::find_path(std::string src, std::string dest, double t_start, double t_max) {
+ConstrainedEP::~ConstrainedEP() {}
+
+std::vector<Path> ConstrainedEP::find_path(std::string src, std::string dest, double t_start, double t_max) {
 
     if (vertex_map.find(src) == vertex_map.end()) {
         throw std::invalid_argument("Unable to find source<" + src + "> in known vertices");
@@ -63,9 +65,8 @@ virtual std::vector<Path> ConstrainedEP::EPGraph::find_path(std::string src, std
             Connection edge = boost::get(boost::edge_bundle, g)[optimal_segment];
             cost += edge.cost;
             time += edge.duration + edge.wait_time(time);
-            path.push_back(Path{g[target].name, g[target].name, edge.name, time, cost});
+            path.push_back(Path{g[target].name, edge, time, cost});
         }
     }
-
     return path;
 }
