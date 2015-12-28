@@ -15,8 +15,8 @@ EP tries to recommend a route which the shipment should thus take, considering a
 
 # Details!
 Re-bar consists of following moving parts:
-* A consumer to read shipment status (currently Kinesis only)[WIP]
-* A parser to parse calculated paths, compare them against provided status, and update with results/recommendations[#ToDo]
+* A consumer to read shipment status (currently Kinesis only)[#DONE]
+* A parser to parse calculated paths, compare them against provided status, and update with results/recommendations[#DONE]
 * A solver to recommend a path between two centers at a provided start time and guaranteed SLA constraint[#DONE]
 * A database to store the list of centers and vehicles connecting them (currently MongoDB only)[#DONE]
 * A producer to dump parsed information (currently Kinesis only)[#ToDo]
