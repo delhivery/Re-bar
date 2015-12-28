@@ -19,6 +19,7 @@ Re-bar consists of following moving parts:
 - [x] A parser to parse calculated paths, compare them against provided status, and update with results/recommendations
 - [x] A solver to recommend a path between two centers at a provided start time and guaranteed SLA constraint
 - [x] A database to store the list of centers and vehicles connecting them (currently MongoDB only)
+- [ ] A writer to read/dump parsed graphs from/to database [#WIP]
 - [ ] A producer to dump parsed information (currently Kinesis only)[#WIP]
 
 
