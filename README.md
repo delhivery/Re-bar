@@ -15,11 +15,11 @@ EP tries to recommend a route which the shipment should thus take, considering a
 
 # Details!
 Re-bar consists of following moving parts:
-- [x] A consumer to read shipment status (currently Kinesis only)[#DONE]
-- [x] A parser to parse calculated paths, compare them against provided status, and update with results/recommendations[#DONE]
-- [x] A solver to recommend a path between two centers at a provided start time and guaranteed SLA constraint[#DONE]
-- [x] A database to store the list of centers and vehicles connecting them (currently MongoDB only)[#DONE]
-- [-] A producer to dump parsed information (currently Kinesis only)[#ToDo]
+- [x] A consumer to read shipment status (currently Kinesis only)
+- [x] A parser to parse calculated paths, compare them against provided status, and update with results/recommendations
+- [x] A solver to recommend a path between two centers at a provided start time and guaranteed SLA constraint
+- [x] A database to store the list of centers and vehicles connecting them (currently MongoDB only)
+- [ ] A producer to dump parsed information (currently Kinesis only)[#WIP]
 
 
 # SetUp
