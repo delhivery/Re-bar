@@ -13,7 +13,7 @@ for subdir in projectLibs:
         '{folderName}/sconscript'.format(folderName=subdir),
         {'env': env}
     )
-    print('Adding library: {}'.format(library))
+    print('Adding library: {}'.format(subdir))
     libraries.append(library)
 
 env.Append(LIBS=libraries)
