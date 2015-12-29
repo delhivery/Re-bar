@@ -5,7 +5,7 @@
 
 #include <rebar.hpp>
 #include <reader.hpp>
-
+#include <writer.hpp>
 
 Segment::Segment(
         std::string index, std::string code, std::string cname,
@@ -48,12 +48,81 @@ bool Segment::match(std::string _cname, double _a_dep) {
     return false;
 }
 
+template <typename T> T Segment::getattr(std::string attr) {
+    T result;
+
+    if (attr == "_id") {
+        result = bsoncxx::oid{index};
+    }
+
+    if (attr == "cn") {
+        result = code;
+    }
+
+    if (attr == "ed") {
+        result = cname;
+    }
+
+    if (attr == "pa") {
+        result = p_arr;
+    }
+
+    if (attr == "pd") {
+        result = p_dep;
+    }
+
+    if (attr == "aa") {
+        result = a_arr;
+    }
+
+    if (attr == "ad") {
+        result = a_dep;
+    }
+
+    if (attr == "tip") {
+        result = t_inb_proc;
+    }
+
+    if (attr == "tap") {
+        result = t_agg_proc;
+    }
+
+    if (attr == "top") {
+        result = t_out_proc;
+    }
+
+    if (attr == "st") {
+        result = state;
+    }
+
+    if (attr == "rmk") {
+        result = comment;
+    }
+
+    if (attr == "cst") {
+        result = cost;
+    }
+
+    if (attr == "par") {
+        result = bsoncxx::oid{parent->index};
+    }
+
+    return result;
+}
+
 ParserGraph::ParserGraph(std::string waybill, std::shared_ptr<Solver> solver) : waybill(waybill), solver(solver) {
     load_segment();
 
     if (segment_by_index.size() == 0) {
         make_root();
     }
+}
+
+ParserGraph::~ParserGraph() {
+    MongoWriter mw{"rebar"};
+    mw.init();
+    boost::multi_index::index<SegmentContainer, SegmentId>::type& iter = segment.get<SegmentId>();
+    mw.write("rebar", iter, std::vector<std::string>{"_id", "cn", "ed", "pa", "pd", "aa", "ad", "tip", "tap", "top", "st", "rmk", "cst", "par"}, "_id");
 }
 
 void ParserGraph::make_root() {
@@ -105,8 +174,8 @@ void ParserGraph::load_segment() {
         cname = result["ed"];
         p_arr = result["pa"];
         a_arr = result["aa"];
-        p_dep = result["p_dep"];
-        a_dep = result["a_dep"];
+        p_dep = result["pd"];
+        a_dep = result["ad"];
         t_inb_proc = result["tip"];
         t_agg_proc = result["tap"];
         t_out_proc = result["top"];
@@ -121,8 +190,7 @@ void ParserGraph::load_segment() {
 
             if (segment_by_index.count(parent) != 1)
                 throw std::invalid_argument("Unable to find parent with _id: " + parent);
-
-            parent_ptr = std::shared_ptr<Segment>(&(*segment_by_index.find(parent)));
+            parent_ptr = std::make_shared<Segment>(*segment_by_index.find(parent));
         }
 
         segment.insert(Segment{
@@ -137,26 +205,26 @@ void ParserGraph::load_segment() {
     }
 }
 
-std::shared_ptr<Segment> ParserGraph::make_duplicate_active(Segment& seg, std::shared_ptr<Connection> conn, std::shared_ptr<Segment> parent, double scan_dt) {
+std::shared_ptr<Segment> ParserGraph::make_duplicate_active(std::shared_ptr<Segment> seg, std::shared_ptr<Connection> conn, std::shared_ptr<Segment> parent, double scan_dt) {
     Segment newseg{
         bsoncxx::oid(bsoncxx::oid::init_tag).to_string(),
-        seg.code,
+        seg->code,
         conn->name,
-        seg.p_arr,
-        seg.p_dep,
-        seg.a_arr,
+        seg->p_arr,
+        seg->p_dep,
+        seg->a_arr,
         scan_dt,
-        seg.t_inb_proc,
+        seg->t_inb_proc,
         conn->_t_out_proc,
         conn->_t_agg_proc,
-        seg.cost,
+        seg->cost,
         State::REACHED,
         Comment::SUCCESS_SEGMENT_TRAVERSED,
         parent
     };
 
     segment.insert(newseg);
-    return std::shared_ptr<Segment>(&newseg);
+    return std::make_shared<Segment>(newseg);
 }
 
 bool ParserGraph::make_path(std::string origin, std::string destination, double start_dt, double promise_dt, std::shared_ptr<Segment> parent) {
@@ -203,7 +271,7 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
         origin_center = path.destination;
         inbound = connection._t_inb_proc;
         segment.insert(seg);
-        parent = std::shared_ptr<Segment>(&seg);
+        parent = std::make_shared<Segment>(seg);
     }
 
     // Create terminal segment
@@ -229,19 +297,19 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
 }
 
 void ParserGraph::parse_scan(std::string location, std::string destination, std::string connection, Actions action, double scan_dt, double promise_dt) {
-    auto active = *segment_by_state.find(State::ACTIVE);
+    auto active = std::make_shared<Segment>(*segment_by_state.find(State::ACTIVE));
 
-    if (active.parent == NULL) {
+    if (active->parent == NULL) {
         if ((action == Actions::LOCATION) or (action == Actions::INSCAN)) {
             // generate new path against root
-            make_path(location, destination, scan_dt, promise_dt, std::shared_ptr<Segment>{&active});
+            make_path(location, destination, scan_dt, promise_dt, active);
 
-            std::shared_ptr<Segment> reached{&(*segment_by_state.find(State::ACTIVE))};
+            std::shared_ptr<Segment> reached = std::make_shared<Segment>(*segment_by_state.find(State::ACTIVE));
             segment_by_state.modify(segment_by_state.find(State::ACTIVE), [&scan_dt](Segment& seg) {
                 seg.state = State::REACHED;
             });
 
-            std::shared_ptr<Segment> active{&(*segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, reached)))};
+            std::shared_ptr<Segment> active = std::make_shared<Segment>(*segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, reached)));
             segment_by_state_and_parent.modify(
                 segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, reached)),
                 [&scan_dt](Segment& seg) {
@@ -253,20 +321,20 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
             // Root and outbound, Do nothing
         }
     }
-    else if(active.code == location) {
+    else if(active->code == location) {
 
         if (action == Actions::OUTSCAN) {
 
-            if (active.match(connection, scan_dt)) {
+            if (active->match(connection, scan_dt)) {
                 // Connection matches
                 auto comment = Comment::SUCCESS_SEGMENT_TRAVERSED;
 
-                if (active.p_dep < scan_dt)
+                if (active->p_dep < scan_dt)
                     comment = Comment::WARNING_CENTER_DELAYED_CONNECTION;
 
                 // Mark active as reached
                 segment_by_index.modify(
-                    segment_by_index.find(active.index),
+                    segment_by_index.find(active->index),
                     [&scan_dt, &comment](Segment &seg) {
                         seg.comment = comment;
                         seg.state = State::REACHED;
@@ -281,7 +349,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
                 });
             }
             else {
-                auto old_parent = active.parent;
+                auto old_parent = active->parent;
 
                 segment_by_state.modify(
                     segment_by_state.find(State::FUTURE),
@@ -291,7 +359,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
                 });
 
                 segment_by_index.modify(
-                    segment_by_index.find(active.index),
+                    segment_by_index.find(active->index),
                     [&scan_dt](Segment& seg) {
                         seg.state = State::FAIL;
                         seg.comment = Comment::FAILURE_CENTER_OVERRIDE_CONNECTION;
@@ -330,14 +398,14 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
         else if (action == Actions::INSCAN) {
             // Inscanned at active
             // Record actual arrival
-            if (scan_dt < active.p_dep) {
+            if (scan_dt < active->p_dep) {
                 auto comment = Comment::INFO_SEGMENT_PREDICTED;
 
-                if (scan_dt > active.a_arr)
+                if (scan_dt > active->a_arr)
                     comment = Comment::WARNING_CONNECTION_LATE_ARRIVAL;
 
                 segment_by_index.modify(
-                    segment_by_index.find(active.index),
+                    segment_by_index.find(active->index),
                     [&scan_dt, &comment](Segment& seg) {
                         seg.comment = comment;
                         seg.a_arr = scan_dt;
@@ -358,10 +426,10 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
                         seg.comment = Comment::FAILURE_CONNECTION_LATE_ARRIVAL;
                 });
 
-                make_path(location, destination, scan_dt, promise_dt, active.parent);
+                make_path(location, destination, scan_dt, promise_dt, active->parent);
 
                 segment_by_state_and_parent.modify(
-                    segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, active.parent)),
+                    segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, active->parent)),
                     [&scan_dt](Segment& seg) {
                         seg.state = State::ACTIVE;
                         seg.a_arr = scan_dt;
@@ -369,9 +437,9 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
             }
         }
     }
-    else if (active.code != location) {
+    else if (active->code != location) {
         if (action == Actions::LOCATION or action == Actions::INSCAN) {
-            auto old_parent = active.parent;
+            auto old_parent = active->parent;
             segment_by_state.modify(
                 segment_by_state.find(State::FUTURE),
                 [](Segment &seg) {

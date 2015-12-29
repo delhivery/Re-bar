@@ -44,7 +44,7 @@ int main() {
             cout << departure_start + arrival << ",";
             cout << solution.connection.name << ",";
             cout << d_time << ",";
-            cout << departure_start + arrival + inbound << ",";
+            cout << departure_start + arrival - inbound << ",";
             cout << inbound << ",";
             cout << d_time - connection._t_out_proc << ",";
             cout << connection._t_agg_proc << ",";

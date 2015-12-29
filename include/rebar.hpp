@@ -92,6 +92,8 @@ struct Segment {
     }
 
     bool match(std::string cname, double a_dep);
+
+    template <typename T> T getattr(std::string attr);
 };
 
 struct SegmentId{};
@@ -141,6 +143,7 @@ class ParserGraph {
 
     public:
         ParserGraph(std::string waybill, std::shared_ptr<Solver> solver);
+        ~ParserGraph();
 
         void load_segment();
 
@@ -148,7 +151,7 @@ class ParserGraph {
 
         bool make_path(std::string origin, std::string destination, double start_dt, double promise_dt, std::shared_ptr<Segment> parent);
 
-        std::shared_ptr<Segment> make_duplicate_active(Segment& seg, std::shared_ptr<Connection> conn, std::shared_ptr<Segment> parent, double scan_dt);
+        std::shared_ptr<Segment> make_duplicate_active(std::shared_ptr<Segment> seg, std::shared_ptr<Connection> conn, std::shared_ptr<Segment> parent, double scan_dt);
 
         void read_scan(std::string location, std::string destination, std::string connection, std::string action, std::string scan_dt, std::string promise_dt);
 

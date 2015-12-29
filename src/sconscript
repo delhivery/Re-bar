@@ -2,7 +2,6 @@ import os
 
 Import('env')
 env = env.Clone()
-newenv = env.Clone()
 
 projectLibs = ['utils', 'marge', 'rebar']
 
@@ -18,4 +17,4 @@ for subdir in projectLibs:
     libraries.append(library)
 
 env.Append(LIBS=libraries)
-env.Program('fletcher', ['fletcher.cxx'])
+env.Program('fletcher', ['main.cxx'])

@@ -1,4 +1,7 @@
-#include <reader.hpp>
+#ifndef MARGE_HPP_INCLUDED
+#define MARGE_HPP_INCLUDED
+
+#include <mongo/reader.hpp>
 #include <dijkstra.hpp>
 #include <constrained.hpp>
 #include <memory>
@@ -19,3 +22,5 @@ class Solver {
 
         std::tuple<std::shared_ptr<Connection>, std::shared_ptr<DeliveryCenter>, std::shared_ptr<DeliveryCenter> > lookup(std::string connection);
 };
+
+#endif

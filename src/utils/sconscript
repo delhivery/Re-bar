@@ -1,5 +1,22 @@
-Import('env')
+import os
 
+Import('env')
 env = env.Clone()
-lib = env.StaticLibrary('reader', ['reader.cxx'])
-Return("lib")
+
+projectLibs = ['mongo']
+
+libraries = list()
+
+for subdir in projectLibs:
+    print('Building> ' + subdir);
+    library = env.SConscript(
+        '{folderName}/sconscript'.format(folderName=subdir),
+        {'env': env}
+    )
+    print('Adding library: {}'.format(library))
+    libraries.append(library)
+
+lib = env.StaticLibrary('rb_utils', ['utils.cxx'])
+libraries.append(lib)
+
+Return("libraries")

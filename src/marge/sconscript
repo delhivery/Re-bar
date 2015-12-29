@@ -15,4 +15,7 @@ for subdir in projectLibs:
 
 env.Append(LIBS=libraries)
 env.Append(LIBS=['boost_graph', 'bsoncxx', 'mongocxx', 'mongoc-1.0'])
-env.StaticLibrary('marge', ['marge.cxx'])
+lib = env.StaticLibrary('marge', ['marge.cxx'])
+libraries.append(lib)
+
+Return("libraries")

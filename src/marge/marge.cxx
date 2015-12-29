@@ -46,6 +46,6 @@ std::vector<Path> Solver::solve(std::string origin, std::string destination, dou
     return paths;
 }
 
-std::shared_ptr<Connection> Solver::lookup(std::string name) {
+std::tuple<std::shared_ptr<Connection>, std::shared_ptr<DeliveryCenter>, std::shared_ptr<DeliveryCenter> > Solver::lookup(std::string name) {
     return path_finder->lookup(name);
 }
