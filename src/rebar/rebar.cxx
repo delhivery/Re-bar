@@ -4,8 +4,8 @@
 #include <iostream>
 
 #include <rebar.hpp>
-#include <reader.hpp>
-#include <writer.hpp>
+#include <mongo/reader.hpp>
+#include <mongo/writer.hpp>
 
 Segment::Segment(
         std::string index, std::string code, std::string cname,
