@@ -20,8 +20,10 @@ Connection::Connection(
 ) : index(index),
             _departure(_departure), _duration(_duration), _t_inb_proc(_t_inb_proc), _t_agg_proc(_t_agg_proc), _t_out_proc(_t_out_proc),
             cost(cost), name(name) {
-    if(_duration < 0)
-        std::cout << "Negative duration specified" << std::endl;
+
+    if (_duration < 0)
+        throw std::invalid_argument("Negative duration " + std::to_string(_duration) + " specified for " + name);
+
     departure = abs_durinal(_departure - _t_agg_proc - _t_out_proc);
     duration = _t_inb_proc + _t_agg_proc + _t_out_proc + _duration;
 }
@@ -61,12 +63,12 @@ void EPGraph::add_vertex(std::string code) {
 
 void EPGraph::add_edge(std::string src, std::string dest, double dep, double dur, double cost, std::string name) {
     if (vertex_map.find(src) == vertex_map.end()) {
-        std::cout << "Unable to find source " << src << " for edge in vertex map" << std::endl;
+        std::cerr << "Unable to find source " << src << " for edge in vertex map" << std::endl;
         return;
     }
 
     if (vertex_map.find(dest) == vertex_map.end()) {
-        std::cout << "Unable to find destination " << dest << " for edge in vertex map" << std::endl;
+        std::cerr << "Unable to find destination " << dest << " for edge in vertex map" << std::endl;
         return;
     }
 
@@ -84,9 +86,9 @@ void EPGraph::add_edge(std::string src, std::string dest, double dep, double dur
 }
 
 std::tuple<std::shared_ptr<Connection>, std::shared_ptr<DeliveryCenter>, std::shared_ptr<DeliveryCenter> > EPGraph::lookup(std::string name) {
-    std::shared_ptr<Connection> conn = NULL;
-    std::shared_ptr<DeliveryCenter> src = NULL;
-    std::shared_ptr<DeliveryCenter> dst = NULL;
+    std::shared_ptr<Connection> conn = nullptr;
+    std::shared_ptr<DeliveryCenter> src = nullptr;
+    std::shared_ptr<DeliveryCenter> dst = nullptr;
 
     typedef boost::graph_traits<Graph>::edge_iterator e_iter;
     e_iter ei, ei_end;
@@ -107,12 +109,12 @@ std::tuple<std::shared_ptr<Connection>, std::shared_ptr<DeliveryCenter>, std::sh
 
 void EPGraph::add_edge(std::string src, std::string dest, double dep, double dur, double tip, double tap, double top, double cost, std::string name) {
     if (vertex_map.find(src) == vertex_map.end()) {
-        std::cout << "Unable to find source " << src << " for edge in vertex map" << std::endl;
+        std::cerr << "Unable to find source " << src << " for edge in vertex map" << std::endl;
         return;
     }
 
     if (vertex_map.find(dest) == vertex_map.end()) {
-        std::cout << "Unable to find destination " << dest << " for edge in vertex map" << std::endl;
+        std::cerr << "Unable to find destination " << dest << " for edge in vertex map" << std::endl;
         return;
     }
 

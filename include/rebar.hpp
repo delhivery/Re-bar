@@ -73,14 +73,14 @@ struct Segment {
     State state = State::ACTIVE;
     Comment comment = Comment::INFO_SEGMENT_PREDICTED;
 
-    std::shared_ptr<Segment> parent;
+    Segment* parent;
 
     Segment(
         std::string index, std::string code, std::string cname,
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
-        State state, Comment comment, std::shared_ptr<Segment> parent=NULL
+        State state, Comment comment, Segment* parent=nullptr
     );
 
     Segment(
@@ -88,7 +88,7 @@ struct Segment {
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
-        std::string state, std::string comment, std::shared_ptr<Segment> parent=NULL
+        std::string state, std::string comment, Segment* parent=nullptr
     );
 
 
@@ -98,7 +98,7 @@ struct Segment {
 
     bool match(std::string cname, double a_dep);
 
-    boost::variant<int, double, std::string, bsoncxx::oid> getattr (std::string attr) const;
+    boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> getattr (std::string attr) const;
 };
 
 struct SegmentId{};
@@ -126,7 +126,7 @@ typedef boost::multi_index::ordered_non_unique<
     boost::multi_index::composite_key<
         Segment,
         boost::multi_index::member<Segment, State, &Segment::state>,
-        boost::multi_index::member<Segment, std::shared_ptr<Segment>, &Segment::parent>
+        boost::multi_index::member<Segment, Segment*, &Segment::parent>
     >
 > SegmentStateAndParentIndex;
 
@@ -154,9 +154,9 @@ class ParserGraph {
 
         void make_root();
 
-        bool make_path(std::string origin, std::string destination, double start_dt, double promise_dt, std::shared_ptr<Segment> parent);
+        bool make_path(std::string origin, std::string destination, double start_dt, double promise_dt, Segment* parent);
 
-        std::shared_ptr<Segment> make_duplicate_active(std::shared_ptr<Segment> seg, std::shared_ptr<Connection> conn, std::shared_ptr<Segment> parent, double scan_dt);
+        std::string make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, Segment* parent, double scan_dt);
 
         void read_scan(std::string location, std::string destination, std::string connection, std::string action, std::string scan_dt, std::string promise_dt);
 

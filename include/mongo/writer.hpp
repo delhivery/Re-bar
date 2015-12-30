@@ -1,6 +1,8 @@
 #ifndef WRITER_HPP_INCLUDED
 #define WRITER_HPP_INCLUDED
 
+#include <bsoncxx/json.hpp>
+
 #include <mongo/base.hpp>
 #include <boost/variant.hpp>
 
@@ -36,61 +38,64 @@ class MongoWriter : public Mongo {
             "", "", replica_set
         ) {}
 
-        template <typename T> void write(std::string collection, T& iterable, std::vector<std::string> fields, std::string p_key) {
+        template <typename T> void write(
+                std::string collection, T& iterable, std::vector<std::string> fields, std::string p_key,
+                std::map<std::string, std::string> meta_data
+        ) {
             auto mongos_client = mongocxx::client{mongo_uri};
             auto db = mongos_client[database];
             auto coll = db[collection];
 
-            // Unordered bulk write
             mongocxx::bulk_write bulk_writer(false);
 
             for (auto const& element: iterable) {
                 // filter and update params
-                bsoncxx::builder::stream::document filter, object;
+                bsoncxx::builder::stream::document filter_builder, update_builder;
 
                 auto pkey_val = element.getattr(p_key);
 
                 if (int* value = boost::get<int>(&pkey_val))
-                    filter << p_key << *value;
+                    filter_builder << p_key << *value;
 
                 else if (double* value = boost::get<double>(&pkey_val))
-                    filter << p_key << *value;
+                    filter_builder << p_key << *value;
 
                 else if (std::string* value = boost::get<std::string>(&pkey_val))
-                    filter << p_key << *value;
+                    filter_builder << p_key << *value;
 
                 else if (bsoncxx::oid* value = boost::get<bsoncxx::oid>(&pkey_val))
-                    filter << p_key << *value;
+                    filter_builder << p_key << *value;
+
+                update_builder << "$set" << bsoncxx::builder::stream::open_document ;
 
                 for (auto const& key: fields) {
                     auto val = element.getattr(key);
 
                     if (int* value = boost::get<int>(&val))
-                        object << key << *value;
+                        update_builder << key << *value;
 
                     if (double* value = boost::get<double>(&val))
-                        object << key << *value;
+                        update_builder << key << *value;
 
                     if (std::string* value = boost::get<std::string>(&val))
-                        object << key << *value;
+                        update_builder << key << *value;
 
                     if (bsoncxx::oid* value = boost::get<bsoncxx::oid>(&val))
-                        object << key << *value;
+                        update_builder << key << *value;
                 }
 
-                // Allow upserts
-                mongocxx::model::update_one write_document{filter.view(), object.view()};
-                write_document.upsert(true);
+                for(auto item: meta_data) {
+                    update_builder << item.first << item.second;
+                }
 
-                bulk_writer.append(mongocxx::model::write{write_document});
+                update_builder << bsoncxx::builder::stream::close_document;
+
+                mongocxx::model::update_one write_document{filter_builder.view(), update_builder.view()};
+                write_document.upsert(true);
+                bulk_writer.append(write_document);
             }
+
             auto results = coll.bulk_write(bulk_writer).optional::value();
-            std::cout << "Write complete." << std::endl;
-            std::cout << "Inserted: <" << results.inserted_count() << "> ";
-            std::cout << "Matched: <" << results.matched_count() << "> ";
-            std::cout << "Modified: <" << results.modified_count() << "> ";
-            std::cout << "Deleted: <" << results.deleted_count() << "> ";
-            std::cout << "Upserted: <" << results.upserted_count() << ">" << std::endl;
         }
 };
 #endif
