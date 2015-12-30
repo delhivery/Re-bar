@@ -4,8 +4,6 @@
 #include <iostream>
 
 #include <rebar.hpp>
-#include <mongo/reader.hpp>
-#include <mongo/writer.hpp>
 
 Segment::Segment(
         std::string index, std::string code, std::string cname,
@@ -48,62 +46,62 @@ bool Segment::match(std::string _cname, double _a_dep) {
     return false;
 }
 
-template <typename T> T Segment::getattr(std::string attr) {
-    T result;
+boost::variant<int, double, std::string, bsoncxx::oid> Segment::getattr(std::string attr) const {
+    boost::variant<int, double, std::string, bsoncxx::oid> result;
 
     if (attr == "_id") {
         result = bsoncxx::oid{index};
     }
 
-    if (attr == "cn") {
+    else if (attr == "cn") {
         result = code;
     }
 
-    if (attr == "ed") {
+    else if (attr == "ed") {
         result = cname;
     }
 
-    if (attr == "pa") {
+    else if (attr == "pa") {
         result = p_arr;
     }
 
-    if (attr == "pd") {
+    else if (attr == "pd") {
         result = p_dep;
     }
 
-    if (attr == "aa") {
+    else if (attr == "aa") {
         result = a_arr;
     }
 
-    if (attr == "ad") {
+    else if (attr == "ad") {
         result = a_dep;
     }
 
-    if (attr == "tip") {
+    else if (attr == "tip") {
         result = t_inb_proc;
     }
 
-    if (attr == "tap") {
+    else if (attr == "tap") {
         result = t_agg_proc;
     }
 
-    if (attr == "top") {
+    else if (attr == "top") {
         result = t_out_proc;
     }
 
-    if (attr == "st") {
+    else if (attr == "st") {
         result = state;
     }
 
-    if (attr == "rmk") {
+    else if (attr == "rmk") {
         result = comment;
     }
 
-    if (attr == "cst") {
+    else if (attr == "cst") {
         result = cost;
     }
 
-    if (attr == "par") {
+    else if (attr == "par") {
         result = bsoncxx::oid{parent->index};
     }
 
@@ -156,7 +154,7 @@ void ParserGraph::load_segment() {
     bsoncxx::builder::stream::document filter;
     filter << "wbn" << waybill;
 
-    for(auto result: mc.query(
+    for (auto const& result: mc.query(
             "segments",
             filter,
             std::vector<std::string>{
@@ -169,20 +167,20 @@ void ParserGraph::load_segment() {
             options
     )) {
         std::string index, code, cname, p_arr, a_arr, p_dep, a_dep, t_inb_proc, t_agg_proc, t_out_proc, cost, parent, state, comment;
-        index = result["_id"];
-        code = result["cn"];
-        cname = result["ed"];
-        p_arr = result["pa"];
-        a_arr = result["aa"];
-        p_dep = result["pd"];
-        a_dep = result["ad"];
-        t_inb_proc = result["tip"];
-        t_agg_proc = result["tap"];
-        t_out_proc = result["top"];
-        state = result["st"];
-        comment = result["rmk"];
-        cost = result["cst"];
-        parent = result["par"];
+        index = result.at("_id");
+        code = result.at("cn");
+        cname = result.at("ed");
+        p_arr = result.at("pa");
+        a_arr = result.at("aa");
+        p_dep = result.at("pd");
+        a_dep = result.at("ad");
+        t_inb_proc = result.at("tip");
+        t_agg_proc = result.at("tap");
+        t_out_proc = result.at("top");
+        state = result.at("st");
+        comment = result.at("rmk");
+        cost = result.at("cst");
+        parent = result.at("par");
 
         std::shared_ptr<Segment> parent_ptr = NULL;
 
@@ -247,7 +245,7 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
     double shipping_cost = 0;
     double inbound = 0;
 
-    for (auto path: solution) {
+    for (auto const& path: solution) {
         auto connection = path.connection;
         Segment seg{
             bsoncxx::oid(bsoncxx::oid::init_tag).to_string(),
@@ -300,7 +298,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
     auto active = std::make_shared<Segment>(*segment_by_state.find(State::ACTIVE));
 
     if (active->parent == NULL) {
-        if ((action == Actions::LOCATION) or (action == Actions::INSCAN)) {
+        if ((action == +Actions::LOCATION) or (action == +Actions::INSCAN)) {
             // generate new path against root
             make_path(location, destination, scan_dt, promise_dt, active);
 
@@ -323,7 +321,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
     }
     else if(active->code == location) {
 
-        if (action == Actions::OUTSCAN) {
+        if (action == +Actions::OUTSCAN) {
 
             if (active->match(connection, scan_dt)) {
                 // Connection matches
@@ -395,7 +393,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
             // Mark active reached
             // Mark future active
         }
-        else if (action == Actions::INSCAN) {
+        else if (action == +Actions::INSCAN) {
             // Inscanned at active
             // Record actual arrival
             if (scan_dt < active->p_dep) {
@@ -438,7 +436,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
         }
     }
     else if (active->code != location) {
-        if (action == Actions::LOCATION or action == Actions::INSCAN) {
+        if (action == +Actions::LOCATION or action == +Actions::INSCAN) {
             auto old_parent = active->parent;
             segment_by_state.modify(
                 segment_by_state.find(State::FUTURE),

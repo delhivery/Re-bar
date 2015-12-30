@@ -1,8 +1,6 @@
 #include <marge.hpp>
 
 Solver::Solver(std::string database, int mode) : database(database) {
-    mc = MongoReader{database};
-
     switch(mode) {
         case 0:
             path_finder = std::make_shared<ConstrainedEP>();
@@ -17,12 +15,13 @@ Solver::Solver(std::string database, int mode) : database(database) {
 }
 
 void Solver::init() {
+    auto mc = MongoReader{database};
     mc.init();
     bsoncxx::builder::stream::document filter;
     filter << "act" << true;
 
-    for (auto node: mc.query(nodes_collection, filter, std::vector<std::string>{"cd", "nm"})) {
-        path_finder->add_vertex(node["cd"], node["nm"]);
+    for (auto const& node: mc.query(nodes_collection, filter, std::vector<std::string>{"cd", "nm"})) {
+        path_finder->add_vertex(node.at("cd"), node.at("nm"));
     }
 
     for (

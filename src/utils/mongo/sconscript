@@ -7,9 +7,6 @@ libraries = list()
 
 lib = env.StaticLibrary('mongo_base', ['base.cxx'])
 libraries.append(lib)
-env.Append(LIBS=libraries)
-
-libraries = list()
 
 lib = env.StaticLibrary('mongo_read', ['reader.cxx'])
 libraries.append(lib)

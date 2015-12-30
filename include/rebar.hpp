@@ -11,17 +11,22 @@
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/composite_key.hpp>
+#include <boost/variant.hpp>
 
 #include <enum.h>
 #include <marge.hpp>
 #include <utils.hpp>
 #include <constants.hpp>
 
-enum Actions{
-    LOCATION,
+#include <mongo/reader.hpp>
+#include <mongo/writer.hpp>
+
+BETTER_ENUM(
+    Actions, char,
+    LOCATION = 0,
     INSCAN,
     OUTSCAN
-};
+);
 
 // State of the nodes
 BETTER_ENUM(
@@ -93,7 +98,7 @@ struct Segment {
 
     bool match(std::string cname, double a_dep);
 
-    template <typename T> T getattr(std::string attr);
+    boost::variant<int, double, std::string, bsoncxx::oid> getattr (std::string attr) const;
 };
 
 struct SegmentId{};

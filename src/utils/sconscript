@@ -8,13 +8,20 @@ projectLibs = ['mongo']
 libraries = list()
 
 for subdir in projectLibs:
-    print('Building> ' + subdir);
+    print('Building subdir> ' + subdir);
     library = env.SConscript(
         '{folderName}/sconscript'.format(folderName=subdir),
         {'env': env}
     )
-    print('Adding library: {}'.format(subdir))
-    libraries.append(library)
+    if isinstance(library, list):
+        lstring = []
+        for lib in library:
+            lstring.append('{}'.format(lib))
+        print('Adding library: {}'.format(','.join(lstring)))
+        libraries.extend(library)
+    else:
+        print('Adding library: {}'.format(library))
+        libraries.append(library)
 
 lib = env.StaticLibrary('rb_utils', ['utils.cxx'])
 libraries.append(lib)

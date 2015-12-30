@@ -9,7 +9,7 @@ const std::vector<std::string> MongoReader::split(const std::string& s, const ch
     std::string buff{""};
     std::vector<std::string> v;
 
-    for(auto n: s) {
+    for (auto const& n: s) {
         if (n != c)
             buff += n;
         else if (n == c && buff != "") {
@@ -66,10 +66,10 @@ std::vector<std::map<std::string, std::string> > MongoReader::query(
     auto coll = db[collection];
     auto cursor = coll.find(filter.view(), options);
 
-    for (auto&& doc : cursor) {
+    for (auto const& doc : cursor) {
         std::map<std::string, std::string> value;
 
-        for (auto field: fields) {
+        for (auto const& field: fields) {
             value[field] = MongoReader::fetch_field(doc, MongoReader::split(field, '.'));
         }
         values.push_back(value);

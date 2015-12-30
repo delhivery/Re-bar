@@ -14,7 +14,7 @@ void Mongo::init() {
         mongo_uri_ss << username << ":" << password;
     }
 
-    for(auto it = hosts.begin(); it != hosts.end(); ++it) {
+    for (auto it = hosts.begin(); it != hosts.end(); ++it) {
         mongo_uri_ss << *it;
     }
 

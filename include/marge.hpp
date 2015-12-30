@@ -11,7 +11,6 @@ class Solver {
         std::string database = "rebar";
         std::string nodes_collection = "nodes";
         std::string edges_collection = "edges";
-        MongoReader mc{database};
         std::shared_ptr<EPGraph> path_finder;
     public:
         Solver(std::string database="rebar", int mode=0);

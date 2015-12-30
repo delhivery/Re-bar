@@ -13,8 +13,18 @@ for subdir in projectLibs:
         '{folderName}/sconscript'.format(folderName=subdir),
         {'env': env}
     )
-    print('Adding library: {}'.format(subdir))
-    libraries.append(library)
+
+    if isinstance(library, list):
+        lstring = []
+        for lib in library:
+            lstring.append('{}'.format(lib))
+        print('Adding library: {}'.format(','.join(lstring)))
+        libraries.extend(library)
+    else:
+        print('Adding library: {}'.format(library))
+        libraries.append(library)
 
 env.Append(LIBS=libraries)
+env.Append(LIBS=['boost_graph', 'bsoncxx', 'mongocxx', 'mongoc-1.0'])
+
 env.Program('fletcher', ['main.cxx'])

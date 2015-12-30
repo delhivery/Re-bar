@@ -48,7 +48,7 @@ class Consumer {
                     auto get_records_result = get_records.GetResult();
                     auto records = get_records_result.GetRecords();
 
-                    for (auto record: records) {
+                    for (auto const& record: records) {
                         std::thread threaded = std::thread([this, record](){ show_record(record); });
                         threaded.detach();
                     }
@@ -71,7 +71,7 @@ class Consumer {
         void iterate_shards(std::vector<Aws::Kinesis::Model::Shard> shards) {
             std::vector<std::string> shard_iterators;
 
-            for (auto shard: shards) {
+            for (auto const& shard: shards) {
                 std::string shard_iterator;
                 Aws::Kinesis::Model::GetShardIteratorRequest get_shard_iterator_request;
                 get_shard_iterator_request.SetStreamName(stream);
@@ -119,7 +119,7 @@ class Consumer {
 
                     if (describe_stream.IsSuccess()) {
                         auto describe_stream_result = describe_stream.GetResult();
-                        for (auto shard: describe_stream_result.GetStreamDescription().GetShards()) {
+                        for (auto const& shard: describe_stream_result.GetStreamDescription().GetShards()) {
                             shards.push_back(shard);
                         }
 
