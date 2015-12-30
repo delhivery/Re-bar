@@ -32,4 +32,5 @@ outputs/*
 .scon*
 config.log
 build/*
+tbuild/*
 *.pyc
