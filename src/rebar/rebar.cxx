@@ -90,11 +90,11 @@ boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> Segment::
     }
 
     else if (attr == "st") {
-        result = state;
+        result = state._to_string();
     }
 
     else if (attr == "rmk") {
-        result = comment;
+        result = comment._to_string();
     }
 
     else if (attr == "cst") {
@@ -118,6 +118,7 @@ ParserGraph::ParserGraph(std::string waybill, std::shared_ptr<Solver> solver) : 
     load_segment();
 
     if (segment_by_index.size() == 0) {
+        std::cout << "No prior elements found. Re-creating root" << std::endl;
         make_root();
     }
 }
