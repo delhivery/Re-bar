@@ -32,7 +32,7 @@ void Solver::init() {
             edge["ori"], edge["dst"],
             std::stod(edge["dep"]), std::stod(edge["dur"]),
             std::stod(edge["tip"]), std::stod(edge["tap"]), std::stod(edge["top"]),
-            std::stod(edge["cst"]), edge["nm"]
+            std::stod(edge["cst"]), edge["idx"]
         );
     }
 }

@@ -4,6 +4,9 @@ env = env.Clone()
 projectLibs = ['graph', 'dijkstra', 'constrained']
 libraries = list()
 
+lib = env.StaticLibrary('marge', ['marge.cxx'])
+libraries.append(lib)
+
 for subdir in projectLibs:
     print('Building> {}'.format(subdir))
     library = env.SConscript(
@@ -20,8 +23,5 @@ for subdir in projectLibs:
     else:
         print('Adding library: {}'.format(library))
         libraries.append(library)
-
-lib = env.StaticLibrary('marge', ['marge.cxx'])
-libraries.append(lib)
 
 Return("libraries")

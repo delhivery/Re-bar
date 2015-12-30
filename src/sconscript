@@ -3,7 +3,7 @@ import os
 Import('env')
 env = env.Clone()
 
-projectLibs = ['utils', 'marge', 'rebar']
+projectLibs = ['rebar', 'marge', 'utils']
 
 libraries = list()
 

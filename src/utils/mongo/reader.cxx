@@ -43,6 +43,9 @@ std::string MongoReader::fetch_field(bsoncxx::document::view view, std::vector<s
             case bsoncxx::type::k_utf8:
                 ss << ele.get_value().get_utf8().value;
                 return ss.str();
+            case bsoncxx::type::k_oid:
+                ss << ele.get_value().get_oid().value.to_string();
+                return ss.str();
             default:
                 return bsoncxx::to_json(ele.get_value());
                 break;

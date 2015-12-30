@@ -130,7 +130,7 @@ ParserGraph::~ParserGraph() {
 
     std::map<std::string, std::string> meta_data;
     meta_data["wbn"] = waybill;
-    mw.write("paths", iter, std::vector<std::string>{"_id", "cn", "ed", "pa", "pd", "aa", "ad", "tip", "tap", "top", "st", "rmk", "cst", "par"}, "_id", meta_data);
+    mw.write("segments", iter, std::vector<std::string>{"_id", "cn", "ed", "pa", "pd", "aa", "ad", "tip", "tap", "top", "st", "rmk", "cst", "par"}, "_id", meta_data);
 }
 
 void ParserGraph::make_root() {

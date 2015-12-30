@@ -19,24 +19,6 @@ common_env.Append(CXXFLAGS=cxxFlags)
 common_env.Append(CPPDEFINES={'VERSION': '1.9.1'})
 
 
-conf = Configure(common_env)
-
-if not conf.CheckLib('boost_graph'):
-   print('Did not find boost_graph')
-   Exit(1)
-
-if not conf.CheckLib('bsoncxx'):
-   print('Did not find bsoncxx')
-   Exit(1)
-
-if not conf.CheckLib('aws-cpp-sdk-core'):
-    print('Did not find aws-cpp-sdk-core')
-    Exit(1)
-
-if not conf.CheckLib('aws-cpp-sdk-kinesis'):
-    print('Did not find aws-cpp-sdk-kinesis')
-    Exit(1)
-
 release_env = common_env.Clone()
 release_env.Append(CPPDEFINES=['RELEASE'])
 release_env.VariantDir('build/release/src', project_src, duplicate=0)

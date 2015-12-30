@@ -51,37 +51,27 @@ class MongoWriter : public Mongo {
             for (auto const& element: iterable) {
                 // filter and update params
                 bsoncxx::builder::stream::document filter_builder, update_builder;
-
-                auto pkey_val = element.getattr(p_key);
-
-                if (int* value = boost::get<int>(&pkey_val))
-                    filter_builder << p_key << *value;
-
-                else if (double* value = boost::get<double>(&pkey_val))
-                    filter_builder << p_key << *value;
-
-                else if (std::string* value = boost::get<std::string>(&pkey_val))
-                    filter_builder << p_key << *value;
-
-                else if (bsoncxx::oid* value = boost::get<bsoncxx::oid>(&pkey_val))
-                    filter_builder << p_key << *value;
-
                 update_builder << "$set" << bsoncxx::builder::stream::open_document ;
 
                 for (auto const& key: fields) {
+                    bsoncxx::builder::stream::document* builder_ptr = &update_builder;
+
+                    if(key == p_key)
+                        builder_ptr = &filter_builder;
+
                     auto val = element.getattr(key);
 
                     if (int* value = boost::get<int>(&val))
-                        update_builder << key << *value;
+                        *builder_ptr << key << *value;
 
                     if (double* value = boost::get<double>(&val))
-                        update_builder << key << *value;
+                        *builder_ptr << key << *value;
 
                     if (std::string* value = boost::get<std::string>(&val))
-                        update_builder << key << *value;
+                        *builder_ptr << key << *value;
 
                     if (bsoncxx::oid* value = boost::get<bsoncxx::oid>(&val))
-                        update_builder << key << *value;
+                        *builder_ptr << key << *value;
                 }
 
                 for(auto item: meta_data) {
