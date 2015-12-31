@@ -25,10 +25,12 @@ int main() {
             std::cin >> scan_dt;
             std::cout << "Promise date: ";
             std::cin >> promise_dt;
+            std::cout << std::endl;
 
             auto parser = ParserGraph{waybill, solver_ptr};
             try {
                 parser.parse_scan(location, destination, connection, Actions::_from_string(action.c_str()), scan_dt, promise_dt);
+                // parser.show();
             }
             catch (std::exception const& exc) {
                 parser.save(false);

@@ -11,6 +11,8 @@
 #include <boost/multi_index/identity.hpp>
 #include <boost/multi_index/member.hpp>
 #include <boost/multi_index/composite_key.hpp>
+#include <boost/multi_index/random_access_index.hpp>
+#include <boost/multi_index/mem_fun.hpp>
 #include <boost/variant.hpp>
 
 #include <enum.h>
@@ -99,6 +101,8 @@ struct Segment {
     bool match(std::string cname, double a_dep);
 
     boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> getattr (std::string attr) const;
+
+    std::string pindex() const;
 };
 
 struct SegmentId{};
@@ -126,11 +130,13 @@ typedef boost::multi_index::ordered_non_unique<
     boost::multi_index::composite_key<
         Segment,
         boost::multi_index::member<Segment, State, &Segment::state>,
-        boost::multi_index::member<Segment, Segment*, &Segment::parent>
+        boost::multi_index::const_mem_fun<Segment, std::string, &Segment::pindex>
     >
 > SegmentStateAndParentIndex;
 
-typedef boost::multi_index_container<Segment, boost::multi_index::indexed_by<SegmentIdIndex, SegmentCodeIndex, SegmentStateIndex, SegmentStateAndParentIndex> > SegmentContainer;
+typedef boost::multi_index::random_access<boost::multi_index::tag<struct aux> > AuxIndex;
+
+typedef boost::multi_index_container<Segment, boost::multi_index::indexed_by<SegmentIdIndex, SegmentCodeIndex, SegmentStateIndex, SegmentStateAndParentIndex, AuxIndex> > SegmentContainer;
 typedef SegmentContainer::index<SegmentId>::type SegmentByIndex;
 typedef SegmentContainer::index<SegmentCode>::type SegmentByCode;
 typedef SegmentContainer::index<SegmentState>::type SegmentByState;
@@ -165,6 +171,8 @@ class ParserGraph {
 
         void save(bool _save_state=true);
 
+        void show();
+
         template <typename T, typename F> Segment* find(T& iterable, F filters) {
             auto iter = iterable.find(filters);
 
@@ -177,9 +185,20 @@ class ParserGraph {
         template <typename T, typename F> Segment* find_and_modify(T& iterable, F filters, State s, double a_arr=-1, Comment rmk=Comment::INFO_SEGMENT_PREDICTED) {
             auto iter = iterable.find(filters);
 
-            if (iter != iterable.end()) {
+            if (iter == iterable.end())
+                return nullptr;
+            std::pair<typename T::iterator, typename T::iterator> iter_main = iterable.equal_range(filters);
+
+            typedef std::vector<typename T::iterator> buffer_type;
+            buffer_type vec;
+
+            while (iter_main.first != iter_main.second) {
+                vec.push_back(iter_main.first++);
+            }
+
+            for (typename buffer_type::iterator it = vec.begin(), it_end = vec.end(); it != it_end; it++) {
                 iterable.modify(
-                    iter,
+                    *it,
                     [&s, &a_arr, &rmk](Segment& seg) {
                         seg.state = s;
                         if (a_arr != -1)
@@ -190,9 +209,26 @@ class ParserGraph {
                         }
                     }
                 );
-                return (Segment *)(&(*iter));
             }
-            return nullptr;
+            /*
+            while (iter_main.first != iter_main.second) {
+                auto it = boost::multi_index::project<aux>(segment, iter_main.first);
+                segment.get<aux>().modify(
+                    it,
+                    [&s, &a_arr, &rmk](Segment& seg) {
+                        seg.state = s;
+                        if (a_arr != -1)
+                            seg.a_arr = a_arr;
+
+                        if (rmk != +Comment::INFO_SEGMENT_PREDICTED) {
+                            seg.comment = rmk;
+                        }
+                    }
+                );
+                iter_main.first++;
+            }*/
+
+            return (Segment *)(&(*iter));
         }
 };
 #endif

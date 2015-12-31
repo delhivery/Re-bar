@@ -46,6 +46,10 @@ bool Segment::match(std::string _cname, double _a_dep) {
     return false;
 }
 
+std::string Segment::pindex() const {
+    return (parent == nullptr)?"":parent->index;
+}
+
 boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> Segment::getattr(std::string attr) const {
     boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> result;
 
@@ -308,6 +312,15 @@ void ParserGraph::save(bool _save_state) {
     save_state = _save_state;
 }
 
+void ParserGraph::show() {
+    auto const& raii = segment.get<aux>();
+
+    for(auto iter = raii.begin(); iter != raii.end(); iter++ ) {
+        auto elem = *iter;
+        std::cout << "Idx: " << elem.index << ",State: " << elem.state << ",Parent Index: " << ((elem.parent != nullptr)?elem.parent->index:"") << std::endl;
+    }
+}
+
 void ParserGraph::parse_scan(std::string location, std::string destination, std::string connection, Actions action, double scan_dt, double promise_dt) {
     Segment* active = find(segment_by_state, State::ACTIVE);
 
@@ -322,7 +335,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
             Segment* reached = find_and_modify(segment_by_state, State::ACTIVE, State::REACHED);
 
             if (reached != nullptr) {
-                active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, reached), State::ACTIVE, scan_dt);
+                active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, reached->index), State::ACTIVE, scan_dt);
             }
         }
     }
@@ -339,7 +352,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
 
                 // Mark active as reached
                 find_and_modify(segment_by_index, active->index, State::REACHED, scan_dt, comment);
-                find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, active), State::ACTIVE, scan_dt);
+                find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, active->index), State::ACTIVE, scan_dt);
             }
             else {
                 find_and_modify(segment_by_state, State::FUTURE, State::INACTIVE, Comment::INFO_SEGMENT_BAD_DATA);
@@ -360,7 +373,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
                     auto scan_t = get_time(scan_dt);
 
                     make_path(dst->code, destination, scan_dt - scan_t + conn->departure + conn->duration, promise_dt, forked);
-                    active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, forked), State::ACTIVE);
+                    active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, forked->index), State::ACTIVE);
                 }
             }
         }
@@ -376,7 +389,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
                 find_and_modify(segment_by_state, State::FUTURE, State::INACTIVE, scan_dt);
                 find_and_modify(segment_by_state, State::ACTIVE, State::FAIL, Comment::FAILURE_CONNECTION_LATE_ARRIVAL);
                 make_path(location, destination, scan_dt, promise_dt, active->parent);
-                active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, active->parent), State::ACTIVE, scan_dt);
+                active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, active->parent->index), State::ACTIVE, scan_dt);
             }
         }
     }
@@ -385,7 +398,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
             find_and_modify(segment_by_state, State::FUTURE, State::INACTIVE);
             find_and_modify(segment_by_state, State::ACTIVE, State::FAIL, Comment::INFO_SEGMENT_BAD_DATA);
             make_path(location, destination, scan_dt, promise_dt, active->parent);
-            active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, active->parent), State::ACTIVE, scan_dt);
+            active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, active->parent->index), State::ACTIVE, scan_dt);
         }
     }
 }
