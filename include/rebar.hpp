@@ -138,6 +138,7 @@ typedef SegmentContainer::index<SegmentStateAndParent>::type SegmentByStateAndPa
 
 class ParserGraph {
     private:
+        bool save_state = true;
         std::string waybill;
         std::shared_ptr<Solver> solver;
         SegmentContainer segment;
@@ -161,5 +162,37 @@ class ParserGraph {
         void read_scan(std::string location, std::string destination, std::string connection, std::string action, std::string scan_dt, std::string promise_dt);
 
         void parse_scan(std::string location, std::string destination, std::string connection, Actions action, double scan_dt, double promise_dt);
+
+        void save(bool _save_state=true);
+
+        template <typename T, typename F> Segment* find(T& iterable, F filters) {
+            auto iter = iterable.find(filters);
+
+            if (iter != iterable.end()) {
+                return (Segment*)(&(*iter));
+            }
+            return nullptr;
+        }
+
+        template <typename T, typename F> Segment* find_and_modify(T& iterable, F filters, State s, double a_arr=-1, Comment rmk=Comment::INFO_SEGMENT_PREDICTED) {
+            auto iter = iterable.find(filters);
+
+            if (iter != iterable.end()) {
+                iterable.modify(
+                    iter,
+                    [&s, &a_arr, &rmk](Segment& seg) {
+                        seg.state = s;
+                        if (a_arr != -1)
+                            seg.a_arr = a_arr;
+
+                        if (rmk != +Comment::INFO_SEGMENT_PREDICTED) {
+                            seg.comment = rmk;
+                        }
+                    }
+                );
+                return (Segment *)(&(*iter));
+            }
+            return nullptr;
+        }
 };
 #endif

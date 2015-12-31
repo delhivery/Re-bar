@@ -19,7 +19,7 @@ Re-bar consists of following moving parts:
 - [x] A parser to parse calculated paths, compare them against provided status, and update with results/recommendations
 - [x] A solver to recommend a path between two centers at a provided start time and guaranteed SLA constraint
 - [x] A database to store the list of centers and vehicles connecting them (currently MongoDB only)
-- [ ] A writer to read/dump parsed graphs from/to database [#WIP]
+- [x] A writer to read/dump parsed graphs from/to database
 - [ ] A producer to dump parsed information (currently Kinesis only)[#WIP]
 
 
@@ -27,7 +27,7 @@ Re-bar consists of following moving parts:
 Re-bar has moved to scons for its build system. Currently, it depends on the following projects
 * [boost](http://www.boost.org/)
 * [mongocxx](https://github.com/mongodb/mongo-cxx-driver)
-* [aws-sdk-cpp](https://github.com/awslabs/aws-sdk-cpp)
+* [aws-sdk-cpp-kinesis](https://github.com/awslabs/aws-sdk-cpp)
 
 Finally to build, just run scons in a terminal
 <pre>

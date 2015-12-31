@@ -118,19 +118,19 @@ ParserGraph::ParserGraph(std::string waybill, std::shared_ptr<Solver> solver) : 
     load_segment();
 
     if (segment_by_index.size() == 0) {
-        std::cout << "No prior elements found. Re-creating root" << std::endl;
         make_root();
     }
 }
 
 ParserGraph::~ParserGraph() {
-    MongoWriter mw{"rebar"};
-    mw.init();
-    boost::multi_index::index<SegmentContainer, SegmentId>::type& iter = segment.get<SegmentId>();
-
-    std::map<std::string, std::string> meta_data;
-    meta_data["wbn"] = waybill;
-    mw.write("segments", iter, std::vector<std::string>{"_id", "cn", "ed", "pa", "pd", "aa", "ad", "tip", "tap", "top", "st", "rmk", "cst", "par"}, "_id", meta_data);
+    if (save_state) {
+        MongoWriter mw{"rebar"};
+        mw.init();
+        std::map<std::string, std::string> meta_data;
+        meta_data["wbn"] = waybill;
+        boost::multi_index::index<SegmentContainer, SegmentId>::type& iter = segment.get<SegmentId>();
+        mw.write("segments", iter, std::vector<std::string>{"_id", "cn", "ed", "pa", "pd", "aa", "ad", "tip", "tap", "top", "st", "rmk", "cst", "par"}, "_id", meta_data);
+    }
 }
 
 void ParserGraph::make_root() {
@@ -304,30 +304,26 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
     return true;
 }
 
+void ParserGraph::save(bool _save_state) {
+    save_state = _save_state;
+}
+
 void ParserGraph::parse_scan(std::string location, std::string destination, std::string connection, Actions action, double scan_dt, double promise_dt) {
-    Segment *active = (Segment*)(&(*segment_by_state.find(State::ACTIVE)));
+    Segment* active = find(segment_by_state, State::ACTIVE);
+
+    if (active == nullptr)
+        return;
 
     if (active->parent == nullptr) {
         if ((action == +Actions::LOCATION) or (action == +Actions::INSCAN)) {
             // generate new path against root
             make_path(location, destination, scan_dt, promise_dt, active);
 
-            Segment* reached = (Segment*)(&(*segment_by_state.find(State::ACTIVE)));
-            segment_by_state.modify(segment_by_state.find(State::ACTIVE), [&scan_dt](Segment& seg) {
-                seg.state = State::REACHED;
-            });
+            Segment* reached = find_and_modify(segment_by_state, State::ACTIVE, State::REACHED);
 
-            active = (Segment*)(&(*segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, reached))));
-
-            segment_by_state_and_parent.modify(
-                segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, reached)),
-                [&scan_dt](Segment& seg) {
-                    seg.state = State::ACTIVE;
-                    seg.a_arr = scan_dt;
-            });
-        }
-        else {
-            // Root and outbound, Do nothing
+            if (reached != nullptr) {
+                active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, reached), State::ACTIVE, scan_dt);
+            }
         }
     }
     else if(active->code == location) {
@@ -342,37 +338,12 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
                     comment = Comment::WARNING_CENTER_DELAYED_CONNECTION;
 
                 // Mark active as reached
-                segment_by_index.modify(
-                    segment_by_index.find(active->index),
-                    [&scan_dt, &comment](Segment &seg) {
-                        seg.comment = comment;
-                        seg.state = State::REACHED;
-                        seg.a_dep = scan_dt;
-                });
-
-                segment_by_state_and_parent.modify(
-                    segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, active)),
-                    [&scan_dt](Segment& seg) {
-                        seg.state = State::ACTIVE;
-                        seg.a_arr = scan_dt;
-                });
+                find_and_modify(segment_by_index, active->index, State::REACHED, scan_dt, comment);
+                find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, active), State::ACTIVE, scan_dt);
             }
             else {
-                auto old_parent = active->parent;
-
-                segment_by_state.modify(
-                    segment_by_state.find(State::FUTURE),
-                    [](Segment& seg) {
-                        seg.comment = Comment::INFO_SEGMENT_BAD_DATA;
-                        seg.state = State::INACTIVE;
-                });
-
-                segment_by_index.modify(
-                    segment_by_index.find(active->index),
-                    [&scan_dt](Segment& seg) {
-                        seg.state = State::FAIL;
-                        seg.comment = Comment::FAILURE_CENTER_OVERRIDE_CONNECTION;
-                });
+                find_and_modify(segment_by_state, State::FUTURE, State::INACTIVE, Comment::INFO_SEGMENT_BAD_DATA);
+                find_and_modify(segment_by_index, active->index, State::FAIL, Comment::FAILURE_CENTER_OVERRIDE_CONNECTION);
 
                 std::shared_ptr<Connection> conn;
                 std::shared_ptr<DeliveryCenter> src, dst;
@@ -383,93 +354,38 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
                     throw std::invalid_argument("Unable to find a connection with index: " + connection);
                 }
 
-                Segment* reached = (Segment*)(&(*segment_by_index.find(make_duplicate_active(active, conn, old_parent, scan_dt))));
-                auto scan_t = get_time(scan_dt);
+                auto forked = find(segment_by_index, make_duplicate_active(active, conn, active->parent, scan_dt));
 
-                make_path(
-                    dst->code,
-                    destination,
-                    scan_dt - scan_t + conn->departure + conn->duration,
-                    promise_dt,
-                    reached
-                );
+                if (forked != nullptr) {
+                    auto scan_t = get_time(scan_dt);
 
-                segment_by_state_and_parent.modify(
-                    segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, reached)),
-                    [](Segment& seg) {
-                        seg.state = State::ACTIVE;
-                });
+                    make_path(dst->code, destination, scan_dt - scan_t + conn->departure + conn->duration, promise_dt, forked);
+                    active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, forked), State::ACTIVE);
+                }
             }
-            // Outscanned from current location
-            // Mark active reached
-            // Mark future active
         }
         else if (action == +Actions::INSCAN) {
-            // Inscanned at active
-            // Record actual arrival
             if (scan_dt < active->p_dep) {
                 auto comment = Comment::INFO_SEGMENT_PREDICTED;
 
                 if (scan_dt > active->a_arr)
                     comment = Comment::WARNING_CONNECTION_LATE_ARRIVAL;
-
-                segment_by_index.modify(
-                    segment_by_index.find(active->index),
-                    [&scan_dt, &comment](Segment& seg) {
-                        seg.comment = comment;
-                        seg.a_arr = scan_dt;
-                });
+                find_and_modify(segment_by_index, active->index, active->state, scan_dt, comment);
             }
             else {
-                segment_by_state.modify(
-                    segment_by_state.find(State::FUTURE),
-                    [&scan_dt](Segment& seg) {
-                        seg.state = State::INACTIVE;
-                        seg.a_arr = scan_dt;
-                });
-
-                segment_by_state.modify(
-                    segment_by_state.find(State::ACTIVE),
-                    [](Segment& seg) {
-                        seg.state = State::FAIL;
-                        seg.comment = Comment::FAILURE_CONNECTION_LATE_ARRIVAL;
-                });
-
+                find_and_modify(segment_by_state, State::FUTURE, State::INACTIVE, scan_dt);
+                find_and_modify(segment_by_state, State::ACTIVE, State::FAIL, Comment::FAILURE_CONNECTION_LATE_ARRIVAL);
                 make_path(location, destination, scan_dt, promise_dt, active->parent);
-
-                segment_by_state_and_parent.modify(
-                    segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, active->parent)),
-                    [&scan_dt](Segment& seg) {
-                        seg.state = State::ACTIVE;
-                        seg.a_arr = scan_dt;
-                });
+                active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, active->parent), State::ACTIVE, scan_dt);
             }
         }
     }
     else if (active->code != location) {
         if (action == +Actions::LOCATION or action == +Actions::INSCAN) {
-            auto old_parent = active->parent;
-            segment_by_state.modify(
-                segment_by_state.find(State::FUTURE),
-                [](Segment &seg) {
-                    seg.state = State::INACTIVE;
-            });
-
-            segment_by_state.modify(
-                segment_by_state.find(State::ACTIVE),
-                [](Segment &seg) {
-                    seg.state = State::FAIL;
-                    seg.comment = Comment::INFO_SEGMENT_BAD_DATA;
-            });
-
-            make_path(location, destination, scan_dt, promise_dt, old_parent);
-
-            segment_by_state_and_parent.modify(
-                segment_by_state_and_parent.find(std::make_tuple(State::FUTURE, old_parent)),
-                [&scan_dt](Segment &seg) {
-                    seg.state = State::ACTIVE;
-                    seg.a_arr = scan_dt;
-            });
+            find_and_modify(segment_by_state, State::FUTURE, State::INACTIVE);
+            find_and_modify(segment_by_state, State::ACTIVE, State::FAIL, Comment::INFO_SEGMENT_BAD_DATA);
+            make_path(location, destination, scan_dt, promise_dt, active->parent);
+            active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, active->parent), State::ACTIVE, scan_dt);
         }
     }
 }
