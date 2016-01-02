@@ -10,7 +10,7 @@ Segment::Segment(
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
-        State state, Comment comment, Segment* parent
+        State state, Comment comment, const Segment* parent
 ) : 
         index(index), code(code), cname(cname),
         p_arr(p_arr), p_dep(p_dep), a_arr(a_arr), a_dep(a_dep),
@@ -23,7 +23,7 @@ Segment::Segment(
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
-        std::string state, std::string comment, Segment* parent
+        std::string state, std::string comment, const Segment* parent
     ) {
     Segment(
         index, code, cname,
@@ -217,7 +217,7 @@ void ParserGraph::load_segment() {
     }
 }
 
-std::string ParserGraph::make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, Segment* parent, double scan_dt) {
+std::string ParserGraph::make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, const Segment* parent, double scan_dt) {
     Segment newseg{
         bsoncxx::oid(bsoncxx::oid::init_tag).to_string(),
         seg->code,
@@ -239,7 +239,7 @@ std::string ParserGraph::make_duplicate_active(Segment* seg, std::shared_ptr<Con
     return newseg.index;
 }
 
-bool ParserGraph::make_path(std::string origin, std::string destination, double start_dt, double promise_dt, Segment* parent) {
+bool ParserGraph::make_path(std::string origin, std::string destination, double start_dt, double promise_dt, const Segment* parent) {
     double start_t = get_time(start_dt);
     double max_t = promise_dt - start_dt;
     auto solution = solver->solve(origin, destination, start_t, max_t);

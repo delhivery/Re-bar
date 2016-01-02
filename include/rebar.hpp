@@ -75,14 +75,14 @@ struct Segment {
     State state = State::ACTIVE;
     Comment comment = Comment::INFO_SEGMENT_PREDICTED;
 
-    Segment* parent;
+    const Segment* parent;
 
     Segment(
         std::string index, std::string code, std::string cname,
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
-        State state, Comment comment, Segment* parent=nullptr
+        State state, Comment comment, const Segment* parent=nullptr
     );
 
     Segment(
@@ -90,7 +90,7 @@ struct Segment {
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
-        std::string state, std::string comment, Segment* parent=nullptr
+        std::string state, std::string comment, const Segment* parent=nullptr
     );
 
 
@@ -161,9 +161,9 @@ class ParserGraph {
 
         void make_root();
 
-        bool make_path(std::string origin, std::string destination, double start_dt, double promise_dt, Segment* parent);
+        bool make_path(std::string origin, std::string destination, double start_dt, double promise_dt, const Segment* parent);
 
-        std::string make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, Segment* parent, double scan_dt);
+        std::string make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, const Segment* parent, double scan_dt);
 
         void read_scan(std::string location, std::string destination, std::string connection, std::string action, std::string scan_dt, std::string promise_dt);
 
