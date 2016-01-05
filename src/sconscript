@@ -3,7 +3,9 @@ import os
 Import('env')
 env = env.Clone()
 
-projectLibs = ['rebar', 'marge', 'utils']
+projectLibs = ['rebar', 'marge', 'utils', 'kinesis']
+
+# projectLibs = ['utils', 'kinesis']
 
 libraries = list()
 
@@ -25,6 +27,7 @@ for subdir in projectLibs:
         libraries.append(library)
 
 env.Append(LIBS=libraries)
-env.Append(LIBS=['boost_graph', 'bsoncxx', 'mongocxx', 'mongoc-1.0'])
+env.Append(LIBS=['boost_graph', 'bsoncxx', 'mongocxx', 'mongoc-1.0', 'aws-cpp-sdk-core', 'aws-cpp-sdk-kinesis', 'pthread'])
+# env.Append(LIBS=['aws-cpp-sdk-core', 'aws-cpp-sdk-kinesis', 'pthread'])
 
-env.Program('fletcher', ['main.cxx'])
+env.Program('fletcher', ['fletcher.cxx'])

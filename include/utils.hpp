@@ -8,4 +8,4 @@ double abs_durinal(double time_as_double);
 
 double wait_time(double t_init, double t_depart);
 
-
+double time_from_string(std::string datestring);

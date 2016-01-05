@@ -9,8 +9,8 @@
 class Solver {
     private:
         std::string database = "rebar";
-        std::string nodes_collection = "nodes";
-        std::string edges_collection = "edges";
+        std::string nodes_collection = "nnodes";
+        std::string edges_collection = "nedges";
         std::shared_ptr<EPGraph> path_finder;
     public:
         Solver(std::string database="rebar", int mode=0);

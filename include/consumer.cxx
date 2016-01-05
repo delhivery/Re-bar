@@ -1,6 +1,8 @@
 #include <iostream>
 #include <thread>
 
+#include <boost/date_time.hpp>
+
 #include <aws/core/client/ClientConfiguration.h>
 #include <aws/core/http/HttpClient.h>
 #include <aws/core/http/HttpResponse.h>
@@ -14,25 +16,26 @@
 #include <aws/kinesis/model/GetShardIteratorRequest.h>
 #include <aws/kinesis/model/GetRecordsRequest.h>
 
-
 template <typename T> class Consumer {
     private:
         Aws::Kinesis::KinesisClient client;
         Aws::Client::ClientConfiguration conf;
         std::string stream;
-        T* queue;
+        T& queue;
 
     public:
 
-        Consumer(std::string stream, T* queue, Aws::Region region=Aws::Region::AP_SOUTHEAST_1) : stream(stream), queue(queue) {
-            std::cout << "Set stream and region" << std::endl;
+        Consumer(std::string stream, T& queue, Aws::Region region=Aws::Region::AP_SOUTHEAST_1) : stream(stream), queue(queue) {
             conf.region = region;
             conf.scheme = Aws::Http::Scheme::HTTPS;
             client = Aws::Kinesis::KinesisClient{conf};
         }
 
         void show_record(Aws::Kinesis::Model::Record record) {
-            std::cout << "Record: " << record.GetData().GetUnderlyingData() << std::endl;
+            auto data = record.GetData().GetUnderlyingData();
+            std::ostringstream ss;
+            ss << data;
+            queue.push(ss.str());
         }
 
         void get_records(std::string shard_iterator) {
@@ -43,6 +46,7 @@ template <typename T> class Consumer {
                 get_records_request.SetLimit(100);
 
                 auto get_records = client.GetRecords(get_records_request);
+
                 if (get_records.IsSuccess()) {
                     auto get_records_result = get_records.GetResult();
                     auto records = get_records_result.GetRecords();
@@ -52,6 +56,7 @@ template <typename T> class Consumer {
                         threaded.detach();
                     }
                     std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+                    // std::cout << "Sleeping for 10 seconds" << std::endl;
                     shard_iterator = get_records_result.GetNextShardIterator();
 
                     if (shard_iterator == "") {
@@ -60,8 +65,8 @@ template <typename T> class Consumer {
                 }
                 else {
                     auto get_records_error = get_records.GetError();
-                    std::cout << "Unable to get records from shard iterator " << shard_iterator << ": ";
-                    std::cout << get_records_error.GetMessage() << std::endl;
+                    // std::cerr << "Unable to get records from shard iterator " << shard_iterator << ": ";
+                    // std::cerr << get_records_error.GetMessage() << std::endl;
                     return;
                 }
             }
@@ -84,7 +89,7 @@ template <typename T> class Consumer {
                     shard_iterators.push_back(shard_iterator);
                 }
                 else {
-                    std::cout << "Unable to get shard iterators: " << get_shard_iterator_result.GetError().GetMessage() << std::endl;
+                    // std::cerr << "Unable to get shard iterators: " << get_shard_iterator_result.GetError().GetMessage() << std::endl;
                 }
             }
 
@@ -99,11 +104,10 @@ template <typename T> class Consumer {
             for (std::size_t index = 0; index < shard_iterators.size(); index++) {
                 threads[index].join();
             }
+            std::cout << std::endl << std::endl << std::endl;
         }
 
         void get_shards() {
-            std::cout << "Trying to get shards" << std::endl;
-
             while(true) {
                 std::vector<Aws::Kinesis::Model::Shard> shards;
                 Aws::Kinesis::Model::DescribeStreamRequest describe_stream_request;
@@ -122,8 +126,6 @@ template <typename T> class Consumer {
                             shards.push_back(shard);
                         }
 
-                        std::cout << shards.size() << " shards found." << std::endl;
-
                         if (describe_stream_result.GetStreamDescription().GetHasMoreShards() and shards.size() > 0) {
                             start_shard_id = shards[shards.size() - 1].GetShardId();
                         }
@@ -132,7 +134,7 @@ template <typename T> class Consumer {
                         }
                     } else {
                         auto describe_stream_error = describe_stream.GetError();
-                        std::cout << "Unable to describe stream: " << describe_stream_error.GetMessage() << std::endl;
+                        // std::cerr << "Unable to describe stream: " << describe_stream_error.GetMessage() << std::endl;
                     }
                 } while(start_shard_id != "");
 
