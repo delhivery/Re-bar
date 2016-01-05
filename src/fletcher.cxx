@@ -58,7 +58,10 @@ void process(std::shared_ptr<Solver> solver_ptr, Queue<std::string>& queue) {
 
             scan_dt = time_from_string(json_to_str(doc["cs"]["sd"]));
             promise_dt = time_from_string(json_to_str(doc["pdd"]));
-            attempt = true;
+
+            if (location != "" and destination != "") {
+                attempt = true;
+            }
         }
         catch (std::exception const& exc) {
             std::cout << "Exception occured in transforming kinesis data" << std::endl;
