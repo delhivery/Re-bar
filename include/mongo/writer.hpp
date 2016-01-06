@@ -61,7 +61,7 @@ class MongoWriter : public Mongo {
             auto db = mongos_client[database];
             auto coll = db[collection];
 
-            mongocxx::bulk_write bulk_writer(false);
+            mongocxx::bulk_write bulk_writer(mongocxx::options::bulk_write{});
 
             for (auto const& element: iterable) {
                 // filter and update params

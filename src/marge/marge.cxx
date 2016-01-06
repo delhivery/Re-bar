@@ -51,6 +51,9 @@ std::vector<Path> Solver::solve(std::string origin, std::string destination, dou
     double t_start = dt_start;
     double t_tat = dt_promise - dt_start;
 
+    if (mode > 1)
+        t_tat = P_INF;
+
     auto paths = path_finder->find_path(origin, destination, t_start, t_tat);
     return paths;
 }

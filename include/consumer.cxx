@@ -104,7 +104,6 @@ template <typename T> class Consumer {
             for (std::size_t index = 0; index < shard_iterators.size(); index++) {
                 threads[index].join();
             }
-            std::cout << std::endl << std::endl << std::endl;
         }
 
         void get_shards() {

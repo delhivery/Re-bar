@@ -21,19 +21,18 @@ std::string json_to_str(jeayeson::value val) {
 void getsize(Queue<std::string>& queue) {
     while (true) {
         std::cout << "Queue size: " << queue.size() << std::endl;
-        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
 }
 
 void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallback_ptr, Queue<std::string>& queue) {
-    try { 
         while(true) {
             std::string waybill, location, destination, connection, action, ps, pid;
             double scan_dt, promise_dt;
-
             bool attempt = false;
-            try {
+
                 std::string::size_type pos_braces;
+
                 auto doc = jeayeson::map_t{jeayeson::data{queue.pop()}};
                 std::map<std::string, std::string> datum;
 
@@ -82,27 +81,13 @@ void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallbac
                     mw.init();
                     mw.write("scans", datum);
                 }
-            }
-            catch (std::exception const& exc) {
-                std::cout << "Exception occured in transforming kinesis data" << std::endl;
-            }
-
             if (attempt) {
                 auto parser = ParserGraph{waybill, solver_ptr, fallback_ptr};
-                try {
                     parser.parse_scan(location, destination, connection, Actions::_from_string(action.c_str()), scan_dt, promise_dt);
                     parser.show();
-                }
-                catch (std::exception const& exc) {
-                    parser.save(false);
-                    std::cout << "Exception occurred at parser: " << exc.what() << std::endl;
-                }
+                
             }
         }
-    }
-    catch (std::exception const& exc) {
-        std::cout << "Exception occurred at parser: " << exc.what() << std::endl;
-    }
 }
 
 int main() {
@@ -123,20 +108,15 @@ int main() {
     threaded.detach();
 
     std::cout << "Starting parser" << std::endl;
-    unsigned int parser_count = 1;//std::thread::hardware_concurrency() * 4;
+    unsigned int parser_count = std::thread::hardware_concurrency() * 4;
     std::vector<std::thread> parsers;
 
-    try {
-        for (unsigned int idx = 0; idx < parser_count; idx++) {
-            parsers.push_back(std::thread{std::bind(&process, solver_ptr, fallback_ptr, std::ref(shared_queue))});
-        }
-
-        for (unsigned int idx = 0; idx < parser_count; idx++) {
-            parsers[idx].join();
-        }
+    for (unsigned int idx = 0; idx < parser_count; idx++) {
+        parsers.push_back(std::thread{std::bind(&process, solver_ptr, fallback_ptr, std::ref(shared_queue))});
     }
-    catch (std::exception const& exc) {
-        std::cout << "Exception occurred: " << exc.what() << std::endl;
+
+    for (unsigned int idx = 0; idx < parser_count; idx++) {
+        parsers[idx].join();
     }
     
     return 0;
