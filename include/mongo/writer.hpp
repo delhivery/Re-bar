@@ -38,6 +38,21 @@ class MongoWriter : public Mongo {
             "", "", replica_set
         ) {}
 
+
+        void write(std::string collection, std::map<std::string, std::string> record) {
+            auto mongos_client = mongocxx::client{mongo_uri};
+            auto db = mongos_client[database];
+            auto coll = db[collection];
+
+            bsoncxx::builder::stream::document doc_builder;
+
+            for (auto const& element: record) {
+                doc_builder << element.first << element.second;
+            }
+
+            coll.insert_one(doc_builder.view());
+        }
+
         template <typename T> void write(
                 std::string collection, T& iterable, std::vector<std::string> fields, std::string p_key,
                 std::map<std::string, std::string> meta_data

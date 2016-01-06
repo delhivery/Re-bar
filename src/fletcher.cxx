@@ -18,6 +18,13 @@ std::string json_to_str(jeayeson::value val) {
     return val.as<std::string>();
 }
 
+void getsize(Queue<std::string>& queue) {
+    while (true) {
+        std::cout << "Queue size: " << queue.size() << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+    }
+}
+
 void process(std::shared_ptr<Solver> solver_ptr, Queue<std::string>& queue) {
     while(true) {
         std::string waybill, location, destination, connection, action, ps, pid;
@@ -27,7 +34,8 @@ void process(std::shared_ptr<Solver> solver_ptr, Queue<std::string>& queue) {
         try {
             std::string::size_type pos_braces;
             auto doc = jeayeson::map_t{jeayeson::data{queue.pop()}};
-            
+            std::map<std::string, std::string> datum;
+
             waybill = json_to_str(doc["wbn"]);
 
             location = json_to_str(doc["cs"]["sl"]);
@@ -59,8 +67,19 @@ void process(std::shared_ptr<Solver> solver_ptr, Queue<std::string>& queue) {
             scan_dt = time_from_string(json_to_str(doc["cs"]["sd"]));
             promise_dt = time_from_string(json_to_str(doc["pdd"]));
 
-            if (location != "" and destination != "") {
+            if (location != "" and destination != "" and destination != "NSZ") {
                 attempt = true;
+                datum["wbn"] = waybill;
+                datum["loc"] = location;
+                datum["dst"] = destination;
+                datum["con"] = connection;
+                datum["action"] = action;
+                datum["scan_dt"] = json_to_str(doc["cs"]["sd"]);
+                datum["promise_dt"] = json_to_str(doc["pdd"]);
+
+                MongoWriter mw{"rebar"};
+                mw.init();
+                mw.write("scans", datum);
             }
         }
         catch (std::exception const& exc) {
@@ -71,6 +90,7 @@ void process(std::shared_ptr<Solver> solver_ptr, Queue<std::string>& queue) {
             auto parser = ParserGraph{waybill, solver_ptr};
             try {
                 parser.parse_scan(location, destination, connection, Actions::_from_string(action.c_str()), scan_dt, promise_dt);
+                parser.show();
             }
             catch (std::exception const& exc) {
                 parser.save(false);
@@ -90,8 +110,12 @@ int main() {
     std::thread threaded(&Consumer<Queue<std::string> >::get_shards, consumer);
     threaded.detach();
 
+    std::cout << "Starting SQ stats poller" << std::endl;
+    threaded = std::thread{std::bind(&getsize, std::ref(shared_queue))};
+    threaded.detach();
+
     std::cout << "Starting parser" << std::endl;
-    auto parser_count = std::thread::hardware_concurrency() * 4;
+    unsigned int parser_count = 1;//std::thread::hardware_concurrency() * 4;
     std::vector<std::thread> parsers;
 
     try {

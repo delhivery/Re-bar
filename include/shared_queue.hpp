@@ -43,4 +43,12 @@ template <typename T> class Queue {
             mlock.unlock();
             cond_.notify_one();
         }
+
+        int size() {
+            std::unique_lock<std::mutex> mlock(mutex_);
+            size_t sz = queue_.size();
+            mlock.unlock();
+            cond_.notify_one();
+            return sz;
+        }
 };
