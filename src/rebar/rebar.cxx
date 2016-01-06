@@ -6,27 +6,27 @@
 #include <rebar.hpp>
 
 Segment::Segment(
-        std::string index, std::string code, std::string cname,
+        std::string index, std::string code, std::string cname, std::string soltype,
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
         State state, Comment comment, const Segment* parent
 ) : 
-        index(index), code(code), cname(cname),
+        index(index), code(code), cname(cname), soltype(soltype),
         p_arr(p_arr), p_dep(p_dep), a_arr(a_arr), a_dep(a_dep),
         t_inb_proc(t_inb_proc), t_agg_proc(t_agg_proc), t_out_proc(t_out_proc),
         cost(cost), state(state), comment(comment), parent(parent) {
 }
 
 Segment::Segment(
-        std::string index, std::string code, std::string cname,
+        std::string index, std::string code, std::string cname, std::string soltype,
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
         std::string state, std::string comment, const Segment* parent
     ) {
     Segment(
-        index, code, cname,
+        index, code, cname, soltype,
         p_arr, p_dep, a_arr, a_dep,
         t_inb_proc, t_agg_proc, t_out_proc,
         cost,
@@ -63,6 +63,10 @@ boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> Segment::
 
     else if (attr == "ed") {
         result = cname;
+    }
+
+    else if (attr == "sol") {
+        result = soltype;
     }
 
     else if (attr == "pa") {
@@ -118,7 +122,7 @@ boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> Segment::
     return result;
 }
 
-ParserGraph::ParserGraph(std::string waybill, std::shared_ptr<Solver> solver) : waybill(waybill), solver(solver) {
+ParserGraph::ParserGraph(std::string waybill, std::shared_ptr<Solver> solver, std::shared_ptr<Solver> fallback) : waybill(waybill), solver(solver), fallback(fallback) {
     load_segment();
 
     if (segment_by_index.size() == 0) {
@@ -133,7 +137,7 @@ ParserGraph::~ParserGraph() {
         std::map<std::string, std::string> meta_data;
         meta_data["wbn"] = waybill;
         boost::multi_index::index<SegmentContainer, SegmentId>::type& iter = segment.get<SegmentId>();
-        mw.write("segments", iter, std::vector<std::string>{"_id", "cn", "ed", "pa", "pd", "aa", "ad", "tip", "tap", "top", "st", "rmk", "cst", "par"}, "_id", meta_data);
+        mw.write("segments", iter, std::vector<std::string>{"_id", "cn", "ed", "sol", "pa", "pd", "aa", "ad", "tip", "tap", "top", "st", "rmk", "cst", "par"}, "_id", meta_data);
     }
 }
 
@@ -142,6 +146,7 @@ void ParserGraph::make_root() {
         bsoncxx::oid(bsoncxx::oid::init_tag).to_string(),   // Unique Id
         "",                                                 // Code
         "",                                                 // Cname
+        "AUTOGEN",                                          // Soltype
         N_INF,                                              // p_arr
         N_INF,                                              // p_dep
         N_INF,                                              // a_arr
@@ -172,7 +177,7 @@ void ParserGraph::load_segment() {
             "segments",
             filter,
             std::vector<std::string>{
-                "_id", "wbn", "cn", "ed",
+                "_id", "wbn", "cn", "ed", "sol",
                 "pa", "aa", "pd", "ad",
                 "tip", "tap", "top",
                 "st", "rmk",
@@ -180,10 +185,11 @@ void ParserGraph::load_segment() {
             },
             options
     )) {
-        std::string index, code, cname, p_arr, a_arr, p_dep, a_dep, t_inb_proc, t_agg_proc, t_out_proc, cost, parent, state, comment;
+        std::string index, code, cname, soltype, p_arr, a_arr, p_dep, a_dep, t_inb_proc, t_agg_proc, t_out_proc, cost, parent, state, comment;
         index = result.at("_id");
         code = result.at("cn");
         cname = result.at("ed");
+        soltype = result.at("sol");
         p_arr = result.at("pa");
         a_arr = result.at("aa");
         p_dep = result.at("pd");
@@ -206,7 +212,7 @@ void ParserGraph::load_segment() {
         }
 
         segment.insert(Segment{
-            index, code, cname, 
+            index, code, cname, soltype,
             std::stod(p_arr), std::stod(p_dep), std::stod(a_arr), std::stod(a_dep),
             std::stod(t_inb_proc), std::stod(t_agg_proc), std::stod(t_out_proc),
             std::stod(cost),
@@ -222,6 +228,7 @@ std::string ParserGraph::make_duplicate_active(Segment* seg, std::shared_ptr<Con
         bsoncxx::oid(bsoncxx::oid::init_tag).to_string(),
         seg->code,
         conn->name,
+        seg->soltype,
         seg->p_arr,
         seg->p_dep,
         seg->a_arr,
@@ -242,10 +249,17 @@ std::string ParserGraph::make_duplicate_active(Segment* seg, std::shared_ptr<Con
 bool ParserGraph::make_path(std::string origin, std::string destination, double start_dt, double promise_dt, const Segment* parent) {
     double start_t = get_time(start_dt);
     double max_t = promise_dt - start_dt;
+    std::string soltype = "RCSP";
     auto solution = solver->solve(origin, destination, start_t, max_t);
 
-    if (solution.size() == 0)
+    if (solution.size() == 0) {
+        solution = fallback->solve(origin, destination, start_t, max_t);
+        soltype = "STSP";
+    }
+
+    if (solution.size() == 0) {
         return false;
+    }
 
     auto origin_center = origin;
     auto origin_arrival = start_dt - start_t;
@@ -265,6 +279,7 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
             bsoncxx::oid(bsoncxx::oid::init_tag).to_string(),
             origin_center,
             connection.name,
+            soltype,
             origin_arrival + arrival_cost,
             origin_arrival + arrival_cost + wait_time(start_t, connection._departure),
             P_INF,
@@ -291,6 +306,7 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
         bsoncxx::oid(bsoncxx::oid::init_tag).to_string(),
         origin_center,
         "",
+        soltype,
         origin_arrival + arrival_cost,
         P_INF,
         P_INF,

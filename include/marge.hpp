@@ -12,6 +12,8 @@ class Solver {
         std::string nodes_collection = "nnodes";
         std::string edges_collection = "nedges";
         std::shared_ptr<EPGraph> path_finder;
+        int mode;
+
     public:
         Solver(std::string database="rebar", int mode=0);
 

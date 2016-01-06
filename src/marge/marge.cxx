@@ -1,6 +1,6 @@
 #include <marge.hpp>
 
-Solver::Solver(std::string database, int mode) : database(database) {
+Solver::Solver(std::string database, int mode) : database(database), mode(mode) {
     switch(mode) {
         case 0:
             path_finder = std::make_shared<ConstrainedEP>();
@@ -28,12 +28,22 @@ void Solver::init() {
             auto edge: mc.query(edges_collection, filter, std::vector<std::string>{
                 "ori", "dst", "dep", "dur", "cst", "tip", "tap", "top", "md", "nm", "md", "cap", "idx"})
     ) {
-        path_finder->add_edge(
-            edge["ori"], edge["dst"],
-            std::stod(edge["dep"]), std::stod(edge["dur"]),
-            std::stod(edge["tip"]), std::stod(edge["tap"]), std::stod(edge["top"]),
-            std::stod(edge["cst"]), edge["idx"]
-        );
+        if (mode < 2) {
+            path_finder->add_edge(
+                edge["ori"], edge["dst"],
+                std::stod(edge["dep"]), std::stod(edge["dur"]),
+                std::stod(edge["tip"]), std::stod(edge["tap"]), std::stod(edge["top"]),
+                std::stod(edge["cst"]), edge["idx"]
+            );
+        }
+        else {
+            path_finder->add_edge(
+                edge["ori"], edge["dst"],
+                std::stod(edge["dep"]), std::stod(edge["dur"]),
+                std::stod(edge["tip"]), std::stod(edge["tap"]), std::stod(edge["top"]),
+                0, edge["idx"]
+            );
+        }
     }
 }
 

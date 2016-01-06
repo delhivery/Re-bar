@@ -68,7 +68,7 @@ BETTER_ENUM(
 );
 
 struct Segment {
-    std::string index, code, cname;
+    std::string index, code, cname, soltype;
     double p_arr, p_dep, a_arr, a_dep, t_inb_proc, t_agg_proc, t_out_proc;
     double cost;
 
@@ -78,7 +78,7 @@ struct Segment {
     const Segment* parent;
 
     Segment(
-        std::string index, std::string code, std::string cname,
+        std::string index, std::string code, std::string cname, std::string soltype,
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
@@ -86,7 +86,7 @@ struct Segment {
     );
 
     Segment(
-        std::string index, std::string code, std::string cname,
+        std::string index, std::string code, std::string cname, std::string soltype,
         double p_arr, double p_dep, double a_arr, double a_dep,
         double t_inb_proc, double t_agg_proc, double t_out_proc,
         double cost,
@@ -147,6 +147,7 @@ class ParserGraph {
         bool save_state = true;
         std::string waybill;
         std::shared_ptr<Solver> solver;
+        std::shared_ptr<Solver> fallback;
         SegmentContainer segment;
         SegmentByIndex& segment_by_index = segment.get<SegmentId>();
         SegmentByCode& segment_by_code = segment.get<SegmentCode>();
@@ -154,7 +155,7 @@ class ParserGraph {
         SegmentByStateAndParent& segment_by_state_and_parent = segment.get<SegmentStateAndParent>();
 
     public:
-        ParserGraph(std::string waybill, std::shared_ptr<Solver> solver);
+        ParserGraph(std::string waybill, std::shared_ptr<Solver> solver, std::shared_ptr<Solver> fallback);
         ~ParserGraph();
 
         void load_segment();
