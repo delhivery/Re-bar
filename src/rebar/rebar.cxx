@@ -131,12 +131,13 @@ ParserGraph::ParserGraph(std::string waybill, std::shared_ptr<Solver> solver, st
 }
 
 ParserGraph::~ParserGraph() {
-    if (save_state) {
+    if (save_state and segment_by_index.size() > 1) {
         MongoWriter mw{"rebar"};
         mw.init();
         std::map<std::string, std::string> meta_data;
         meta_data["wbn"] = waybill;
         boost::multi_index::index<SegmentContainer, SegmentId>::type& iter = segment.get<SegmentId>();
+
         mw.write("segments", iter, std::vector<std::string>{"_id", "cn", "ed", "sol", "pa", "pd", "aa", "ad", "tip", "tap", "top", "st", "rmk", "cst", "par"}, "_id", meta_data);
     }
 }

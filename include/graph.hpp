@@ -64,7 +64,7 @@ typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, Delive
 typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
 typedef boost::graph_traits<Graph>::edge_descriptor Edge;
 typedef std::vector<Cost> DistanceMap;
-typedef std::vector<std::pair<Vertex, Connection*> > PredecessorMap;
+typedef std::vector<std::pair<Vertex, Connection> > PredecessorMap;
 
 class EPGraph {
     protected:

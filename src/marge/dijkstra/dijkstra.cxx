@@ -31,7 +31,7 @@ template <typename Compare> void SimpleEP::run_dijkstra(
     for(vertices = boost::vertices(g); vertices.first != vertices.second; vertices.first++) {
         int v_index = *vertices.first;
         distances[v_index] = inf;
-        predecessors[v_index] = std::pair<Vertex, Connection*>(source, nullptr);
+        predecessors[v_index] = std::pair<Vertex, Connection>(source, Connection());
         visited[v_index] = 0;
     }
 
@@ -56,14 +56,14 @@ template <typename Compare> void SimpleEP::run_dijkstra(
                     bin_heap.push(target);
                     distances[target] = fresh;
                     predecessors[target].first = current;
-                    predecessors[target].second = &conn;
+                    predecessors[target].second = conn;
                     visited[target] = 1;
                 }
                 else if (visited[target] == 1) {
                     if(cmp(fresh, distances[target])) {
                         distances[target] = fresh;
                         predecessors[target].first = current;
-                        predecessors[target].second = &conn;
+                        predecessors[target].second = conn;
                     }
                 }
             }
@@ -105,7 +105,7 @@ std::vector<Path> SimpleEP::find_path(std::string src, std::string dest, double 
         auto target_name = g[target].name;
         auto connection = predecessors[target].second;
         auto next = predecessors[target].first;
-        path.push_back(Path{target_name, *connection, distance, distance_t});
+        path.push_back(Path{target_name, connection, distance, distance_t});
         target = next;
     }
 

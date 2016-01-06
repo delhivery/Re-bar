@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <utils.hpp>
+#include <algorithm>
 
 double get_time(double datetime_as_double) {
     if (datetime_as_double == P_INF) {
@@ -25,10 +26,8 @@ double wait_time(double t_init, double t_depart) {
 }
 
 double time_from_string(std::string datestring) {
-    std::istringstream iss{datestring};
-    iss.imbue(std::locale(std::locale::classic(), new boost::posix_time::time_input_facet(1)));
-    boost::posix_time::ptime datetime;
-    iss >> datetime;
+    std::replace(datestring.begin(), datestring.end(), 'T', ' ');
+    boost::posix_time::ptime datetime = boost::posix_time::time_from_string(datestring);
 
     boost::posix_time::ptime epoch{boost::gregorian::date(1970, 1, 1)};
     auto diff = datetime - epoch;

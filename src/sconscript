@@ -27,7 +27,7 @@ for subdir in projectLibs:
         libraries.append(library)
 
 env.Append(LIBS=libraries)
-env.Append(LIBS=['boost_graph', 'bsoncxx', 'mongocxx', 'mongoc-1.0', 'aws-cpp-sdk-core', 'aws-cpp-sdk-kinesis', 'pthread'])
+env.Append(LIBS=['boost_graph', 'bsoncxx', 'mongocxx', 'mongoc-1.0', 'aws-cpp-sdk-core', 'aws-cpp-sdk-kinesis', 'pthread', 'boost_date_time'])
 # env.Append(LIBS=['aws-cpp-sdk-core', 'aws-cpp-sdk-kinesis', 'pthread'])
 
 env.Program('fletcher', ['fletcher.cxx'])
