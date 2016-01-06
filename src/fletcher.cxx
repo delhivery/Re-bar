@@ -92,7 +92,7 @@ void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallbac
                 auto parser = ParserGraph{waybill, solver_ptr, fallback_ptr};
                 try {
                     parser.parse_scan(location, destination, connection, Actions::_from_string(action.c_str()), scan_dt, promise_dt);
-                    parser.show();
+                    // parser.show();
                 }
                 catch (std::exception const& exc) {
                     parser.save(false);
@@ -117,10 +117,6 @@ int main() {
 
     std::cout << "Starting consumer" << std::endl;
     std::thread threaded(&Consumer<Queue<std::string> >::get_shards, consumer);
-    threaded.detach();
-
-    std::cout << "Starting SQ stats poller" << std::endl;
-    threaded = std::thread{std::bind(&getsize, std::ref(shared_queue))};
     threaded.detach();
 
     std::cout << "Starting parser" << std::endl;

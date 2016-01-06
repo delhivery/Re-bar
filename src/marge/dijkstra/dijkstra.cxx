@@ -36,6 +36,7 @@ template <typename Compare> void SimpleEP::run_dijkstra(
     }
 
     distances[source] = zero;
+
     bin_heap.push(source);
     visited[source] = 1;
 
@@ -60,7 +61,7 @@ template <typename Compare> void SimpleEP::run_dijkstra(
                     visited[target] = 1;
                 }
                 else if (visited[target] == 1) {
-                    if(cmp(fresh, distances[target])) {
+                    if (cmp(fresh, distances[target])) {
                         distances[target] = fresh;
                         predecessors[target].first = current;
                         predecessors[target].second = conn;
@@ -91,23 +92,27 @@ std::vector<Path> SimpleEP::find_path(std::string src, std::string dest, double 
 
     run_dijkstra(source, destination, distances, predecessors, smaller, inf, zero, t_max);
 
-    Vertex target = vertex_map[dest];
     std::vector<Path> path;
 
-    while(target != source) {
+    Vertex target = vertex_map[dest];
+    Connection connection_outbound;
+
+    do {
         auto distance = distances[target].second;
         auto distance_t = distances[target].first;
 
         if(distance == P_INF or distance_t == P_INF) {
-            break;
+            return path;
         }
 
         auto target_name = g[target].name;
-        auto connection = predecessors[target].second;
-        auto next = predecessors[target].first;
-        path.push_back(Path{target_name, connection, distance, distance_t});
-        target = next;
-    }
+        path.push_back(Path{target_name, connection_outbound, distance, distance_t});
 
+        if (target == source)
+            break;
+
+        connection_outbound = predecessors[target].second;
+        target = predecessors[target].first;
+    } while (true); 
     return path;
 }
