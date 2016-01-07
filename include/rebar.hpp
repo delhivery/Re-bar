@@ -5,6 +5,8 @@
 #include <limits>
 #include <memory>
 
+#include <experimental/any>
+
 #include <boost/date_time.hpp>
 #include <boost/multi_index_container.hpp>
 #include <boost/multi_index/ordered_index.hpp>
@@ -77,6 +79,8 @@ struct Segment {
 
     const Segment* parent;
 
+    std::map<std::string, std::experimental::any> meta_data;
+
     Segment(
         std::string index, std::string code, std::string cname, std::string soltype,
         double p_arr, double p_dep, double a_arr, double a_dep,
@@ -93,6 +97,7 @@ struct Segment {
         std::string state, std::string comment, const Segment* parent=nullptr
     );
 
+    void set_meta(std::map<std::string, std::experimental::any> _meta_data);
 
     bool operator < (Segment& segment) {
         return index < segment.index;
@@ -146,8 +151,11 @@ class ParserGraph {
     private:
         bool save_state = true;
         std::string waybill;
+        double promise_dt;
+
         std::shared_ptr<Solver> solver;
         std::shared_ptr<Solver> fallback;
+
         SegmentContainer segment;
         SegmentByIndex& segment_by_index = segment.get<SegmentId>();
         SegmentByCode& segment_by_code = segment.get<SegmentCode>();
@@ -155,20 +163,18 @@ class ParserGraph {
         SegmentByStateAndParent& segment_by_state_and_parent = segment.get<SegmentStateAndParent>();
 
     public:
-        ParserGraph(std::string waybill, std::shared_ptr<Solver> solver, std::shared_ptr<Solver> fallback);
+        ParserGraph(std::string waybill, double promise_dt, std::shared_ptr<Solver> solver, std::shared_ptr<Solver> fallback);
         ~ParserGraph();
 
         void load_segment();
 
         void make_root();
 
-        bool make_path(std::string origin, std::string destination, double start_dt, double promise_dt, const Segment* parent);
+        bool make_path(std::string origin, std::string destination, double start_dt, const Segment* parent);
 
         std::string make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, const Segment* parent, double scan_dt);
 
-        void read_scan(std::string location, std::string destination, std::string connection, std::string action, std::string scan_dt, std::string promise_dt);
-
-        void parse_scan(std::string location, std::string destination, std::string connection, Actions action, double scan_dt, double promise_dt);
+        void parse_scan(std::string location, std::string destination, std::string connection, Actions action, double scan_dt);
 
         void save(bool _save_state=true);
 
@@ -183,7 +189,7 @@ class ParserGraph {
             return nullptr;
         }
 
-        template <typename T, typename F> Segment* find_and_modify(T& iterable, F filters, State s, double a_arr=-1, Comment rmk=Comment::INFO_SEGMENT_PREDICTED) {
+        template <typename T, typename F> Segment* find_and_modify(T& iterable, F filters, State s, double a_arr=-1, double a_dep=-1, Comment rmk=Comment::INFO_SEGMENT_PREDICTED) {
             auto iter = iterable.find(filters);
 
             if (iter == iterable.end())
@@ -200,10 +206,13 @@ class ParserGraph {
             for (typename buffer_type::iterator it = vec.begin(), it_end = vec.end(); it != it_end; it++) {
                 iterable.modify(
                     *it,
-                    [&s, &a_arr, &rmk](Segment& seg) {
+                    [&s, &a_arr, &a_dep, &rmk](Segment& seg) {
                         seg.state = s;
                         if (a_arr != -1)
                             seg.a_arr = a_arr;
+
+                        if (a_dep != -1)
+                            seg.a_dep = a_dep;
 
                         if (rmk != +Comment::INFO_SEGMENT_PREDICTED) {
                             seg.comment = rmk;
@@ -211,24 +220,6 @@ class ParserGraph {
                     }
                 );
             }
-            /*
-            while (iter_main.first != iter_main.second) {
-                auto it = boost::multi_index::project<aux>(segment, iter_main.first);
-                segment.get<aux>().modify(
-                    it,
-                    [&s, &a_arr, &rmk](Segment& seg) {
-                        seg.state = s;
-                        if (a_arr != -1)
-                            seg.a_arr = a_arr;
-
-                        if (rmk != +Comment::INFO_SEGMENT_PREDICTED) {
-                            seg.comment = rmk;
-                        }
-                    }
-                );
-                iter_main.first++;
-            }*/
-
             return (Segment *)(&(*iter));
         }
 };

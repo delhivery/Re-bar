@@ -89,10 +89,9 @@ void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallbac
             }
 
             if (attempt) {
-                auto parser = ParserGraph{waybill, solver_ptr, fallback_ptr};
+                auto parser = ParserGraph{waybill, promise_dt, solver_ptr, fallback_ptr};
                 try {
-                    parser.parse_scan(location, destination, connection, Actions::_from_string(action.c_str()), scan_dt, promise_dt);
-                    // parser.show();
+                    parser.parse_scan(location, destination, connection, Actions::_from_string(action.c_str()), scan_dt);
                 }
                 catch (std::exception const& exc) {
                     parser.save(false);

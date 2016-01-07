@@ -1,8 +1,9 @@
 #ifndef WRITER_HPP_INCLUDED
 #define WRITER_HPP_INCLUDED
 
-#include <bsoncxx/json.hpp>
+#include <experimental/any>
 
+#include <bsoncxx/json.hpp>
 #include <mongo/base.hpp>
 #include <boost/variant.hpp>
 
@@ -55,7 +56,7 @@ class MongoWriter : public Mongo {
 
         template <typename T> void write(
                 std::string collection, T& iterable, std::vector<std::string> fields, std::string p_key,
-                std::map<std::string, std::string> meta_data
+                bool has_meta=false
         ) {
             auto mongos_client = mongocxx::client{mongo_uri};
             auto db = mongos_client[database];
@@ -89,9 +90,28 @@ class MongoWriter : public Mongo {
                         *builder_ptr << key << *value;
                 }
 
-                for(auto item: meta_data) {
-                    update_builder << item.first << item.second;
-                }
+                if (has_meta)
+                    for(auto item: element.meta_data) {
+                        if (!item.second.empty()) {
+                            if (item.second.type() == typeid(int))
+                                update_builder << item.first << std::experimental::any_cast<int>(item.second);
+
+                            else if (item.second.type() == typeid(float))
+                                update_builder << item.first << std::experimental::any_cast<float>(item.second);
+
+                            else if (item.second.type() == typeid(double))
+                                update_builder << item.first << std::experimental::any_cast<double>(item.second);
+
+                            else if (item.second.type() == typeid(bool))
+                                update_builder << item.first << std::experimental::any_cast<bool>(item.second);
+
+                            else if (item.second.type() == typeid(long))
+                                update_builder << item.first << std::experimental::any_cast<int>(item.second);
+
+                            else
+                                update_builder << item.first << std::experimental::any_cast<std::string>(item.second);
+                        }
+                    }
 
                 update_builder << bsoncxx::builder::stream::close_document;
 
