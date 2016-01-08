@@ -121,7 +121,6 @@ int main() {
     std::cout << "Starting parser" << std::endl;
     // process(solver_ptr, fallback_ptr, std::ref(shared_queue));
     unsigned int parser_count = std::thread::hardware_concurrency() * 4;
-    parser_count = 1; //std::thread::hardware_concurrency() * 4;
     std::vector<std::thread> parsers;
 
     for (unsigned int idx = 0; idx < parser_count; idx++) {
