@@ -28,7 +28,7 @@ void getsize(Queue<std::string>& queue) {
 void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallback_ptr, Queue<std::string>& queue) {
     try { 
         while(true) {
-            std::string waybill, location, destination, connection, action, ps, pid;
+            std::string waybill, location, destination, connection, action, ps, pid, mode;
             long scan_dt, promise_dt;
             bool attempt = false;
 
@@ -56,6 +56,11 @@ void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallbac
 
                 pid = json_to_str(doc["cs"]["pid"]);
 
+                mode = json_to_str(doc["st"]);
+
+                if (mode != "UD")
+                    continue;
+
                 if (action == "+L") {
                     action = "OUTSCAN";
                 }
@@ -71,7 +76,6 @@ void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallbac
 
                 if (location != "" and destination != "" and destination != "NSZ") {
                     attempt = true;
-                    std::cout << "Parsing for wbn at time " << promise_dt << " or " << json_to_str(doc["pdd"]) << std::endl;
                     datum["wbn"] = waybill;
                     datum["loc"] = location;
                     datum["dst"] = destination;
