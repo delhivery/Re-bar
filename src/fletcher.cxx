@@ -56,10 +56,12 @@ void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallbac
 
                 pid = json_to_str(doc["cs"]["pid"]);
 
-                mode = json_to_str(doc["st"]);
+                mode = json_to_str(doc["cs"]["st"]);
 
-                if (mode != "UD")
+                if (mode != "UD") {
+                    std::cout << "Non forward mode <" << mode << "> found. Skipping" << std::endl;
                     continue;
+                }
 
                 if (action == "+L") {
                     action = "OUTSCAN";
