@@ -58,8 +58,8 @@ std::map<std::string, std::experimental::any> Segment::to_store() const {
     data["tip"] = t_inb_proc;
     data["tap"] = t_agg_proc;
     data["top"] = t_out_proc;
-    data["st"] = state._to_string();
-    data["rmk"] = comment._to_string();
+    data["st"] = std::string(state._to_string());
+    data["rmk"] = std::string(comment._to_string());
     data["par"] = std::string("");
     auto par = pindex();
 
