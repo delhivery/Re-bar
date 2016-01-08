@@ -2,10 +2,8 @@
 #include <limits>
 #include <constants.hpp>
 
-double get_time(double datetime_as_double); 
+long abs_durinal(long time);
 
-double abs_durinal(double time_as_double);
+long wait_time(long t_init, long t_depart);
 
-double wait_time(double t_init, double t_depart);
-
-double time_from_string(std::string datestring);
+long time_from_string(std::string datestring);

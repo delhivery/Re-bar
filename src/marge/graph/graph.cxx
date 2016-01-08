@@ -9,12 +9,12 @@ DeliveryCenter::DeliveryCenter(int idx, std::string name, std::string code) : in
 Connection::Connection() {}
 
 Connection::Connection(
-    std::size_t index, const double departure, const double duration, const double cost,
+    std::size_t index, const long departure, const long duration, const double cost,
     std::string name) : index(index), departure(departure), duration(duration), cost(cost), name(name) {}
 
 Connection::Connection(
         std::size_t index,
-        const double _departure, const double _duration, const double _t_inb_proc, const double _t_agg_proc, const double _t_out_proc,
+        const long _departure, const long _duration, const long _t_inb_proc, const long _t_agg_proc, const long _t_out_proc,
         const double cost,
         std::string name
 ) : index(index),
@@ -29,26 +29,26 @@ Connection::Connection(
 }
 
 Path::Path(
-    std::string destination, Connection& connection, double arrival, double cost
+    std::string destination, Connection& connection, long arrival, double cost
 ) : destination(destination), connection(connection), arrival(arrival), cost(cost) {}
 
-Cost Connection::weight(Cost distance, double t_max) {
+Cost Connection::weight(Cost distance, long t_max) {
     double c_parent = distance.first;
-    double t_parent = distance.second;
+    long t_parent = distance.second;
 
-    double t_durinal = fmod(t_parent, HOURS_IN_DAY);
-    double t_wait = t_durinal <= departure ? departure - t_durinal: departure + HOURS_IN_DAY - t_durinal;
-    double t_total = t_parent + t_wait + duration;
+    long t_durinal = fmod(t_parent, HOURS_IN_DAY);
+    long t_wait = t_durinal <= departure ? departure - t_durinal: departure + HOURS_IN_DAY - t_durinal;
+    long t_total = t_parent + t_wait + duration;
 
     if (t_total <= t_max) {
-        return std::pair<double, double>(c_parent + cost, t_total);
+        return std::pair<double, long>(c_parent + cost, t_total);
     }
-    return std::pair<double, double>(P_INF, P_INF);
+    return std::pair<double, long>(P_INF, P_T_INF);
 }
 
-double Connection::wait_time(double t_parent) const {
-    double t_durinal = fmod(t_parent, HOURS_IN_DAY);
-    double t_wait = t_durinal <= departure ? departure - t_durinal: departure + HOURS_IN_DAY - t_durinal;
+long Connection::wait_time(long t_parent) const {
+    long t_durinal = fmod(t_parent, HOURS_IN_DAY);
+    long t_wait = t_durinal <= departure ? departure - t_durinal: departure + HOURS_IN_DAY - t_durinal;
     return t_wait;
 }
 
@@ -61,7 +61,7 @@ void EPGraph::add_vertex(std::string code) {
     add_vertex(code, code);
 }
 
-void EPGraph::add_edge(std::string src, std::string dest, double dep, double dur, double cost, std::string name) {
+void EPGraph::add_edge(std::string src, std::string dest, long dep, long dur, double cost, std::string name) {
     if (vertex_map.find(src) == vertex_map.end()) {
         std::cerr << "Unable to find source " << src << " for edge in vertex map" << std::endl;
         return;
@@ -79,7 +79,7 @@ void EPGraph::add_edge(std::string src, std::string dest, double dep, double dur
     boost::add_edge(source, destination, conn, g);
 }
 
-void EPGraph::add_edge(std::string src, std::string dest, double dep, double dur, double cost) {
+void EPGraph::add_edge(std::string src, std::string dest, long dep, long dur, double cost) {
     std::ostringstream ss;
     ss << dep;
     add_edge(src, dest, dep, dur, cost, src + "-" + dest + "@" + ss.str());
@@ -107,7 +107,7 @@ std::tuple<std::shared_ptr<Connection>, std::shared_ptr<DeliveryCenter>, std::sh
     return std::tie(conn, src, dst);
 }
 
-void EPGraph::add_edge(std::string src, std::string dest, double dep, double dur, double tip, double tap, double top, double cost, std::string name) {
+void EPGraph::add_edge(std::string src, std::string dest, long dep, long dur, long tip, long tap, long top, double cost, std::string name) {
     if (vertex_map.find(src) == vertex_map.end()) {
         std::cerr << "Unable to find source " << src << " for edge in vertex map" << std::endl;
         return;

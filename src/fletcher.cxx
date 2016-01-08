@@ -29,7 +29,7 @@ void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallbac
     try { 
         while(true) {
             std::string waybill, location, destination, connection, action, ps, pid;
-            double scan_dt, promise_dt;
+            long scan_dt, promise_dt;
             bool attempt = false;
 
             try {
@@ -71,6 +71,7 @@ void process(std::shared_ptr<Solver> solver_ptr, std::shared_ptr<Solver> fallbac
 
                 if (location != "" and destination != "" and destination != "NSZ") {
                     attempt = true;
+                    std::cout << "Parsing for wbn at time " << promise_dt << " or " << json_to_str(doc["pdd"]) << std::endl;
                     datum["wbn"] = waybill;
                     datum["loc"] = location;
                     datum["dst"] = destination;
@@ -121,6 +122,7 @@ int main() {
     std::cout << "Starting parser" << std::endl;
     // process(solver_ptr, fallback_ptr, std::ref(shared_queue));
     unsigned int parser_count = std::thread::hardware_concurrency() * 4;
+    parser_count = 1;
     std::vector<std::thread> parsers;
 
     for (unsigned int idx = 0; idx < parser_count; idx++) {

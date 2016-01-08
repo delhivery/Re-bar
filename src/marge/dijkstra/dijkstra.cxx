@@ -5,7 +5,7 @@
 #include <dijkstra.hpp>
 
 bool smaller(Cost first, Cost second) {
-    if (second.second == P_INF) {
+    if (second.second == P_T_INF) {
         return true;
     }
 
@@ -17,7 +17,7 @@ SimpleEP::~SimpleEP() {
 
 template <typename Compare> void SimpleEP::run_dijkstra(
         Vertex source, Vertex destination, DistanceMap& distances, PredecessorMap& predecessors,
-        Compare& cmp, Cost inf, Cost zero, double t_max) {
+        Compare& cmp, Cost inf, Cost zero, long t_max) {
     typedef typename boost::graph_traits<Graph>::vertex_iterator v_iter;
     typedef typename boost::graph_traits<Graph>::out_edge_iterator o_e_iter;
 
@@ -72,7 +72,7 @@ template <typename Compare> void SimpleEP::run_dijkstra(
     }
 }
 
-std::vector<Path> SimpleEP::find_path(std::string src, std::string dest, double t_start, double t_max) {
+std::vector<Path> SimpleEP::find_path(std::string src, std::string dest, long t_start, long t_max) {
     if (vertex_map.find(src) == vertex_map.end()) {
         throw std::invalid_argument("Unable to find source<" + src + "> in known vertices");
     }
@@ -84,8 +84,8 @@ std::vector<Path> SimpleEP::find_path(std::string src, std::string dest, double 
     Vertex source = vertex_map[src];
     Vertex destination = vertex_map[dest];
 
-    Cost zero = std::pair<double, double>{0, t_start};
-    Cost inf = std::pair<double, double>{P_INF, P_INF};
+    Cost zero = std::pair<double, long>{0, t_start};
+    Cost inf = std::pair<double, long>{P_INF, P_T_INF};
 
     DistanceMap distances(boost::num_vertices(g));
     PredecessorMap predecessors(boost::num_vertices(g));
@@ -101,7 +101,7 @@ std::vector<Path> SimpleEP::find_path(std::string src, std::string dest, double 
         auto distance = distances[target].second;
         auto distance_t = distances[target].first;
 
-        if(distance == P_INF or distance_t == P_INF) {
+        if(distance == P_INF or distance_t == P_T_INF) {
             return path;
         }
 

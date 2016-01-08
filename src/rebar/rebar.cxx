@@ -9,8 +9,8 @@ const std::vector<std::string> Segment::_keywords = std::vector<std::string>{"_i
 
 Segment::Segment(
         std::string index, std::string code, std::string cname, std::string soltype,
-        double p_arr, double p_dep, double a_arr, double a_dep,
-        double t_inb_proc, double t_agg_proc, double t_out_proc,
+        long p_arr, long p_dep, long a_arr, long a_dep,
+        long t_inb_proc, long t_agg_proc, long t_out_proc,
         double cost,
         State state, Comment comment, const Segment* parent
 ) : 
@@ -22,8 +22,8 @@ Segment::Segment(
 
 Segment::Segment(
         std::string index, std::string code, std::string cname, std::string soltype,
-        double p_arr, double p_dep, double a_arr, double a_dep,
-        double t_inb_proc, double t_agg_proc, double t_out_proc,
+        long p_arr, long p_dep, long a_arr, long a_dep,
+        long t_inb_proc, long t_agg_proc, long t_out_proc,
         double cost,
         std::string state, std::string comment, const Segment* parent
     ) {
@@ -44,26 +44,16 @@ void Segment::set_meta(std::map<std::string, std::experimental::any> _meta_data)
     }
 }
 
-long double_to_long(double val) {
-    if(val > 4102444800) {
-        return 4102444800;
-    }
-    else if(val < 946684800) {
-        return 946684800;
-    }
-    return long(val);
-}
-
 std::map<std::string, std::experimental::any> Segment::to_store() const {
     std::map<std::string, std::experimental::any> data;
     data["_id"] = bsoncxx::oid(index);
     data["cn"] = code;
     data["ed"] = cname;
     data["sol"] = soltype;
-    data["pa"] = time_t(double_to_long(p_arr));
-    data["pd"] = time_t(double_to_long(p_dep));
-    data["aa"] = time_t(double_to_long(a_arr));
-    data["ad"] = time_t(double_to_long(a_dep));
+    data["pa"] = time_t(p_arr);
+    data["pd"] = time_t(p_dep);
+    data["aa"] = time_t(a_arr);
+    data["ad"] = time_t(a_dep);
     data["cst"] = cost;
     data["tip"] = t_inb_proc;
     data["tap"] = t_agg_proc;
@@ -85,7 +75,7 @@ std::map<std::string, std::experimental::any> Segment::to_store() const {
 }
 
 
-bool Segment::match(std::string _cname, double _a_dep) {
+bool Segment::match(std::string _cname, long _a_dep) {
     if(cname == _cname) {
         if (std::abs(_a_dep - p_dep) < (HOURS_IN_DAY - t_agg_proc - t_out_proc)) {
             return true;
@@ -99,7 +89,7 @@ std::string Segment::pindex() const {
     return (parent == nullptr) ? "" : parent->index;
 }
 
-ParserGraph::ParserGraph(std::string waybill, double promise_dt, std::shared_ptr<Solver> solver, std::shared_ptr<Solver> fallback) : waybill(waybill), promise_dt(promise_dt), solver(solver), fallback(fallback) {
+ParserGraph::ParserGraph(std::string waybill, long promise_dt, std::shared_ptr<Solver> solver, std::shared_ptr<Solver> fallback) : waybill(waybill), promise_dt(promise_dt), solver(solver), fallback(fallback) {
     load_segment();
 
     if (segment_by_index.size() == 0) {
@@ -122,10 +112,10 @@ void ParserGraph::make_root() {
         "",                                                 // Code
         "",                                                 // Cname
         "AUTOGEN",                                          // Soltype
-        N_INF,                                              // p_arr
-        N_INF,                                              // p_dep
-        N_INF,                                              // a_arr
-        N_INF,                                              // a_dep
+        N_T_INF,                                            // p_arr
+        N_T_INF,                                            // p_dep
+        N_T_INF,                                            // a_arr
+        N_T_INF,                                            // a_dep
         0,                                                  // t_inb_proc
         0,                                                  // t_agg_proc
         0,                                                  // t_out_proc
@@ -134,7 +124,7 @@ void ParserGraph::make_root() {
         Comment::INFO_SEGMENT_PREDICTED,                    // comment
     };
 
-    seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pdd", time_t(long(promise_dt))}});
+    seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pdd", time_t(promise_dt)}});
     segment.insert(seg);
 }
 
@@ -155,7 +145,7 @@ void ParserGraph::load_segment() {
     }
 }
 
-std::string ParserGraph::make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, const Segment* parent, double scan_dt) {
+std::string ParserGraph::make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, const Segment* parent, long scan_dt) {
     Segment newseg{
         bsoncxx::oid(bsoncxx::oid::init_tag).to_string(),
         seg->code,
@@ -178,9 +168,9 @@ std::string ParserGraph::make_duplicate_active(Segment* seg, std::shared_ptr<Con
     return newseg.index;
 }
 
-bool ParserGraph::make_path(std::string origin, std::string destination, double start_dt, const Segment* parent) {
-    double start_t = get_time(start_dt);
-    double max_t = promise_dt - start_dt;
+bool ParserGraph::make_path(std::string origin, std::string destination, long start_dt, const Segment* parent) {
+    long start_t = abs_durinal(start_dt);
+    long max_t = promise_dt - start_dt;
     std::string soltype = "RCSP";
     auto solution = solver->solve(origin, destination, start_t, max_t);
 
@@ -203,7 +193,7 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
     }
 
     double shipping_cost = 0;
-    double inbound = 0;
+    long inbound = 0;
 
     for (auto const& path: solution) {
         auto connection = path.connection;
@@ -214,8 +204,8 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
             soltype,
             origin_arrival + arrival_cost,
             origin_arrival + arrival_cost + wait_time(start_t, connection._departure),
-            P_INF,
-            P_INF,
+            P_T_INF,
+            P_T_INF,
             inbound,
             connection._t_agg_proc,
             connection._t_out_proc,
@@ -224,7 +214,7 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
             Comment::INFO_SEGMENT_PREDICTED,
             parent
         };
-        seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pdd", time_t(long(promise_dt))}});
+        seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pdd", time_t(promise_dt)}});
         arrival_cost = path.arrival;
         shipping_cost = path.cost;
         origin_center = path.destination;
@@ -240,9 +230,9 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
         "TERMINAL",
         soltype,
         origin_arrival + arrival_cost,
-        P_INF,
-        P_INF,
-        P_INF,
+        P_T_INF,
+        P_T_INF,
+        P_T_INF,
         inbound,
         0,
         0,
@@ -251,7 +241,7 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
         Comment::INFO_SEGMENT_PREDICTED,
         parent
     };
-    seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pdd", time_t(long(promise_dt))}});
+    seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pdd", time_t(promise_dt)}});
     segment.insert(seg);
 
     return true;
@@ -270,7 +260,7 @@ void ParserGraph::show() {
     }
 }
 
-void ParserGraph::parse_scan(std::string location, std::string destination, std::string connection, Actions action, double scan_dt) {
+void ParserGraph::parse_scan(std::string location, std::string destination, std::string connection, Actions action, long scan_dt) {
     Segment* active = find(segment_by_state, State::ACTIVE);
 
     if (active == nullptr)
@@ -319,7 +309,7 @@ void ParserGraph::parse_scan(std::string location, std::string destination, std:
                 auto forked = find(segment_by_index, make_duplicate_active(active, conn, active->parent, scan_dt));
 
                 if (forked != nullptr) {
-                    auto scan_t = get_time(scan_dt);
+                    auto scan_t = abs_durinal(scan_dt);
 
                     make_path(dst->code, destination, scan_dt - scan_t + conn->departure + conn->duration, forked);
                     active = find_and_modify(segment_by_state_and_parent, std::make_tuple(State::FUTURE, forked->index), State::ACTIVE);

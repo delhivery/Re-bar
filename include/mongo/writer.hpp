@@ -74,7 +74,11 @@ class MongoWriter : public Mongo {
                         filter_builder << element.first << std::experimental::any_cast<bsoncxx::oid>(element.second);
                     }
 
-                    if(element.second.type() == typeid(int)) {
+                    if(element.second.type() == typeid(time_t) and (element.first == "pdd" or element.first == "pd" or element.first == "pa" or element.first == "aa" or element.first == "ad")) {
+                        time_t ptime = std::experimental::any_cast<time_t>(element.second);
+                        update_builder << element.first << bsoncxx::types::b_date{std::chrono::system_clock::from_time_t(ptime)};
+                    }
+                    else if(element.second.type() == typeid(int)) {
                         update_builder << element.first << std::experimental::any_cast<int>(element.second);
                     }
                     else if(element.second.type() == typeid(double)) {
@@ -88,9 +92,6 @@ class MongoWriter : public Mongo {
                     }
                     else if(element.second.type() == typeid(bool)) {
                         update_builder << element.first << std::experimental::any_cast<bool>(element.second);
-                    }
-                    else if(element.second.type() == typeid(time_t)) {
-                        update_builder << element.first << bsoncxx::types::b_date{std::experimental::any_cast<time_t>(element.second)};
                     }
                     else {
                         update_builder << element.first << std::experimental::any_cast<std::string>(element.second);

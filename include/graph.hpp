@@ -17,7 +17,7 @@
 
 
 // Cost is shipping_cost, time_cost
-typedef std::pair<double, double> Cost;
+typedef std::pair<double, long> Cost;
 
 struct DeliveryCenter {
     std::size_t index;
@@ -31,33 +31,33 @@ struct DeliveryCenter {
 struct Connection {
     std::size_t index;
 
-    double _departure, _duration, _t_inb_proc, _t_agg_proc, _t_out_proc = 0;
+    long _departure, _duration, _t_inb_proc, _t_agg_proc, _t_out_proc = 0;
 
-    double departure, duration;
+    long departure, duration;
     double cost;
     std::string name;
     
     Connection();
-    Connection(std::size_t index, const double departure, const double duration, const double cost, std::string name);
+    Connection(std::size_t index, const long departure, const long duration, const double cost, std::string name);
 
     Connection(
         std::size_t index,
-        const double _departure, const double _duration, const double _t_inb_proc, const double _t_agg_proc, const double _t_out_proc,
+        const long _departure, const long _duration, const long _t_inb_proc, const long _t_agg_proc, const long _t_out_proc,
         const double cost,
         std::string name);
 
-    Cost weight(Cost distance, double t_max);
+    Cost weight(Cost distance, long t_max);
 
-    double wait_time(double t_parent) const;
+    long wait_time(long t_parent) const;
 };
 
 struct Path {
     std::string destination;
     Connection connection;
-    double arrival;
+    long arrival;
     double cost;
 
-    Path(std::string destination, Connection& connection, double arrival, double cost);
+    Path(std::string destination, Connection& connection, long arrival, double cost);
 };
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, DeliveryCenter, Connection> Graph;
@@ -80,14 +80,14 @@ class EPGraph {
 
         void add_vertex(std::string code);
 
-        void add_edge(std::string src, std::string dest, double dep, double dur, double cost, std::string name);
+        void add_edge(std::string src, std::string dest, long dep, long dur, double cost, std::string name);
 
-        void add_edge(std::string src, std::string dest, double dep, double dur, double cost);
+        void add_edge(std::string src, std::string dest, long dep, long dur, double cost);
 
-        void add_edge(std::string src, std::string dest, double dep, double dur, double tip, double tap, double top, double cost, std::string name);
+        void add_edge(std::string src, std::string dest, long dep, long dur, long tip, long tap, long top, double cost, std::string name);
 
         std::tuple<std::shared_ptr<Connection>, std::shared_ptr<DeliveryCenter>, std::shared_ptr<DeliveryCenter> > lookup(std::string name);
 
-        virtual std::vector<Path> find_path(std::string src, std::string dst, double t_start, double t_max) = 0;
+        virtual std::vector<Path> find_path(std::string src, std::string dst, long t_start, long t_max) = 0;
 };
 #endif

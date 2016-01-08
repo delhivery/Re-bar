@@ -5,7 +5,7 @@
 #include <boost/graph/r_c_shortest_paths.hpp>
 
 
-Traversal::Traversal(double cost, double time) : cost(cost), time(time) {}
+Traversal::Traversal(double cost, long time) : cost(cost), time(time) {}
 
 bool operator == (const Traversal& first, const Traversal& second) {
     return (first.cost == second.cost && first.time == second.time);
@@ -25,7 +25,7 @@ TATExtension::TATExtension() {}
 
 ConstrainedEP::~ConstrainedEP() {}
 
-std::vector<Path> ConstrainedEP::find_path(std::string src, std::string dest, double t_start, double t_max) {
+std::vector<Path> ConstrainedEP::find_path(std::string src, std::string dest, long t_start, long t_max) {
 
     if (vertex_map.find(src) == vertex_map.end()) {
         throw std::invalid_argument("Unable to find source<" + src + "> in known vertices");
@@ -57,7 +57,7 @@ std::vector<Path> ConstrainedEP::find_path(std::string src, std::string dest, do
         auto optimal_solution = optimal_solutions[0];
 
         double cost = 0;
-        double time = t_start;
+        long time = t_start;
 
         for (int i = static_cast<int>(optimal_solution.size()) - 1; i >= 0; --i) {
             auto optimal_segment = optimal_solution[i];

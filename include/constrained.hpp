@@ -5,9 +5,9 @@
 
 struct Traversal {
     double cost;
-    double time;
+    long time;
 
-    Traversal(double cost = 0, double time = 0);
+    Traversal(double cost = 0, long time = 0);
 
     Traversal& operator = (const Traversal& other) {
         if (this == &other) {
@@ -22,12 +22,12 @@ struct Traversal {
 
 class TATExtension {
     private:
-        double t_max;
+        long t_max;
 
     public:
         TATExtension();
 
-        TATExtension(double t_max=0) : t_max(t_max) {};
+        TATExtension(long t_max=0) : t_max(t_max) {};
 
         inline bool operator() (
             const Graph& g, Traversal& fresh, const Traversal& old,
@@ -51,7 +51,7 @@ class ConstrainedEP : public EPGraph {
     public:
         ~ConstrainedEP();
 
-        std::vector<Path> find_path(std::string src, std::string dst, double t_start, double t_max) override;
+        std::vector<Path> find_path(std::string src, std::string dst, long t_start, long t_max) override;
 };
 
 #endif

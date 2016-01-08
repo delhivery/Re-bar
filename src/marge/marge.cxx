@@ -39,20 +39,20 @@ void Solver::init() {
         path_finder->add_edge(
             std::experimental::any_cast<std::string>(edge.at("ori")),
             std::experimental::any_cast<std::string>(edge.at("dst")),
-            std::experimental::any_cast<double>(edge.at("dep")),
-            std::experimental::any_cast<double>(edge.at("dur")),
-            std::experimental::any_cast<double>(edge.at("tip")),
-            std::experimental::any_cast<double>(edge.at("tap")),
-            std::experimental::any_cast<double>(edge.at("top")),
+            long(std::experimental::any_cast<double>(edge.at("dep"))),
+            long(std::experimental::any_cast<double>(edge.at("dur"))),
+            long(std::experimental::any_cast<double>(edge.at("tip"))),
+            long(std::experimental::any_cast<double>(edge.at("tap"))),
+            long(std::experimental::any_cast<double>(edge.at("top"))),
             cost,
             std::experimental::any_cast<std::string>(edge.at("idx"))
         );
     }
 }
 
-std::vector<Path> Solver::solve(std::string origin, std::string destination, double dt_start, double dt_promise) {
+std::vector<Path> Solver::solve(std::string origin, std::string destination, long dt_start, long dt_promise) {
     if (mode > 1)
-        dt_promise = P_INF;
+        dt_promise = P_T_INF;
 
     auto paths = path_finder->find_path(origin, destination, dt_start, dt_promise);
     return paths;

@@ -87,13 +87,13 @@ struct Segment {
             std::experimental::any_cast<std::string>(data.at("cn")),
             std::experimental::any_cast<std::string>(data.at("ed")),
             std::experimental::any_cast<std::string>(data.at("sol")),
-            double(std::experimental::any_cast<std::int64_t>(data.at("pa"))),
-            double(std::experimental::any_cast<std::int64_t>(data.at("pd"))),
-            double(std::experimental::any_cast<std::int64_t>(data.at("aa"))),
-            double(std::experimental::any_cast<std::int64_t>(data.at("ad"))),
-            std::experimental::any_cast<double>(data.at("tip")),
-            std::experimental::any_cast<double>(data.at("tap")),
-            std::experimental::any_cast<double>(data.at("top")),
+            long(std::experimental::any_cast<std::int64_t>(data.at("pa"))),
+            long(std::experimental::any_cast<std::int64_t>(data.at("pd"))),
+            long(std::experimental::any_cast<std::int64_t>(data.at("aa"))),
+            long(std::experimental::any_cast<std::int64_t>(data.at("ad"))),
+            std::experimental::any_cast<long>(data.at("tip")),
+            std::experimental::any_cast<long>(data.at("tap")),
+            std::experimental::any_cast<long>(data.at("top")),
             std::experimental::any_cast<double>(data.at("cst")),
             State::_from_string(std::experimental::any_cast<std::string>(data.at("st")).c_str()),
             Comment::_from_string(std::experimental::any_cast<std::string>(data.at("rmk")).c_str()),
@@ -111,7 +111,7 @@ struct Segment {
     }
 
     std::string index, code, cname, soltype;
-    double p_arr, p_dep, a_arr, a_dep, t_inb_proc, t_agg_proc, t_out_proc;
+    long p_arr, p_dep, a_arr, a_dep, t_inb_proc, t_agg_proc, t_out_proc;
     double cost;
 
     State state = State::ACTIVE;
@@ -124,16 +124,16 @@ struct Segment {
 
     Segment(
         std::string index, std::string code, std::string cname, std::string soltype,
-        double p_arr, double p_dep, double a_arr, double a_dep,
-        double t_inb_proc, double t_agg_proc, double t_out_proc,
+        long p_arr, long p_dep, long a_arr, long a_dep,
+        long t_inb_proc, long t_agg_proc, long t_out_proc,
         double cost,
         State state, Comment comment, const Segment* parent=nullptr
     );
 
     Segment(
         std::string index, std::string code, std::string cname, std::string soltype,
-        double p_arr, double p_dep, double a_arr, double a_dep,
-        double t_inb_proc, double t_agg_proc, double t_out_proc,
+        long p_arr, long p_dep, long a_arr, long a_dep,
+        long t_inb_proc, long t_agg_proc, long t_out_proc,
         double cost,
         std::string state, std::string comment, const Segment* parent=nullptr
     );
@@ -144,7 +144,7 @@ struct Segment {
         return index < segment.index;
     }
 
-    bool match(std::string cname, double a_dep);
+    bool match(std::string cname, long a_dep);
 
     std::string pindex() const;
 
@@ -192,7 +192,7 @@ class ParserGraph {
     private:
         bool save_state = true;
         std::string waybill;
-        double promise_dt;
+        long promise_dt;
 
         std::shared_ptr<Solver> solver;
         std::shared_ptr<Solver> fallback;
@@ -204,18 +204,18 @@ class ParserGraph {
         SegmentByStateAndParent& segment_by_state_and_parent = segment.get<SegmentStateAndParent>();
 
     public:
-        ParserGraph(std::string waybill, double promise_dt, std::shared_ptr<Solver> solver, std::shared_ptr<Solver> fallback);
+        ParserGraph(std::string waybill, long promise_dt, std::shared_ptr<Solver> solver, std::shared_ptr<Solver> fallback);
         ~ParserGraph();
 
         void load_segment();
 
         void make_root();
 
-        bool make_path(std::string origin, std::string destination, double start_dt, const Segment* parent);
+        bool make_path(std::string origin, std::string destination, long start_dt, const Segment* parent);
 
-        std::string make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, const Segment* parent, double scan_dt);
+        std::string make_duplicate_active(Segment* seg, std::shared_ptr<Connection> conn, const Segment* parent, long scan_dt);
 
-        void parse_scan(std::string location, std::string destination, std::string connection, Actions action, double scan_dt);
+        void parse_scan(std::string location, std::string destination, std::string connection, Actions action, long scan_dt);
 
         void save(bool _save_state=true);
 
@@ -230,7 +230,7 @@ class ParserGraph {
             return nullptr;
         }
 
-        template <typename T, typename F> Segment* find_and_modify(T& iterable, F filters, State s, double a_arr=-1, double a_dep=-1, Comment rmk=Comment::INFO_SEGMENT_PREDICTED) {
+        template <typename T, typename F> Segment* find_and_modify(T& iterable, F filters, State s, long a_arr=-1, long a_dep=-1, Comment rmk=Comment::INFO_SEGMENT_PREDICTED) {
             auto iter = iterable.find(filters);
 
             if (iter == iterable.end())
