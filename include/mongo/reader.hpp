@@ -36,15 +36,7 @@ class MongoReader : public Mongo {
             "", "", replica_set
         ) {}
 
-        const std::vector<std::string> split(const std::string& s, const char& c);
-
-        std::string fetch_field(bsoncxx::document::view view, std::vector<std::string> field);
-
-        std::vector<std::map<std::string, std::string> > query(
-            std::string collection,
-            bsoncxx::builder::stream::document& filter,
-            std::vector<std::string> fields,
-            mongocxx::options::find options = mongocxx::options::find{}
-        );
+        std::vector<std::map<std::string, std::experimental::any> > query(
+            std::string collection, bsoncxx::builder::stream::document & filter, mongocxx::options::find options=mongocxx::options::find{});
 };
 #endif

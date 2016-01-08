@@ -5,6 +5,8 @@
 
 #include <rebar.hpp>
 
+const std::vector<std::string> Segment::_keywords = std::vector<std::string>{"_id", "cn", "ed", "sol", "pa", "pd", "aa", "ad", "tip", "tap", "top", "cst", "st", "rmk", "par"};
+
 Segment::Segment(
         std::string index, std::string code, std::string cname, std::string soltype,
         double p_arr, double p_dep, double a_arr, double a_dep,
@@ -42,6 +44,37 @@ void Segment::set_meta(std::map<std::string, std::experimental::any> _meta_data)
     }
 }
 
+std::map<std::string, std::experimental::any> Segment::to_store() const {
+    std::map<std::string, std::experimental::any> data;
+    data["_id"] = bsoncxx::oid(index);
+    data["cn"] = code;
+    data["ed"] = cname;
+    data["sol"] = soltype;
+    data["pa"] = time_t(long(p_arr));
+    data["pd"] = time_t(long(p_dep));
+    data["aa"] = time_t(long(a_arr));
+    data["ad"] = time_t(long(a_dep));
+    data["cst"] = cost;
+    data["tip"] = t_inb_proc;
+    data["tap"] = t_agg_proc;
+    data["top"] = t_out_proc;
+    data["st"] = state._to_string();
+    data["rmk"] = comment._to_string();
+    data["par"] = std::string("");
+    auto par = pindex();
+
+    if (par != "") {
+        data["par"] = bsoncxx::oid(par);
+    }
+
+    std::cout << "Set parent to " << par << std::endl;
+    for (auto const& element: meta_data) {
+        data[element.first] = element.second;
+    }
+
+    return data;
+}
+
 
 bool Segment::match(std::string _cname, double _a_dep) {
     if(cname == _cname) {
@@ -57,78 +90,6 @@ std::string Segment::pindex() const {
     return (parent == nullptr) ? "" : parent->index;
 }
 
-boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> Segment::getattr(std::string attr) const {
-    boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> result;
-
-    if (attr == "_id") {
-        result = bsoncxx::oid{index};
-    }
-
-    else if (attr == "cn") {
-        result = code;
-    }
-
-    else if (attr == "ed") {
-        result = cname;
-    }
-
-    else if (attr == "sol") {
-        result = soltype;
-    }
-
-    else if (attr == "pa") {
-        result = p_arr;
-    }
-
-    else if (attr == "pd") {
-        result = p_dep;
-    }
-
-    else if (attr == "aa") {
-        result = a_arr;
-    }
-
-    else if (attr == "ad") {
-        result = a_dep;
-    }
-
-    else if (attr == "tip") {
-        result = t_inb_proc;
-    }
-
-    else if (attr == "tap") {
-        result = t_agg_proc;
-    }
-
-    else if (attr == "top") {
-        result = t_out_proc;
-    }
-
-    else if (attr == "st") {
-        result = state._to_string();
-    }
-
-    else if (attr == "rmk") {
-        result = comment._to_string();
-    }
-
-    else if (attr == "cst") {
-        result = cost;
-    }
-
-    else if (attr == "par") {
-        if (parent == nullptr) {
-            result = nullptr;
-        }
-        else if (parent->index != "")
-            result = bsoncxx::oid{parent->index};
-        else
-            result = nullptr;
-    }
-
-    return result;
-}
-
 ParserGraph::ParserGraph(std::string waybill, double promise_dt, std::shared_ptr<Solver> solver, std::shared_ptr<Solver> fallback) : waybill(waybill), promise_dt(promise_dt), solver(solver), fallback(fallback) {
     load_segment();
 
@@ -142,7 +103,7 @@ ParserGraph::~ParserGraph() {
         MongoWriter mw{"rebar"};
         mw.init();
         boost::multi_index::index<SegmentContainer, SegmentId>::type& iter = segment.get<SegmentId>();
-        mw.write("segments", iter, std::vector<std::string>{"_id", "cn", "ed", "sol", "pa", "pd", "aa", "ad", "tip", "tap", "top", "st", "rmk", "cst", "par"}, "_id", true);
+        mw.write("segments", iter);
     }
 }
 
@@ -164,7 +125,7 @@ void ParserGraph::make_root() {
         Comment::INFO_SEGMENT_PREDICTED,                    // comment
     };
 
-    seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pd", promise_dt}});
+    seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pdd", time_t(long(promise_dt))}});
     segment.insert(seg);
 }
 
@@ -180,53 +141,8 @@ void ParserGraph::load_segment() {
     bsoncxx::builder::stream::document filter;
     filter << "wbn" << waybill;
 
-    for (auto const& result: mc.query(
-            "segments",
-            filter,
-            std::vector<std::string>{
-                "_id", "wbn", "cn", "ed", "sol",
-                "pa", "aa", "pd", "ad",
-                "tip", "tap", "top",
-                "st", "rmk",
-                "cst", "par"
-            },
-            options
-    )) {
-        std::string index, code, cname, soltype, p_arr, a_arr, p_dep, a_dep, t_inb_proc, t_agg_proc, t_out_proc, cost, parent, state, comment;
-        index = result.at("_id");
-        code = result.at("cn");
-        cname = result.at("ed");
-        soltype = result.at("sol");
-        p_arr = result.at("pa");
-        a_arr = result.at("aa");
-        p_dep = result.at("pd");
-        a_dep = result.at("ad");
-        t_inb_proc = result.at("tip");
-        t_agg_proc = result.at("tap");
-        t_out_proc = result.at("top");
-        state = result.at("st");
-        comment = result.at("rmk");
-        cost = result.at("cst");
-        parent = result.at("par");
-
-        Segment* parent_ptr = nullptr;
-
-        if(parent != "") {
-
-            if (segment_by_index.count(parent) != 1)
-                throw std::invalid_argument("Unable to find parent with _id: " + parent);
-            parent_ptr = (Segment*)(&(*segment_by_index.find(parent)));
-        }
-
-        segment.insert(Segment{
-            index, code, cname, soltype,
-            std::stod(p_arr), std::stod(p_dep), std::stod(a_arr), std::stod(a_dep),
-            std::stod(t_inb_proc), std::stod(t_agg_proc), std::stod(t_out_proc),
-            std::stod(cost),
-            State::_from_string(state.c_str()),
-            Comment::_from_string(comment.c_str()),
-            parent_ptr
-        });
+    for (auto const& result: mc.query("segments", filter, options)) {
+        segment.insert(Segment::from_map(result, segment_by_index));
     }
 }
 
@@ -299,7 +215,7 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
             Comment::INFO_SEGMENT_PREDICTED,
             parent
         };
-        seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pd", promise_dt}});
+        seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pdd", time_t(long(promise_dt))}});
         arrival_cost = path.arrival;
         shipping_cost = path.cost;
         origin_center = path.destination;
@@ -326,7 +242,7 @@ bool ParserGraph::make_path(std::string origin, std::string destination, double 
         Comment::INFO_SEGMENT_PREDICTED,
         parent
     };
-    seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pd", promise_dt}});
+    seg.set_meta(std::map<std::string, std::experimental::any>{{"wbn", waybill},{"pdd", time_t(long(promise_dt))}});
     segment.insert(seg);
 
     return true;

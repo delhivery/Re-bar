@@ -15,7 +15,6 @@
 #include <boost/multi_index/composite_key.hpp>
 #include <boost/multi_index/random_access_index.hpp>
 #include <boost/multi_index/mem_fun.hpp>
-#include <boost/variant.hpp>
 
 #include <enum.h>
 #include <marge.hpp>
@@ -70,6 +69,47 @@ BETTER_ENUM(
 );
 
 struct Segment {
+    static const std::vector<std::string> _keywords;
+
+    template <typename T> static Segment from_map(const std::map<std::string, std::experimental::any>& data, const T& container) {
+        Segment* parent_ptr = nullptr;
+        std::string parent = std::experimental::any_cast<std::string>(data.at("par"));
+        std::map<std::string, std::experimental::any> meta_data;
+
+        if (parent != "") {
+            if (container.count(parent) != 1)
+                throw std::invalid_argument("Unable to find parent with _id: " + parent);
+            parent_ptr = (Segment*)(&(*container.find(parent)));
+        }
+
+        Segment seg{
+            std::experimental::any_cast<std::string>(data.at("_id")),
+            std::experimental::any_cast<std::string>(data.at("cn")),
+            std::experimental::any_cast<std::string>(data.at("ed")),
+            std::experimental::any_cast<std::string>(data.at("sol")),
+            double(std::experimental::any_cast<std::int64_t>(data.at("pa"))),
+            double(std::experimental::any_cast<std::int64_t>(data.at("pd"))),
+            double(std::experimental::any_cast<std::int64_t>(data.at("aa"))),
+            double(std::experimental::any_cast<std::int64_t>(data.at("ad"))),
+            std::experimental::any_cast<double>(data.at("tip")),
+            std::experimental::any_cast<double>(data.at("tap")),
+            std::experimental::any_cast<double>(data.at("top")),
+            std::experimental::any_cast<double>(data.at("cst")),
+            State::_from_string(std::experimental::any_cast<std::string>(data.at("st")).c_str()),
+            Comment::_from_string(std::experimental::any_cast<std::string>(data.at("rmk")).c_str()),
+            parent_ptr
+        };
+
+        for (auto const& elem: data) {
+            if(std::find(_keywords.begin(), _keywords.end(), elem.first) == _keywords.end()) {
+                meta_data[elem.first] = elem.second;
+            }
+        }
+
+        seg.set_meta(meta_data);
+        return seg;
+    }
+
     std::string index, code, cname, soltype;
     double p_arr, p_dep, a_arr, a_dep, t_inb_proc, t_agg_proc, t_out_proc;
     double cost;
@@ -80,6 +120,7 @@ struct Segment {
     const Segment* parent;
 
     std::map<std::string, std::experimental::any> meta_data;
+
 
     Segment(
         std::string index, std::string code, std::string cname, std::string soltype,
@@ -105,9 +146,9 @@ struct Segment {
 
     bool match(std::string cname, double a_dep);
 
-    boost::variant<int, double, std::string, bsoncxx::oid, std::nullptr_t> getattr (std::string attr) const;
-
     std::string pindex() const;
+
+    std::map<std::string, std::experimental::any> to_store() const;
 };
 
 struct SegmentId{};

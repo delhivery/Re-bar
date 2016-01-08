@@ -5,78 +5,53 @@
 
 #include <mongo/reader.hpp>
 
-const std::vector<std::string> MongoReader::split(const std::string& s, const char& c) {
-    std::string buff{""};
-    std::vector<std::string> v;
+std::vector<std::map<std::string, std::experimental::any> > MongoReader::query(
+        std::string collection, bsoncxx::builder::stream::document& filter, mongocxx::options::find options) {
+    std::vector<std::map<std::string, std::experimental::any> > data;
 
-    for (auto const& n: s) {
-        if (n != c)
-            buff += n;
-        else if (n == c && buff != "") {
-            v.push_back(buff);
-            buff = "";
-        }
-    }
-
-    if(buff != "") {
-        v.push_back(buff);
-    }
-
-    return v;
-}
-
-std::string MongoReader::fetch_field(bsoncxx::document::view view, std::vector<std::string> fields) {
-    std::string pfield = fields[0];
-    std::ostringstream ss;
-    bsoncxx::document::element ele{view[pfield]};
-
-    if(ele) {
-        if (fields.size() > 1 && ele.type() == bsoncxx::type::k_document) {
-            fields.erase(fields.begin() + 0);
-            return MongoReader::fetch_field(ele.get_document(), fields);
-        }
-
-        switch(ele.type()) {
-            case bsoncxx::type::k_double:
-                return std::to_string(ele.get_value().get_double().value);
-                break;
-            case bsoncxx::type::k_utf8:
-                ss << ele.get_value().get_utf8().value;
-                return ss.str();
-            case bsoncxx::type::k_oid:
-                ss << ele.get_value().get_oid().value.to_string();
-                return ss.str();
-            default:
-                return bsoncxx::to_json(ele.get_value());
-                break;
-        }
-    }
-    else {
-        return std::string{""};
-    }
-}
-
-std::vector<std::map<std::string, std::string> > MongoReader::query(
-        std::string collection,
-        bsoncxx::builder::stream::document& filter,
-        std::vector<std::string> fields,
-        mongocxx::options::find options
-) {
-    std::vector<std::map<std::string, std::string> > values;
-    auto mongos_client = mongocxx::client{mongo_uri};
-    auto db = mongos_client[database];
-
+    auto mongo_client = mongocxx::client{mongo_uri};
+    auto db = mongo_client[database];
     auto coll = db[collection];
-    auto cursor = coll.find(filter.view(), options);
 
-    for (auto const& doc : cursor) {
-        std::map<std::string, std::string> value;
+    for (auto const& doc: coll.find(filter.view(), options)) {
+        std::map<std::string, std::experimental::any> record;
 
-        for (auto const& field: fields) {
-            value[field] = MongoReader::fetch_field(doc, MongoReader::split(field, '.'));
+        for (auto const& ele: doc) {
+            auto key = ele.key().to_string();
+
+            switch(ele.type()) {
+                case bsoncxx::type::k_double:
+                    record[key] = ele.get_double().value;
+                    break;
+                case bsoncxx::type::k_utf8:
+                    record[key] = ele.get_utf8().value.to_string();
+                    break;
+                case bsoncxx::type::k_oid:
+                    record[key] = ele.get_oid().value.to_string();
+                    break;
+                case bsoncxx::type::k_bool:
+                    record[key] = ele.get_bool().value;
+                    break;
+                case bsoncxx::type::k_int32:
+                    record[key] = ele.get_int32().value;
+                    break;
+                case bsoncxx::type::k_int64:
+                    record[key] = ele.get_int64().value;
+                    break;
+                case bsoncxx::type::k_timestamp:
+                    record[key] = ele.get_timestamp().timestamp;
+                    break;
+                case bsoncxx::type::k_date:
+                    record[key] = ele.get_date().value;
+                    break;
+                case bsoncxx::type::k_dbpointer:
+                    record[key] = ele.get_dbpointer().value.to_string();
+                    break;
+                default:
+                    continue;
+            }
         }
-        values.push_back(value);
+        data.push_back(record);
     }
-
-    return values;
+    return data;
 }

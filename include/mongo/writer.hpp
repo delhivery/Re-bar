@@ -54,10 +54,7 @@ class MongoWriter : public Mongo {
             coll.insert_one(doc_builder.view());
         }
 
-        template <typename T> void write(
-                std::string collection, T& iterable, std::vector<std::string> fields, std::string p_key,
-                bool has_meta=false
-        ) {
+        template <typename T> void write(std::string collection, T& iterable) {
             auto mongos_client = mongocxx::client{mongo_uri};
             auto db = mongos_client[database];
             auto coll = db[collection];
@@ -67,51 +64,50 @@ class MongoWriter : public Mongo {
             for (auto const& element: iterable) {
                 // filter and update params
                 bsoncxx::builder::stream::document filter_builder, update_builder;
-                update_builder << "$set" << bsoncxx::builder::stream::open_document ;
+                update_builder << "$set" << bsoncxx::builder::stream::open_document;
 
-                for (auto const& key: fields) {
-                    bsoncxx::builder::stream::document* builder_ptr = &update_builder;
+                auto data = element.to_store();
 
-                    if(key == p_key)
-                        builder_ptr = &filter_builder;
+                for(auto const& element: data) {
 
-                    auto val = element.getattr(key);
-
-                    if (int* value = boost::get<int>(&val))
-                        *builder_ptr << key << *value;
-
-                    if (double* value = boost::get<double>(&val))
-                        *builder_ptr << key << *value;
-
-                    if (std::string* value = boost::get<std::string>(&val))
-                        *builder_ptr << key << *value;
-
-                    if (bsoncxx::oid* value = boost::get<bsoncxx::oid>(&val))
-                        *builder_ptr << key << *value;
-                }
-
-                if (has_meta)
-                    for(auto item: element.meta_data) {
-                        if (!item.second.empty()) {
-                            if (item.second.type() == typeid(int))
-                                update_builder << item.first << std::experimental::any_cast<int>(item.second);
-
-                            else if (item.second.type() == typeid(float))
-                                update_builder << item.first << std::experimental::any_cast<float>(item.second);
-
-                            else if (item.second.type() == typeid(double))
-                                update_builder << item.first << std::experimental::any_cast<double>(item.second);
-
-                            else if (item.second.type() == typeid(bool))
-                                update_builder << item.first << std::experimental::any_cast<bool>(item.second);
-
-                            else if (item.second.type() == typeid(long))
-                                update_builder << item.first << std::experimental::any_cast<int>(item.second);
-
-                            else
-                                update_builder << item.first << std::experimental::any_cast<std::string>(item.second);
-                        }
+                    if(element.first == "_id") {
+                        std::cout << "Casting oid" << std::endl;
+                        filter_builder << element.first << std::experimental::any_cast<bsoncxx::oid>(element.second);
+                        std::cout << "Suckcess oid" << std::endl;
                     }
+
+                    if(element.second.type() == typeid(int)) {
+                        std::cout << "Casting int" << std::endl;
+                        update_builder << element.first << std::experimental::any_cast<int>(element.second);
+                        std::cout << "Suckcess int" << std::endl;
+                    }
+                    else if(element.second.type() == typeid(double)) {
+                        std::cout << "Casting double" << std::endl;
+                        update_builder << element.first << std::experimental::any_cast<double>(element.second);
+                        std::cout << "Suckcess double" << std::endl;
+                    }
+                    else if(element.second.type() == typeid(long)) {
+                        std::cout << "Casting long" << std::endl;
+                        update_builder << element.first << std::experimental::any_cast<long>(element.second);
+                        std::cout << "Suckcess long" << std::endl;
+                    }
+                    else if(element.second.type() == typeid(bsoncxx::oid)) {
+                        std::cout << "Casting oid" << std::endl;
+                        update_builder << element.first << std::experimental::any_cast<bsoncxx::oid>(element.second);
+                        std::cout << "Suckcess oid" << std::endl;
+                    }
+                    else if(element.second.type() == typeid(bool)) {
+                        std::cout << "Casting bool" << std::endl;
+                        update_builder << element.first << std::experimental::any_cast<bool>(element.second);
+                        std::cout << "Suckcess bool" << std::endl;
+                    }
+                    else if(element.second.type() == typeid(time_t)) {
+                        update_builder << element.first << bsoncxx::types::b_date{std::experimental::any_cast<time_t>(element.second)};
+                    }
+                    else {
+                        update_builder << element.first << std::experimental::any_cast<std::string>(element.second);
+                    }
+                }
 
                 update_builder << bsoncxx::builder::stream::close_document;
 

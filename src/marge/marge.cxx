@@ -20,30 +20,33 @@ void Solver::init() {
     bsoncxx::builder::stream::document filter;
     filter << "act" << true;
 
-    for (auto const& node: mc.query(nodes_collection, filter, std::vector<std::string>{"cd", "nm"})) {
-        path_finder->add_vertex(node.at("cd"), node.at("nm"));
+    for (auto const& node: mc.query(nodes_collection, filter)) {
+        path_finder->add_vertex(
+            std::experimental::any_cast<std::string>(node.at("cd")),
+            std::experimental::any_cast<std::string>(node.at("nm"))
+        );
     }
 
     for (
-            auto edge: mc.query(edges_collection, filter, std::vector<std::string>{
-                "ori", "dst", "dep", "dur", "cst", "tip", "tap", "top", "md", "nm", "md", "cap", "idx"})
+            auto const& edge: mc.query(edges_collection, filter)
     ) {
+        double cost = 0;
+
         if (mode < 2) {
-            path_finder->add_edge(
-                edge["ori"], edge["dst"],
-                std::stod(edge["dep"]), std::stod(edge["dur"]),
-                std::stod(edge["tip"]), std::stod(edge["tap"]), std::stod(edge["top"]),
-                std::stod(edge["cst"]), edge["idx"]
-            );
+            cost = std::experimental::any_cast<double>(edge.at("cst"));
         }
-        else {
-            path_finder->add_edge(
-                edge["ori"], edge["dst"],
-                std::stod(edge["dep"]), std::stod(edge["dur"]),
-                std::stod(edge["tip"]), std::stod(edge["tap"]), std::stod(edge["top"]),
-                0, edge["idx"]
-            );
-        }
+
+        path_finder->add_edge(
+            std::experimental::any_cast<std::string>(edge.at("ori")),
+            std::experimental::any_cast<std::string>(edge.at("dst")),
+            std::experimental::any_cast<double>(edge.at("dep")),
+            std::experimental::any_cast<double>(edge.at("dur")),
+            std::experimental::any_cast<double>(edge.at("tip")),
+            std::experimental::any_cast<double>(edge.at("tap")),
+            std::experimental::any_cast<double>(edge.at("top")),
+            cost,
+            std::experimental::any_cast<std::string>(edge.at("idx"))
+        );
     }
 }
 

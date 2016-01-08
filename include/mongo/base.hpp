@@ -1,6 +1,8 @@
 #ifndef BASE_HPP_INCLUDED
 #define BASE_HPP_INCLUDED
 
+#include <experimental/any>
+
 #include <mongocxx/client.hpp>
 #include <mongocxx/instance.hpp>
 
