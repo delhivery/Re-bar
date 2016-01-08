@@ -45,11 +45,11 @@ void Segment::set_meta(std::map<std::string, std::experimental::any> _meta_data)
 }
 
 long double_to_long(double val) {
-    if(val == P_INF) {
-        return LONG_MAX;
+    if(val > 4102444800) {
+        return 4102444800;
     }
-    else if(val == N_INF) {
-        return 0;
+    else if(val < 946684800) {
+        return 946684800;
     }
     return long(val);
 }
