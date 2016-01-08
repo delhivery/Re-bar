@@ -50,10 +50,10 @@ std::map<std::string, std::experimental::any> Segment::to_store() const {
     data["cn"] = code;
     data["ed"] = cname;
     data["sol"] = soltype;
-    data["pa"] = time_t(long(p_arr));
-    data["pd"] = time_t(long(p_dep));
-    data["aa"] = time_t(long(a_arr));
-    data["ad"] = time_t(long(a_dep));
+    data["pa"] = time_t(long((p_arr == std::numeric_limits<double>::infinity()) ? LONG_MAX: p_arr));
+    data["pd"] = time_t(long((p_dep == std::numeric_limits<double>::infinity()) ? LONG_MAX: p_dep));
+    data["aa"] = time_t(long((a_arr == std::numeric_limits<double>::infinity()) ? LONG_MAX: a_arr));
+    data["ad"] = time_t(long((a_dep == std::numeric_limits<double>::infinity()) ? LONG_MAX: a_dep));
     data["cst"] = cost;
     data["tip"] = t_inb_proc;
     data["tap"] = t_agg_proc;
