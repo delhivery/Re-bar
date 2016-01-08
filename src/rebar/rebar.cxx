@@ -67,7 +67,6 @@ std::map<std::string, std::experimental::any> Segment::to_store() const {
         data["par"] = bsoncxx::oid(par);
     }
 
-    std::cout << "Set parent to " << par << std::endl;
     for (auto const& element: meta_data) {
         data[element.first] = element.second;
     }

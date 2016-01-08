@@ -71,35 +71,23 @@ class MongoWriter : public Mongo {
                 for(auto const& element: data) {
 
                     if(element.first == "_id") {
-                        std::cout << "Casting oid" << std::endl;
                         filter_builder << element.first << std::experimental::any_cast<bsoncxx::oid>(element.second);
-                        std::cout << "Suckcess oid" << std::endl;
                     }
 
                     if(element.second.type() == typeid(int)) {
-                        std::cout << "Casting int" << std::endl;
                         update_builder << element.first << std::experimental::any_cast<int>(element.second);
-                        std::cout << "Suckcess int" << std::endl;
                     }
                     else if(element.second.type() == typeid(double)) {
-                        std::cout << "Casting double" << std::endl;
                         update_builder << element.first << std::experimental::any_cast<double>(element.second);
-                        std::cout << "Suckcess double" << std::endl;
                     }
                     else if(element.second.type() == typeid(long)) {
-                        std::cout << "Casting long" << std::endl;
                         update_builder << element.first << std::experimental::any_cast<long>(element.second);
-                        std::cout << "Suckcess long" << std::endl;
                     }
                     else if(element.second.type() == typeid(bsoncxx::oid)) {
-                        std::cout << "Casting oid" << std::endl;
                         update_builder << element.first << std::experimental::any_cast<bsoncxx::oid>(element.second);
-                        std::cout << "Suckcess oid" << std::endl;
                     }
                     else if(element.second.type() == typeid(bool)) {
-                        std::cout << "Casting bool" << std::endl;
                         update_builder << element.first << std::experimental::any_cast<bool>(element.second);
-                        std::cout << "Suckcess bool" << std::endl;
                     }
                     else if(element.second.type() == typeid(time_t)) {
                         update_builder << element.first << bsoncxx::types::b_date{std::experimental::any_cast<time_t>(element.second)};
