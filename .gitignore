@@ -27,10 +27,7 @@
 *.out
 *.app
 *.sw*
-tests/*
-outputs/*
-.scon*
-config.log
-build/*
-tbuild/*
+lib/*
+build
+bin/*
 *.pyc
