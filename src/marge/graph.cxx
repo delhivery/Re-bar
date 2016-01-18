@@ -14,6 +14,10 @@ VertexProperty::VertexProperty(size_t _index, string_view _code) {
     code = _code.to_string();
 }
 
+EdgeProperty::EdgeProperty(const size_t _index, string_view _code, const long __tip, const long __tap, const long __top) : index(_index), code(_code.to_string()), _tip(__tip), _tap(__tap), _top(__top) {
+    percon = true;
+}
+
 EdgeProperty::EdgeProperty(const size_t _index, const long __dep, const long __dur, const long __tip, const long __tap, const long __top, const double _cost, string_view _code) {
     index = _index;
     _dep = __dep;
@@ -29,11 +33,18 @@ EdgeProperty::EdgeProperty(const size_t _index, const long __dep, const long __d
 }
 
 long EdgeProperty::wait_time(const long t_departure) const {
+    if (percon)
+        return 0;
+
     auto t_departure_durinal = t_departure % TIME_DURINAL;
     return (t_departure_durinal > dep) ? (TIME_DURINAL - t_departure_durinal + dep) : (dep - t_departure_durinal);
 }
 
 Cost EdgeProperty::weight(const Cost& start, const long t_max) {
+    if (percon) {
+        return Cost{start.first, start.second + _tip + _tap + _top};
+    }
+
     auto cost_total = start.first + cost;
     long time_total = wait_time(start.second) + dur + start.second;
     time_total = (time_total > t_max) ? P_L_INF : time_total;
@@ -42,52 +53,145 @@ Cost EdgeProperty::weight(const Cost& start, const long t_max) {
     return Cost{cost_total, time_total};
 }
 
+void BaseGraph::check_kwargs(const map<string, any>& kwargs, string_view key) {
+    if (kwargs.find(key.to_string()) == kwargs.end()) {
+        char buffer[255];
+        sprintf(buffer, "Missing required argument \"%s\"", key.to_string().c_str());
+        throw buffer;
+    }
+}
+
+void BaseGraph::check_kwargs(const map<string, any>& kwargs, const list<string_view>& keys) {
+    for(string_view key: keys) {
+        check_kwargs(kwargs, key);
+    }
+}
+
 void BaseGraph::add_vertex(string_view code) {
     unique_lock<shared_timed_mutex> graph_write_lock(graph_mutex, defer_lock);
     graph_write_lock.lock();
 
-    VertexProperty vprop{boost::num_vertices(g), code};
-    Vertex created = boost::add_vertex(vprop, g);
-    vertex_map[vprop.code] = created;
+    if (vertex_map.find(code) == vertex_map.end()) {
+        VertexProperty vprop{boost::num_vertices(g), code};
+        Vertex created = boost::add_vertex(vprop, g);
+        vertex_map[vprop.code] = created;
+    }
+    throw "Unable to add vertex. Duplicate code specified";
 }
 
-void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, const long dep, const long dur, const long tip, const long top, const long tap, const double cost) {
+map<string_view, string_view> BaseGraph::add_vertex(map<string, any> kwargs) {
+    map<string_view, string_view> response;
+    try {
+        string_view value;
+        check_kwargs(kwargs, "code");
+        value = any_cast<string_view>(kwargs.at("code"));
+        add_vertex(value);
+        response["success"] = "true";
+    }
+    catch (const exception& exc) {
+        response["error"] = exc.what();
+    }
+
+    return response;
+}
+
+void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
     if (vertex_map.find(src) == vertex_map.end()) {
-        throw invalid_argument("Invalid source <" + src.to_string() + "> specified");
+        throw "Invalid source <" + src.to_string() + "> specified";
     }
 
     if (vertex_map.find(dst) == vertex_map.end()) {
-        throw invalid_argument("Invalid source <" + dst.to_string() + "> specified");
+        throw "Invalid source <" + dst.to_string() + "> specified";
     }
 
-    size_t sindex = vertex_map.at(src);
-    size_t dindex = vertex_map.at(dst);
+    if (edge_map.find(conn) == edge_map.end()) {
 
-    unique_lock<shared_timed_mutex> graph_write_lock(graph_mutex, defer_lock);
-    graph_write_lock.lock();
+        size_t sindex = vertex_map.at(src);
+        size_t dindex = vertex_map.at(dst);
 
-    EdgeProperty eprop{boost::num_edges(g), dep, dur, tip, tap, top, cost, conn};
-    auto created = boost::add_edge(sindex, dindex, eprop, g);
+        unique_lock<shared_timed_mutex> graph_write_lock(graph_mutex, defer_lock);
+        graph_write_lock.lock();
 
-    if (created.second)
-        edge_map[eprop.code] = created.first;
-    else
-        cerr << "Unable to add edge<" << conn << ">" << endl;
+        EdgeProperty eprop{boost::num_edges(g), dep, dur, tip, tap, top, cost, conn};
+        auto created = boost::add_edge(sindex, dindex, eprop, g);
+
+        if (created.second) {
+            edge_map[eprop.code] = created.first;
+        }
+        else {
+            throw "Unable to create edge.";
+        }
+    }
+    throw "Unable to create edge. Duplicate connection specified";
+}
+
+map<string_view, string_view> BaseGraph::add_edge(map<string, any> kwargs) {
+    map<string_view, string_view> response;
+    try {
+        string src, dst, conn;
+        long dep, dur, tip, top, tap;
+        double cost;
+
+        check_kwargs(kwargs, list<string_view>{"src", "dst", "conn", "dep", "dur", "tip", "tap", "top", "cost"});
+
+        src  = any_cast<string>(kwargs.at("src"));
+        dst  = any_cast<string>(kwargs.at("dst"));
+        conn = any_cast<string>(kwargs.at("conn"));
+
+        dep  = any_cast<long>(kwargs.at("dst"));
+        dur  = any_cast<long>(kwargs.at("dur"));
+        tip  = any_cast<long>(kwargs.at("tip"));
+        tap  = any_cast<long>(kwargs.at("tap"));
+        top  = any_cast<long>(kwargs.at("top"));
+
+        cost = any_cast<double>(kwargs.at("cost"));
+
+        add_edge(src, dst, conn, dep, dur, tip, tap, top, cost);
+        response["success"] = "true";
+    }
+    catch (const exception& exc) {
+        response["error"] = exc.what();
+    }
+    return response;
 }
 
 EdgeProperty BaseGraph::lookup(string_view vertex, string_view edge) {
     if (vertex_map.find(vertex) == vertex_map.end())
-        throw invalid_argument("No source vertex<" + vertex.to_string() + "> found in database");
+        throw "No source vertex<" + vertex.to_string() + "> found in database";
 
     if (edge_map.find(edge) == edge_map.end())
-        throw invalid_argument("Connection<" + edge.to_string() + "> not in database");
+        throw "Connection<" + edge.to_string() + "> not in database";
 
     Vertex vdesc = vertex_map.at(vertex);
     Edge edesc = edge_map.at(edge);
 
     if (boost::source(edesc, g) != vdesc) {
-        throw invalid_argument("No connection<" + edge.to_string() + "> from source<" + vertex.to_string() + ">");
+        throw "No connection<" + edge.to_string() + "> from source<" + vertex.to_string() + ">";
     }
 
     return g[edesc];
+}
+
+map<string_view, string_view> BaseGraph::lookup(map<string, any> kwargs) {
+    map<string_view, string_view> response;
+
+    try {
+        check_kwargs(kwargs, list<string_view>{"src", "conn"});
+        string_view vertex = any_cast<string>(kwargs.at("src"));
+        string_view edge = any_cast<string>(kwargs.at("conn"));
+        auto edge_property = lookup(vertex, edge);
+
+        response["conn"] = edge_property.code;
+        response["dep"]  = to_string(edge_property._dep);
+        response["dur"]  = to_string(edge_property._dur);
+        response["tip"]  = to_string(edge_property._tip);
+        response["tap"]  = to_string(edge_property._tap);
+        response["top"]  = to_string(edge_property._top);
+        response["cost"] = to_string(edge_property.cost);
+        response["success"] = "true";
+    }
+    catch (const exception& exc) {
+        response["error"] = exc.what();
+    }
+    return response;
 }

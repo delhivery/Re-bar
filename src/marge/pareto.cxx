@@ -1,5 +1,7 @@
 #include <marge/pareto.hpp>
-#include <iostream>
+
+#include <boost/graph/r_c_shortest_paths.hpp>
+
 
 Traversal::Traversal(double _cost, long _time) : cost(_cost), time(_time) {}
 
@@ -46,9 +48,46 @@ inline bool TraversalDominance::operator () (const Traversal& first, const Trave
 
 vector<Path> Pareto::find_path(string_view src, string_view dst, const long t_start, const long t_max) {
     vector<Path> path;
-
-    if (src == "Amit" && dst == "Prakash" && t_start == 0 && t_max == 0) {
-        cout << "Hello" << endl;
+    if (vertex_map.find(src) == vertex_map.end()) {
+        throw invalid_argument("Invalid source");
     }
+
+    if (vertex_map.find(dst) == vertex_map.end()) {
+        throw invalid_argument("Invalid destination");
+    }
+
+    Vertex source = vertex_map.at(src);
+    Vertex destination = vertex_map.at(dst);
+
+    std::vector<std::vector<Edge> > optimal_solutions;
+    std::vector<Traversal> pareto_optimal_paths;
+
+    shared_lock<shared_timed_mutex> graph_read_lock(graph_mutex, defer_lock);
+    graph_read_lock.lock();
+
+    boost::r_c_shortest_paths(
+        g, get(&VertexProperty::index, g), get(&EdgeProperty::index, g),
+        source, destination, optimal_solutions, pareto_optimal_paths,
+        Traversal(0, t_start), TimeConstraint(t_max), TraversalDominance(),
+        allocator<boost::r_c_shortest_paths_label<Graph, Traversal> >(),
+        boost::default_r_c_shortest_paths_visitor()
+    );
+
+    for (auto const& solution: optimal_solutions) {
+        Cost current{0, t_max};
+        Vertex source, target;
+        EdgeProperty eprop;
+
+        for (auto const& edge: solution) {
+            source = boost::source(edge, g);
+            target = boost::target(edge, g);
+            eprop = g[edge];
+            path.push_back(Path{g[source].code, eprop.code, g[target].code, current.second, eprop.wait_time(current.second) + current.second, current.first});
+            current = eprop.weight(current, t_max);
+        }
+        path.push_back(Path{g[target].code, "", "", current.second, P_L_INF, current.first});
+        break;
+    }
+
     return path;
 }

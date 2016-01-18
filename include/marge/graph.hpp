@@ -5,6 +5,7 @@
 #include <shared_mutex>
 #include <map>
 #include <experimental/string_view>
+#include <experimental/any>
 
 #include <boost/graph/adjacency_list.hpp>
 
@@ -38,14 +39,16 @@ struct VertexProperty {
 };
 
 struct EdgeProperty {
+    bool percon = false;
     size_t index;
+    string code;
 
     long _dep, _dur, _tip, _tap, _top, dep, dur;
 
     double cost;
-    string code;
 
     EdgeProperty() {}
+    EdgeProperty(const size_t _index, string_view code, const long __tip, const long __tap, const long __top);
     EdgeProperty(const size_t _index, const long __dep, const long __dur, const long __tip, const long __tap, const long __top, const double _cost, string_view _code);
 
     long wait_time(const long t_start) const;
@@ -77,11 +80,19 @@ class BaseGraph {
         BaseGraph() {}
         virtual ~BaseGraph() {}
 
-        void add_vertex(string_view code);
+        static void check_kwargs(const map<string, any>& kwargs, string_view key);
 
-        void add_edge(string_view src, string_view dest, string_view code, const long dep, const long dur, const long tip, const long top, const long tap, const double cost);
+        static void check_kwargs(const map<string, any>& kwargs, const list<string_view>& keys);
+
+        void add_vertex(string_view code);
+        void add_edge(string_view src, string_view dest, string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost);
         EdgeProperty lookup(string_view vertex, string_view edge);
 
         virtual std::vector<Path> find_path(string_view src, string_view dst, const long t_start, const long t_max) = 0;
+
+        map<string_view, string_view> add_vertex(map<string, any> kwargs);
+        map<string_view, string_view> add_edge(map<string, any> kwargs);
+        map<string_view, string_view> lookup(map<string, any> kwargs);
+        map<string_view, string_view> find_path(map<string, any> kwargs);
 };
 #endif
