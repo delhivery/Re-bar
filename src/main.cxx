@@ -9,8 +9,7 @@ int main() {
     asio::io_service io_service;
     asio::ip::tcp::endpoint endpoint(asio::ip::tcp::v4(), 9000);
 
-    shared_ptr<Weld> welder = make_shared<Weld>{};
-    
+    Weld welder;
     Server server{io_service, endpoint, welder};
 
     io_service.run();
