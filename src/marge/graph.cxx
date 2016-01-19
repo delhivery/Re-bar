@@ -79,22 +79,6 @@ void BaseGraph::add_vertex(string_view code) {
     throw "Unable to add vertex. Duplicate code specified";
 }
 
-map<string_view, string_view> BaseGraph::add_vertex(map<string, any> kwargs) {
-    map<string_view, string_view> response;
-    try {
-        string_view value;
-        check_kwargs(kwargs, "code");
-        value = any_cast<string_view>(kwargs.at("code"));
-        add_vertex(value);
-        response["success"] = "true";
-    }
-    catch (const exception& exc) {
-        response["error"] = exc.what();
-    }
-
-    return response;
-}
-
 void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
     if (vertex_map.find(src) == vertex_map.end()) {
         throw "Invalid source <" + src.to_string() + "> specified";
@@ -125,36 +109,6 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
     throw "Unable to create edge. Duplicate connection specified";
 }
 
-map<string_view, string_view> BaseGraph::add_edge(map<string, any> kwargs) {
-    map<string_view, string_view> response;
-    try {
-        string src, dst, conn;
-        long dep, dur, tip, top, tap;
-        double cost;
-
-        check_kwargs(kwargs, list<string_view>{"src", "dst", "conn", "dep", "dur", "tip", "tap", "top", "cost"});
-
-        src  = any_cast<string>(kwargs.at("src"));
-        dst  = any_cast<string>(kwargs.at("dst"));
-        conn = any_cast<string>(kwargs.at("conn"));
-
-        dep  = any_cast<long>(kwargs.at("dst"));
-        dur  = any_cast<long>(kwargs.at("dur"));
-        tip  = any_cast<long>(kwargs.at("tip"));
-        tap  = any_cast<long>(kwargs.at("tap"));
-        top  = any_cast<long>(kwargs.at("top"));
-
-        cost = any_cast<double>(kwargs.at("cost"));
-
-        add_edge(src, dst, conn, dep, dur, tip, tap, top, cost);
-        response["success"] = "true";
-    }
-    catch (const exception& exc) {
-        response["error"] = exc.what();
-    }
-    return response;
-}
-
 EdgeProperty BaseGraph::lookup(string_view vertex, string_view edge) {
     if (vertex_map.find(vertex) == vertex_map.end())
         throw "No source vertex<" + vertex.to_string() + "> found in database";
@@ -170,28 +124,4 @@ EdgeProperty BaseGraph::lookup(string_view vertex, string_view edge) {
     }
 
     return g[edesc];
-}
-
-map<string_view, string_view> BaseGraph::lookup(map<string, any> kwargs) {
-    map<string_view, string_view> response;
-
-    try {
-        check_kwargs(kwargs, list<string_view>{"src", "conn"});
-        string_view vertex = any_cast<string>(kwargs.at("src"));
-        string_view edge = any_cast<string>(kwargs.at("conn"));
-        auto edge_property = lookup(vertex, edge);
-
-        response["conn"] = edge_property.code;
-        response["dep"]  = to_string(edge_property._dep);
-        response["dur"]  = to_string(edge_property._dur);
-        response["tip"]  = to_string(edge_property._tip);
-        response["tap"]  = to_string(edge_property._tap);
-        response["top"]  = to_string(edge_property._top);
-        response["cost"] = to_string(edge_property.cost);
-        response["success"] = "true";
-    }
-    catch (const exception& exc) {
-        response["error"] = exc.what();
-    }
-    return response;
 }

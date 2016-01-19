@@ -18,7 +18,6 @@ class Optimal : public BaseGraph {
         bool ignore_cost;
         void run_dijkstra(Vertex src, Vertex dst, DistanceMap& dmap, PredecessorMap& pmap, Cost inf, Cost zero, long t_max);
     public:
-        Optimal() {}
         Optimal(bool _ignore_cost = false);
         void add_edge(string_view src, string_view dst, string_view code, const long dep, const long dur, const long tip, const long top, const long tap, const double cost);
         vector<Path> find_path(string_view src, string_view dst, const long t_start, const long t_max);

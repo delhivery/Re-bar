@@ -1,13 +1,13 @@
-#include <protocol.hpp>
+#include <jezik/jezik.hpp>
 
 #include <cstring>
 #include <iostream>
 
-void Protocol::read(unsigned char* buffer) {
+void Jezik::read(unsigned char* buffer) {
     socket_ptr->read_some(asio::buffer(buffer, sizeof(unsigned char)));
 }
 
-void Protocol::read(char* buffer, size_t length) {
+void Jezik::read(char* buffer, size_t length) {
     if (length == 0) {
         length = sizeof(buffer);
     }
@@ -18,6 +18,12 @@ void Protocol::read(char* buffer, size_t length) {
         cerr << "Error occurred while attempting to read from socket. " << exc.what() << endl;
         throw exc;
     }
+}
+
+void Jezik::do_write(string response) {
+    response = to_string(response.length()) + response;
+    socket_ptr->write_some(asio::buffer(response, response.length()));
+    socket_ptr->close();
 }
 
 void ArgumentToken::do_read_body_length() {
@@ -68,42 +74,27 @@ map<string, any> Argument::value() const {
 }
 
 void Command::do_read() {
+    read(mode);
     read(command, sizeof(command));
     read(nargs);
 
     for (size_t i = 0; i < nargs[0]; i++) {
         Argument arg{socket_ptr};
         arg.do_read();
-        arguments.push_back(arg);
-    }
-}
 
-void Command::run_command() {
-    cout << "Cmd: " << command << endl;
-    cout << "NArgs: " << int(nargs[0]) << endl;
-
-    for (const auto& argument: arguments) {
-        for (const auto& value: argument.value()) {
-            cout << value.first << ": ";
-
-            if (value.second.type() == typeid(int)) {
-                cout << std::experimental::any_cast<int>(value.second) << endl;
-            } else
-            if (value.second.type() == typeid(double)) {
-                cout << std::experimental::any_cast<double>(value.second) << endl;
-            } else {
-                cout << std::experimental::any_cast<string>(value.second) << endl;
-            }
+        for (const auto& value: arg.value()) {
+            kwargs[value.first] = value.second;
         }
     }
 }
 
-void Command::start() {
+void Command::start(function<json_map(int, string_view, const map<string, any>&) > handler) {
     do_read();
-    run_command();
+    string response = handler(mode[0], string_view(command, 3), kwargs).to_string();
+    do_write(response);
 }
 
-Server::Server(asio::io_service& io_service, tcp::endpoint& endpoint) : Protocol(make_shared<tcp::socket>(ref(io_service))), acceptor(io_service, endpoint) {
+Server::Server(asio::io_service& io_service, tcp::endpoint& endpoint, function<json_map(int, string_view, const map<string, any>&)> _handler) : Jezik(make_shared<tcp::socket>(ref(io_service))), acceptor(io_service, endpoint) , handler(_handler) {
     try {
         do_read();
     }
@@ -116,7 +107,7 @@ Server::Server(asio::io_service& io_service, tcp::endpoint& endpoint) : Protocol
 void Server::do_read() {
     acceptor.async_accept(*socket_ptr, [this](error_code ec) {
         if (!ec)
-            make_shared<Command>(socket_ptr)->start();
+            make_shared<Command>(socket_ptr)->start(handler);
         do_read();
     });
 }
