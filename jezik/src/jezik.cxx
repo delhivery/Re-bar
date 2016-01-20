@@ -105,7 +105,7 @@ Server::Server(asio::io_service& io_service, tcp::endpoint& endpoint, function<j
 }
 
 void Server::do_read() {
-    acceptor.async_accept(*socket_ptr, [this](error_code ec) {
+    acceptor.async_accept(*socket_ptr, [this](const asio::error_code ec) {
         if (!ec)
             make_shared<Command>(socket_ptr)->start(handler);
         do_read();
