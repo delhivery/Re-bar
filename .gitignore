@@ -30,4 +30,5 @@
 lib/*
 build
 bin/*
+docs/*
 *.pyc
