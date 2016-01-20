@@ -1,3 +1,5 @@
+// Include list - missing in BGL-rcsp
+#include <list>
 #include <boost/graph/r_c_shortest_paths.hpp>
 
 #include "pareto.hpp"
