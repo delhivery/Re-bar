@@ -59,7 +59,7 @@ class Command : public Jezik, public enable_shared_from_this<Command>  {
     private:
         unsigned char mode[1];
         unsigned char nargs[1];
-        char command[3];
+        char command[4];
         map<string, any> kwargs;
 
         void run_command();

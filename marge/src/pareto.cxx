@@ -47,7 +47,7 @@ inline bool TraversalDominance::operator () (const Traversal& first, const Trave
     return first.cost <= second.cost && first.time <= second.time;
 }
 
-std::vector<Path> Pareto::find_path(std::experimental::string_view src, std::experimental::string_view dst, const long t_start, const long t_max) {
+std::vector<Path> Pareto::find_path(string_view src, string_view dst, const long t_start, const long t_max) {
     std::vector<Path> path;
     if (vertex_map.find(src) == vertex_map.end()) {
         throw std::invalid_argument("Invalid source");

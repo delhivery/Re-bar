@@ -64,7 +64,7 @@ void Optimal::run_dijkstra(Vertex src, Vertex dst, DistanceMap& dmap, Predecesso
 
 Optimal::Optimal(bool _ignore_cost) : ignore_cost(_ignore_cost) {}
 
-void Optimal::add_edge(std::experimental::string_view src, std::experimental::string_view dst, std::experimental::string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
+void Optimal::add_edge(string_view src, string_view dst, string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
     if (ignore_cost) {
         BaseGraph::add_edge(src, dst, code, dep, dur, tip, tap, top, 0);
     }
@@ -73,7 +73,7 @@ void Optimal::add_edge(std::experimental::string_view src, std::experimental::st
     }
 }
 
-std::vector<Path> Optimal::find_path(std::experimental::string_view src, std::experimental::string_view dst, const long t_start, const long t_max) {
+std::vector<Path> Optimal::find_path(string_view src, string_view dst, const long t_start, const long t_max) {
     if (vertex_map.find(src) == vertex_map.end()) {
         throw std::invalid_argument("No source <> found");
     }
