@@ -1,6 +1,7 @@
-#include <marge/graph.hpp>
 #include <iostream>
 #include <mutex>
+
+#include "graph.hpp"
 
 bool operator < (const Cost& first, const Cost& second) {
     if (second.second == P_L_INF) {
@@ -9,16 +10,16 @@ bool operator < (const Cost& first, const Cost& second) {
     return (first.first < second.first) ? true : ((first.first > second.first) ? false : (first.second < second.second));
 }
 
-VertexProperty::VertexProperty(size_t _index, string_view _code) {
+VertexProperty::VertexProperty(size_t _index, std::experimental::string_view _code) {
     index = _index;
     code = _code.to_string();
 }
 
-EdgeProperty::EdgeProperty(const size_t _index, string_view _code, const long __tip, const long __tap, const long __top) : index(_index), code(_code.to_string()), _tip(__tip), _tap(__tap), _top(__top) {
+EdgeProperty::EdgeProperty(const size_t _index, std::experimental::string_view _code, const long __tip, const long __tap, const long __top) : index(_index), code(_code.to_string()), _tip(__tip), _tap(__tap), _top(__top) {
     percon = true;
 }
 
-EdgeProperty::EdgeProperty(const size_t _index, const long __dep, const long __dur, const long __tip, const long __tap, const long __top, const double _cost, string_view _code) {
+EdgeProperty::EdgeProperty(const size_t _index, const long __dep, const long __dur, const long __tip, const long __tap, const long __top, const double _cost, std::experimental::string_view _code) {
     index = _index;
     _dep = __dep;
     _dur = __dur;
@@ -53,7 +54,7 @@ Cost EdgeProperty::weight(const Cost& start, const long t_max) {
     return Cost{cost_total, time_total};
 }
 
-void BaseGraph::check_kwargs(const map<string, any>& kwargs, string_view key) {
+void BaseGraph::check_kwargs(const std::map<std::string, std::experimental::any>& kwargs, std::experimental::string_view key) {
     if (kwargs.find(key.to_string()) == kwargs.end()) {
         char buffer[255];
         sprintf(buffer, "Missing required argument \"%s\"", key.to_string().c_str());
@@ -61,14 +62,14 @@ void BaseGraph::check_kwargs(const map<string, any>& kwargs, string_view key) {
     }
 }
 
-void BaseGraph::check_kwargs(const map<string, any>& kwargs, const list<string_view>& keys) {
-    for(string_view key: keys) {
+void BaseGraph::check_kwargs(const std::map<std::string, std::experimental::any>& kwargs, const std::list<std::experimental::string_view>& keys) {
+    for(std::experimental::string_view key: keys) {
         check_kwargs(kwargs, key);
     }
 }
 
-void BaseGraph::add_vertex(string_view code) {
-    unique_lock<shared_timed_mutex> graph_write_lock(graph_mutex, defer_lock);
+void BaseGraph::add_vertex(std::experimental::string_view code) {
+    std::unique_lock<std::shared_timed_mutex> graph_write_lock(graph_mutex, std::defer_lock);
     graph_write_lock.lock();
 
     if (vertex_map.find(code) == vertex_map.end()) {
@@ -79,7 +80,7 @@ void BaseGraph::add_vertex(string_view code) {
     throw "Unable to add vertex. Duplicate code specified";
 }
 
-void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
+void BaseGraph::add_edge(std::experimental::string_view src, std::experimental::string_view dst, std::experimental::string_view conn, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
     if (vertex_map.find(src) == vertex_map.end()) {
         throw "Invalid source <" + src.to_string() + "> specified";
     }
@@ -93,7 +94,7 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
         size_t sindex = vertex_map.at(src);
         size_t dindex = vertex_map.at(dst);
 
-        unique_lock<shared_timed_mutex> graph_write_lock(graph_mutex, defer_lock);
+        std::unique_lock<std::shared_timed_mutex> graph_write_lock(graph_mutex, std::defer_lock);
         graph_write_lock.lock();
 
         EdgeProperty eprop{boost::num_edges(g), dep, dur, tip, tap, top, cost, conn};
@@ -109,7 +110,7 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
     throw "Unable to create edge. Duplicate connection specified";
 }
 
-EdgeProperty BaseGraph::lookup(string_view vertex, string_view edge) {
+EdgeProperty BaseGraph::lookup(std::experimental::string_view vertex, std::experimental::string_view edge) {
     if (vertex_map.find(vertex) == vertex_map.end())
         throw "No source vertex<" + vertex.to_string() + "> found in database";
 

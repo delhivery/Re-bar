@@ -1,4 +1,4 @@
-#include <jezik/jezik.hpp>
+#include <jezik.hpp>
 
 #include <cstring>
 #include <iostream>

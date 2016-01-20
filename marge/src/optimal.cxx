@@ -1,14 +1,14 @@
-#include <marge/optimal.hpp>
 #include <queue>
+#include "optimal.hpp"
 
-bool Compare::operator () (const pair<Vertex, Cost>& first, const pair<Vertex, Cost>& second) const {
+bool Compare::operator () (const std::pair<Vertex, Cost>& first, const std::pair<Vertex, Cost>& second) const {
     return first.second > second.second;
 }
 
 void Optimal::run_dijkstra(Vertex src, Vertex dst, DistanceMap& dmap, PredecessorMap& pmap, Cost inf, Cost zero, long t_max) {
 
-    vector<int> visited(boost::num_vertices(g));
-    priority_queue<pair<Vertex, Cost>, std::vector<pair<Vertex, Cost> >, Compare> bin_heap;
+    std::vector<int> visited(boost::num_vertices(g));
+    std::priority_queue<std::pair<Vertex, Cost>, std::vector<std::pair<Vertex, Cost> >, Compare> bin_heap;
 
     for (auto vertices = boost::vertices(g); vertices.first != vertices.second; vertices.first++) {
         Vertex vertex = *vertices.first;
@@ -64,7 +64,7 @@ void Optimal::run_dijkstra(Vertex src, Vertex dst, DistanceMap& dmap, Predecesso
 
 Optimal::Optimal(bool _ignore_cost) : ignore_cost(_ignore_cost) {}
 
-void Optimal::add_edge(string_view src, string_view dst, string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
+void Optimal::add_edge(std::experimental::string_view src, std::experimental::string_view dst, std::experimental::string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
     if (ignore_cost) {
         BaseGraph::add_edge(src, dst, code, dep, dur, tip, tap, top, 0);
     }
@@ -73,22 +73,22 @@ void Optimal::add_edge(string_view src, string_view dst, string_view code, const
     }
 }
 
-vector<Path> Optimal::find_path(string_view src, string_view dst, const long t_start, const long t_max) {
+std::vector<Path> Optimal::find_path(std::experimental::string_view src, std::experimental::string_view dst, const long t_start, const long t_max) {
     if (vertex_map.find(src) == vertex_map.end()) {
-        throw invalid_argument("No source <> found");
+        throw std::invalid_argument("No source <> found");
     }
 
     if (vertex_map.find(dst) == vertex_map.end()) {
-        throw invalid_argument("No destination<> found");
+        throw std::invalid_argument("No destination<> found");
     }
 
     Vertex source = vertex_map.at(src);
     Vertex destination = vertex_map.at(dst);
 
-    Cost zero = make_pair(0, t_start);
-    Cost inf = make_pair(P_D_INF, P_L_INF);
+    Cost zero = std::make_pair(0, t_start);
+    Cost inf = std::make_pair(P_D_INF, P_L_INF);
 
-    shared_lock<shared_timed_mutex> graph_read_lock(graph_mutex, defer_lock);
+    std::shared_lock<std::shared_timed_mutex> graph_read_lock(graph_mutex, std::defer_lock);
     graph_read_lock.lock();
 
     DistanceMap distances(boost::num_vertices(g));
@@ -96,7 +96,7 @@ vector<Path> Optimal::find_path(string_view src, string_view dst, const long t_s
 
     run_dijkstra(source, destination, distances, predecessors, inf, zero, t_max);
 
-    vector<Path> path;
+    std::vector<Path> path;
 
     Vertex current = destination;
     Edge inbound;

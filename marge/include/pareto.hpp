@@ -1,7 +1,7 @@
 #ifndef PARETO_HPP_DEFINED
 #define PARETO_HPP_DEFINED
 
-#include <marge/graph.hpp>
+#include "graph.hpp"
 
 struct Traversal {
     double cost;
@@ -33,7 +33,7 @@ class TraversalDominance {
 
 class Pareto : public BaseGraph {
     public:
-        vector<Path> find_path(string_view src, string_view dst, const long t_start, const long t_max);
+        std::vector<Path> find_path(std::experimental::string_view src, std::experimental::string_view dst, const long t_start, const long t_max);
 };
 
 #endif
