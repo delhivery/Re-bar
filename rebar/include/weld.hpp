@@ -31,7 +31,6 @@ template <typename T> class Weld {
                 future<json_map> response = async(launch::async, [this, &command, &solver, &kwargs]{ return welder.at(command.to_string())(solver, kwargs); });
                 responses.push_back(response.get());
             }
-
             return responses[mode];
         }
 };

@@ -16,12 +16,6 @@ using std::experimental::any;
 using std::experimental::any_cast;
 using std::experimental::string_view;
 
-#ifdef BOOST_NO_EXCEPTIONS
-    void boost::throw_exception(exception const& exc) {
-        cout << exc.what() << endl;
-    }
-#endif
-
 const double P_D_INF = numeric_limits<double>::infinity();
 const double N_D_INF = -1 * P_D_INF;
 
@@ -149,8 +143,8 @@ typedef boost::graph_traits<Graph>::edge_descriptor Edge;
 class BaseGraph {
     protected:
         Graph g;
-        map<string_view, Vertex> vertex_map;
-        map<string_view, Edge> edge_map;
+        map<string, Vertex, less<>> vertex_map;
+        map<string, Edge, less<>> edge_map;
         mutable shared_timed_mutex graph_mutex;
 
     public:
@@ -200,7 +194,7 @@ class BaseGraph {
             try {
                 string_view value;
                 check_kwargs(kwargs, "code");
-                value = any_cast<string_view>(kwargs.at("code"));
+                value = any_cast<string>(kwargs.at("code"));
                 solver->add_vertex(value);
                 response["success"] = true;
             }
@@ -219,17 +213,16 @@ class BaseGraph {
         static json_map adde(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
             json_map response;
             try {
-                string src, dst, conn;
+                string_view src, dst, conn;
                 long dep, dur, tip, top, tap;
                 double cost;
 
                 check_kwargs(kwargs, list<string_view>{"src", "dst", "conn", "dep", "dur", "tip", "tap", "top", "cost"});
-
                 src  = any_cast<string>(kwargs.at("src"));
                 dst  = any_cast<string>(kwargs.at("dst"));
                 conn = any_cast<string>(kwargs.at("conn"));
 
-                dep  = any_cast<long>(kwargs.at("dst"));
+                dep  = any_cast<long>(kwargs.at("dep"));
                 dur  = any_cast<long>(kwargs.at("dur"));
                 tip  = any_cast<long>(kwargs.at("tip"));
                 tap  = any_cast<long>(kwargs.at("tap"));
@@ -287,8 +280,8 @@ class BaseGraph {
                 check_kwargs(kwargs, list<string_view>{"src", "dst", "beg", "tmax"});
                 string_view src = any_cast<string>(kwargs.at("src"));
                 string_view dst = any_cast<string>(kwargs.at("dst"));
-                long t_start                       = any_cast<long>(kwargs.at("beg"));
-                long t_max                         = any_cast<long>(kwargs.at("tmax"));
+                long t_start    = any_cast<long>(kwargs.at("beg"));
+                long t_max      = any_cast<long>(kwargs.at("tmax"));
 
                 auto path = solver->find_path(src, dst, t_start, t_max);
                 json_array segments;

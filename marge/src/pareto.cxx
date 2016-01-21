@@ -47,30 +47,30 @@ inline bool TraversalDominance::operator () (const Traversal& first, const Trave
     return first.cost <= second.cost && first.time <= second.time;
 }
 
-std::vector<Path> Pareto::find_path(string_view src, string_view dst, const long t_start, const long t_max) {
-    std::vector<Path> path;
+vector<Path> Pareto::find_path(string_view src, string_view dst, const long t_start, const long t_max) {
+    vector<Path> path;
     if (vertex_map.find(src) == vertex_map.end()) {
-        throw std::invalid_argument("Invalid source");
+        throw invalid_argument("Invalid source");
     }
 
     if (vertex_map.find(dst) == vertex_map.end()) {
-        throw std::invalid_argument("Invalid destination");
+        throw invalid_argument("Invalid destination");
     }
 
-    Vertex source = vertex_map.at(src);
-    Vertex destination = vertex_map.at(dst);
+    Vertex source = vertex_map.at(src.to_string());
+    Vertex destination = vertex_map.at(dst.to_string());
 
-    std::vector<std::vector<Edge> > optimal_solutions;
-    std::vector<Traversal> pareto_optimal_paths;
+    vector<vector<Edge> > optimal_solutions;
+    vector<Traversal> pareto_optimal_paths;
 
-    std::shared_lock<std::shared_timed_mutex> graph_read_lock(graph_mutex, std::defer_lock);
+    shared_lock<shared_timed_mutex> graph_read_lock(graph_mutex, defer_lock);
     graph_read_lock.lock();
 
     boost::r_c_shortest_paths(
         g, get(&VertexProperty::index, g), get(&EdgeProperty::index, g),
         source, destination, optimal_solutions, pareto_optimal_paths,
         Traversal(0, t_start), TimeConstraint(t_max), TraversalDominance(),
-        std::allocator<boost::r_c_shortest_paths_label<Graph, Traversal> >(),
+        allocator<boost::r_c_shortest_paths_label<Graph, Traversal> >(),
         boost::default_r_c_shortest_paths_visitor()
     );
 
