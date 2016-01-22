@@ -69,6 +69,7 @@ template <typename T> class Weld {
 template <typename T> map<string, function<json_map(shared_ptr<T>, const map<string, any>&)> > Weld<T>::welder = {
     {"ADDV", T::addv},
     {"ADDE", T::adde},
+    {"ADDC", T::addc},
     {"LOOK", T::look},
     {"FIND", T::find}
 };

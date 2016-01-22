@@ -32,7 +32,7 @@ typedef pair<double, long> Cost;
 /**
  * Helper function which allows comparison of two Costs
  */
-bool operator < (const Cost& first, const Cost& second);
+bool operator < (const Cost&, const Cost&);
 
 /**
  * Structure representing a bundled properties of a vertex in a graph/tree.
@@ -49,7 +49,7 @@ struct VertexProperty {
     /**
      * Constructs a vertex property specifying the index of vertex in the graph and a unique human readeable code for representation
      */
-    VertexProperty(size_t _index, string_view _code);
+    VertexProperty(size_t, string_view);
 };
 
 /**
@@ -79,7 +79,7 @@ struct EdgeProperty {
      * @param[in] __top: Processing time in seconds for inbound at destination vertex.
      */
     EdgeProperty(
-        const size_t _index, string_view code, const long __tip, const long __tap, const long __top);
+        const size_t, const long, const long, const long, const double, string_view);
 
     /**
      * Constructs an edge property for a time-discrete edge, taking the index of edge in the graph, unique human readeable code, the time and duration of departure in seconds, the processing time in seconds for inbound/aggregation and outbound respectively and the cost of traversal via this edge
@@ -92,20 +92,20 @@ struct EdgeProperty {
      * @param[in] _cost: Cost incurred on traversing the edge
      * @param[in] code: a unique code for human readable representation
      */
-    EdgeProperty(const size_t _index, const long __dep, const long __dur, const long __tip, const long __tap, const long __top, const double _cost, string_view _code);
+    EdgeProperty(const size_t, const long, const long, const long, const long, const long, const double, string_view);
 
     /**
      * Returns the wait time to traverse this edge.
      * @param[in] t_start: Time of arrival at edge source.
      */
-    long wait_time(const long t_start) const;
+    long wait_time(const long) const;
 
     /**
      * Returns the Cost to traverse this edge.
      * @param[in] start: Cost of arrival at edge source
      * @param[in] t_max: Maximum time permissible to reach destination
      */
-    Cost weight(const Cost& start, const long t_max);
+    Cost weight(const Cost&, const long);
 };
 
 /**
@@ -130,7 +130,7 @@ struct Path {
      * @param[in] _dep: Departure time from source vertex
      * @param[in] _cost: Cost incurred to arrive at destination vertex.
      */
-    Path(string_view _src, string_view _conn, string_view _dst, long _arr, long _dep, double _cost) : src(_src), conn(_conn), dst(_dst), arr(_arr), dep(_dep), cost(_cost) {}
+    Path(string_view, string_view, string_view, long, long, double);
 };
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, VertexProperty, EdgeProperty> Graph;
@@ -161,12 +161,12 @@ class BaseGraph {
         /**
          * Utility function to verify if the specified key exists in the kwargs
          */
-        static void check_kwargs(const map<string, any>& kwargs, string_view key);
+        static void check_kwargs(const map<string, any>&, string_view);
 
         /**
          * Utility function to verify if a list of specified keys exist in the kwargs
          */
-        static void check_kwargs(const map<string, any>& kwargs, const list<string_view>& keys);
+        static void check_kwargs(const map<string, any>&, const list<string_view>&);
 
         /**
          * Adds a vertex to the graph given its unique human readable code
@@ -174,16 +174,21 @@ class BaseGraph {
         void add_vertex(string_view code);
 
         /**
+         * Adds a continuous edge to the graph
+         */
+        virtual void add_edge(string_view, string_view, string_view, const long, const long, const long, const double);
+
+        /**
          * Adds an edge to the graph given its source vertex src, destination vertex dst, unique human readable code, time of departure, duration of traversal, processing time incurred for aggregation at source/outbound at source/inbound at destination and the cost incurred on traversal via the edge.
          */
-        virtual void add_edge(string_view src, string_view dest, string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost);
+        virtual void add_edge(string_view, string_view, string_view, const long, const long, const long, const long, const long, const double);
 
         /**
          * Finds and returns the properties of an edge given its source vertex and its unique human readeable name
          */
-        EdgeProperty lookup(string_view vertex, string_view edge);
+        EdgeProperty lookup(string_view, string_view);
 
-        virtual vector<Path> find_path(string_view src, string_view dst, long t_start, long t_max) = 0;
+        virtual vector<Path> find_path(string_view, string_view, long, long) = 0;
 
         /**
          * Helper function which takes in an instance of the Graph and kwargs and invokes add vertex on the instance.
@@ -231,6 +236,30 @@ class BaseGraph {
                 cost = any_cast<double>(kwargs.at("cost"));
 
                 solver->add_edge(src, dst, conn, dep, dur, tip, tap, top, cost);
+                response["success"] = true;
+            }
+            catch (const exception& exc) {
+                response["error"] = exc.what();
+            }
+            return response;
+        }
+
+        static json_map addc(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
+            json_map response;
+            try {
+                string_view src, dst, conn;
+                long tip, top, tap;
+                double cost = 0.30;
+                
+                check_kwargs(kwargs, list<string_view>{"src", "dst", "conn", "tip", "tap", "top"});
+                src = any_cast<string>(kwargs.at("src"));
+                src = any_cast<string>(kwargs.at("dst"));
+                conn = any_cast<string>(kwargs.at("conn"));
+
+                top = any_cast<long>(kwargs.at("tap"));
+                tap = any_cast<long>(kwargs.at("top"));
+                tip = any_cast<long>(kwargs.at("tip"));
+                solver->add_edge(src, dst, conn, tip, top, tap, cost);
                 response["success"] = true;
             }
             catch (const exception& exc) {

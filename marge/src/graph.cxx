@@ -9,12 +9,14 @@ bool operator < (const Cost& first, const Cost& second) {
     return (first.first < second.first) ? true : ((first.first > second.first) ? false : (first.second < second.second));
 }
 
+Path::Path(string_view _src, string_view _conn, string_view _dst, long _arr, long _dep, double _cost) : src(_src), conn(_conn), dst(_dst), arr(_arr), dep(_dep), cost(_cost) {}
+
 VertexProperty::VertexProperty(size_t _index, string_view _code) {
     index = _index;
     code = _code.to_string();
 }
 
-EdgeProperty::EdgeProperty(const size_t _index, string_view _code, const long __tip, const long __tap, const long __top) : index(_index), code(_code.to_string()), _tip(__tip), _tap(__tap), _top(__top) {
+EdgeProperty::EdgeProperty(const size_t _index, const long __tip, const long __tap, const long __top, const double _cost, string_view _code) : index(_index), code(_code.to_string()), _tip(__tip), _tap(__tap), _top(__top), cost(_cost) {
     percon = true;
 }
 
@@ -79,6 +81,37 @@ void BaseGraph::add_vertex(string_view code) {
     }
     else {
         throw invalid_argument("Unable to add vertex. Duplicate code specified");
+    }
+}
+
+void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, const long tip, const long tap, const long top, const double cost) {
+    if (vertex_map.find(src) == vertex_map.end()) {
+        throw domain_error("Invalid source <" + src.to_string() + "> specified");
+    }
+
+    if (vertex_map.find(dst) == vertex_map.end()) {
+        throw domain_error("Invalid source <" + dst.to_string() + "> specified");
+    }
+
+    if (edge_map.find(conn) == edge_map.end()) {
+        size_t sindex = vertex_map.at(src.to_string());
+        size_t dindex = vertex_map.at(dst.to_string());
+
+        unique_lock<shared_timed_mutex> graph_write_lock(graph_mutex, defer_lock);
+        graph_write_lock.lock();
+
+        EdgeProperty eprop{boost::num_edges(g), tip, tap, top, cost, conn};
+        auto created = boost::add_edge(sindex, dindex, eprop, g);
+
+        if (created.second) {
+            edge_map[eprop.code] = created.first;
+        }
+        else {
+            throw runtime_error("Unable to create edge");
+        }
+    }
+    else {
+        throw invalid_argument("Unable to create edge. Duplicate connection specified");
     }
 }
 
