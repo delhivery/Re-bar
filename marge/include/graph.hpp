@@ -47,7 +47,9 @@ struct VertexProperty {
     VertexProperty() {}
 
     /**
-     * Constructs a vertex property specifying the index of vertex in the graph and a unique human readeable code for representation
+     * Constructs a vertex property
+     * @param size_t: index of ther vertex in graph
+     * @param string_view: unique human readable name for vertex
      */
     VertexProperty(size_t, string_view);
 };
@@ -72,38 +74,39 @@ struct EdgeProperty {
     /**
      * Constructs an edge property for a continuous edge(such as custody scan).
      * Continuous edges are free i.e. there is no physical cost associated against movement via them.
-     * @param[in] _index: index of the edge in the underlying graph
-     * @param[in] code: a unique code for human readable representation
-     * @param[in] __tip: Processing time in seconds for outbound at source vertex
-     * @param[in] __tap: Processing time in seconds for aggregation at source vertex
-     * @param[in] __top: Processing time in seconds for inbound at destination vertex.
+     * @param[in] size_t:       Index of the edge in the underlying graph
+     * @param[in] const long:   Processing time in seconds for outbound at source vertex
+     * @param[in] const long:   Processing time in seconds for aggregation at source vertex
+     * @param[in] const long:   Processing time in seconds for inbound at destination vertex.
+     * @param[in] const double: Cost of iterating the edge.
+     * @param[in] string_view:  Unique human readable name for edge
      */
     EdgeProperty(
         const size_t, const long, const long, const long, const double, string_view);
 
     /**
      * Constructs an edge property for a time-discrete edge, taking the index of edge in the graph, unique human readeable code, the time and duration of departure in seconds, the processing time in seconds for inbound/aggregation and outbound respectively and the cost of traversal via this edge
-     * @param[in] _index: index of the edge in the underlying graph
-     * @param[in] __dep: Time of departure from source vertex
-     * @param[in] __dur: Duration to traverse the edge
-     * @param[in] __tip: Processing time in seconds for outbound at source vertex
-     * @param[in] __tap: Processing time in seconds for aggregation at source vertex
-     * @param[in] __top: Processing time in seconds for inbound at destination vertex.
-     * @param[in] _cost: Cost incurred on traversing the edge
-     * @param[in] code: a unique code for human readable representation
+     * @param[in] size_t:       Index of the edge in the underlying graph
+     * @param[in] const long:   Time of departure from source vertex
+     * @param[in] const long:   Duration of iterating the edge
+     * @param[in] const long:   Processing time in seconds for outbound at source vertex
+     * @param[in] const long:   Processing time in seconds for aggregation at source vertex
+     * @param[in] const long:   Processing time in seconds for inbound at destination vertex.
+     * @param[in] const double: Cost of iterating the edge
+     * @param[in] string_view:  Unique human readable name for edge
      */
     EdgeProperty(const size_t, const long, const long, const long, const long, const long, const double, string_view);
 
     /**
      * Returns the wait time to traverse this edge.
-     * @param[in] t_start: Time of arrival at edge source.
+     * @param[in] t_start:      Time of arrival at edge source.
      */
     long wait_time(const long) const;
 
     /**
      * Returns the Cost to traverse this edge.
-     * @param[in] start: Cost of arrival at edge source
-     * @param[in] t_max: Maximum time permissible to reach destination
+     * @param[in] start:        Cost of arrival at edge source
+     * @param[in] t_max:        Maximum time permissible to reach destination
      */
     Cost weight(const Cost&, const long);
 };
@@ -123,12 +126,12 @@ struct Path {
 
     /**
      * Constructs a segment representing movement of an object.
-     * @param[in] _src: Source Vertex
-     * @param[in] _conn: Edge used to reach destination from source
-     * @param[in] _dst: Destination Vertex
-     * @param[in] _arr: Arrival time at destination vertex
-     * @param[in] _dep: Departure time from source vertex
-     * @param[in] _cost: Cost incurred to arrive at destination vertex.
+     * @param[in] string_view:  Source Vertex
+     * @param[in] string_view:  Edge used to reach destination from source
+     * @param[in] string_view:  Destination Vertex
+     * @param[in] long:         Arrival time at destination vertex
+     * @param[in] long:         Departure time from source vertex
+     * @param[in] double:       Cost incurred to arrive at source vertex
      */
     Path(string_view, string_view, string_view, long, long, double);
 };
@@ -160,31 +163,54 @@ class BaseGraph {
 
         /**
          * Utility function to verify if the specified key exists in the kwargs
+         * @param[in] const map<string, any>&:  A map of named arguments
+         * @param[in] string_view:              Key to look for the the map
          */
         static void check_kwargs(const map<string, any>&, string_view);
 
         /**
          * Utility function to verify if a list of specified keys exist in the kwargs
+         * @param[in] const map<string, any>&:  A map of named arguments
+         * @param[in] const list<string_view>&: List of keys to look for in the map
          */
         static void check_kwargs(const map<string, any>&, const list<string_view>&);
 
         /**
-         * Adds a vertex to the graph given its unique human readable code
+         * Adds a vertex to the graph
+         * @param[in] string_view:              Unique human readable name for the vertex
          */
-        void add_vertex(string_view code);
+        void add_vertex(string_view);
 
         /**
          * Adds a continuous edge to the graph
+         * @param[in] string_view:              Source vertex of edge
+         * @param[in] string_view:              Destination vertex of edge
+         * @param[in] stirng_view:              Unique human readable name for edge
+         * @param[in] const long:               Processing time in seconds for inbound at destination vertex.
+         * @param[in] const long:               Processing time in seconds for aggregation at source vertex
+         * @param[in] const long:               Processing time in seconds for outbound at source vertex
+         * @param[in] const double:             Cost of iterating the edge
          */
         virtual void add_edge(string_view, string_view, string_view, const long, const long, const long, const double);
 
         /**
-         * Adds an edge to the graph given its source vertex src, destination vertex dst, unique human readable code, time of departure, duration of traversal, processing time incurred for aggregation at source/outbound at source/inbound at destination and the cost incurred on traversal via the edge.
+         * Adds a discrete edge to the graph
+         * @param[in] string_view:              Source vertex of edge
+         * @param[in] string_view:              Destination vertex of edge
+         * @param[in] stirng_view:              Unique human readable name for edge
+         * @param[in] const long:               Time of departure from source vertex
+         * @param[in] const long:               Duration of iterating the edge
+         * @param[in] const long:               Processing time in seconds for inbound at destination vertex.
+         * @param[in] const long:               Processing time in seconds for aggregation at source vertex
+         * @param[in] const long:               Processing time in seconds for outbound at source vertex
+         * @param[in] const double:             Cost of iterating the edge
          */
         virtual void add_edge(string_view, string_view, string_view, const long, const long, const long, const long, const long, const double);
 
         /**
-         * Finds and returns the properties of an edge given its source vertex and its unique human readeable name
+         * Finds and returns the properties of an edge
+         * @param[in] string_view:              Source vertex
+         * @param[in] string_view:              Edge name
          */
         EdgeProperty lookup(string_view, string_view);
 
