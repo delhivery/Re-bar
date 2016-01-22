@@ -163,3 +163,131 @@ EdgeProperty BaseGraph::lookup(string_view vertex, string_view edge) {
 
     return g[edesc];
 }
+
+json_map BaseGraph::addv(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
+    json_map response;
+    try {
+        string_view value;
+        check_kwargs(kwargs, "code");
+        value = any_cast<string>(kwargs.at("code"));
+        solver->add_vertex(value);
+        response["success"] = true;
+    }
+    catch (const exception& exc) {
+        response["error"] = exc.what();
+    }
+
+    return response;
+}
+
+
+json_map BaseGraph::adde(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
+    json_map response;
+    try {
+        string_view src, dst, conn;
+        long dep, dur, tip, top, tap;
+        double cost;
+
+        check_kwargs(kwargs, list<string_view>{"src", "dst", "conn", "dep", "dur", "tip", "tap", "top", "cost"});
+        src  = any_cast<string>(kwargs.at("src"));
+        dst  = any_cast<string>(kwargs.at("dst"));
+        conn = any_cast<string>(kwargs.at("conn"));
+
+        dep  = any_cast<long>(kwargs.at("dep"));
+        dur  = any_cast<long>(kwargs.at("dur"));
+        tip  = any_cast<long>(kwargs.at("tip"));
+        tap  = any_cast<long>(kwargs.at("tap"));
+        top  = any_cast<long>(kwargs.at("top"));
+
+        cost = any_cast<double>(kwargs.at("cost"));
+
+        solver->add_edge(src, dst, conn, dep, dur, tip, tap, top, cost);
+        response["success"] = true;
+    }
+    catch (const exception& exc) {
+        response["error"] = exc.what();
+    }
+    return response;
+}
+
+json_map BaseGraph::addc(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
+    json_map response;
+    try {
+        string_view src, dst, conn;
+        long tip, top, tap;
+        double cost = 0.30;
+        
+        check_kwargs(kwargs, list<string_view>{"src", "dst", "conn", "tip", "tap", "top"});
+        src = any_cast<string>(kwargs.at("src"));
+        dst = any_cast<string>(kwargs.at("dst"));
+        conn = any_cast<string>(kwargs.at("conn"));
+
+        top = any_cast<long>(kwargs.at("tap"));
+        tap = any_cast<long>(kwargs.at("top"));
+        tip = any_cast<long>(kwargs.at("tip"));
+        solver->add_edge(src, dst, conn, tip, top, tap, cost);
+        response["success"] = true;
+    }
+    catch (const exception& exc) {
+        response["error"] = exc.what();
+    }
+    return response;
+}
+
+json_map BaseGraph::look(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
+    json_map response;
+
+    try {
+        check_kwargs(kwargs, list<string_view>{"src", "conn"});
+        string_view vertex = any_cast<string>(kwargs.at("src"));
+        string_view edge = any_cast<string>(kwargs.at("conn"));
+        auto edge_property = solver->lookup(vertex, edge);
+
+        json_map conn;
+        conn["code"] = edge_property.code;
+        conn["dep"]  = edge_property._dep;
+        conn["dur"]  = edge_property._dur;
+        conn["tip"]  = edge_property._tip;
+        conn["tap"]  = edge_property._tap;
+        conn["top"]  = edge_property._top;
+        conn["cost"] = edge_property.cost;
+
+        response["connection"] = conn;
+        response["success"]    = true;
+    }
+    catch (const exception& exc) {
+        response["error"] = exc.what();
+    }
+    return response;
+}
+
+json_map BaseGraph::find(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
+    json_map response;
+    try {
+        check_kwargs(kwargs, list<string_view>{"src", "dst", "beg", "tmax"});
+        string_view src = any_cast<string>(kwargs.at("src"));
+        string_view dst = any_cast<string>(kwargs.at("dst"));
+        long t_start    = any_cast<long>(kwargs.at("beg"));
+        long t_max      = any_cast<long>(kwargs.at("tmax"));
+
+        auto path = solver->find_path(src, dst, t_start, t_max);
+        json_array segments;
+
+        for (auto const& segment: path) {
+            json_map seg;
+            seg["source"] = segment.src.to_string();
+            seg["connection"] = segment.conn.to_string();
+            seg["destination"] = segment.dst.to_string();
+            seg["arrival_at_source"] = segment.arr;
+            seg["departure_from_source"] = segment.dep;
+            seg["cost_reaching_source"] = segment.cost;
+            segments.push_back(seg);
+        }
+        response["path"] = segments;
+        response["success"] = true;
+    }
+    catch (const exception& exc) {
+        response["error"] = exc.what();
+    }
+    return response;
+}
