@@ -24,7 +24,7 @@ Re-bar has moved to cmake for its build system. Following are the individual pro
 - Fletcher:
     * [boost](http://www.boost.org/)
     * [asio](http://think-async.com/Asio/)
-- Expressor:
+- Expresso:
     * [lambda](http://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
 
 You can use cmake to build the project.
