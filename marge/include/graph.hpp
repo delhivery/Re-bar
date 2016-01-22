@@ -253,7 +253,7 @@ class BaseGraph {
                 
                 check_kwargs(kwargs, list<string_view>{"src", "dst", "conn", "tip", "tap", "top"});
                 src = any_cast<string>(kwargs.at("src"));
-                src = any_cast<string>(kwargs.at("dst"));
+                dst = any_cast<string>(kwargs.at("dst"));
                 conn = any_cast<string>(kwargs.at("conn"));
 
                 top = any_cast<long>(kwargs.at("tap"));
