@@ -4,6 +4,11 @@
 
 #include "pareto.hpp"
 
+template <typename T> struct reversion_wrapper { T& iterable; };
+template <typename T> auto begin (reversion_wrapper<T> w) { return std::rbegin(w.iterable); }
+template <typename T> auto end (reversion_wrapper<T> w) { return std::rend(w.iterable); }
+template <typename T> reversion_wrapper<T> reverse (T&& iterable) { return { iterable }; }
+
 Traversal::Traversal(double _cost, long _time) : cost(_cost), time(_time) {}
 
 Traversal& Traversal::operator = (const Traversal& other) {
@@ -47,7 +52,7 @@ inline bool TraversalDominance::operator () (const Traversal& first, const Trave
     return first.cost <= second.cost && first.time <= second.time;
 }
 
-vector<Path> Pareto::find_path(string_view src, string_view dst, const long t_start, const long t_max) {
+vector<Path> Pareto::find_path(string_view src, string_view dst, long t_start, long t_max) {
     vector<Path> path;
     if (vertex_map.find(src) == vertex_map.end()) {
         throw invalid_argument("Invalid source");
@@ -74,18 +79,21 @@ vector<Path> Pareto::find_path(string_view src, string_view dst, const long t_st
         boost::default_r_c_shortest_paths_visitor()
     );
 
+    cout << "Source, Connection, Destination, Arrival, Departure, Cost" << endl;
     for (auto const& solution: optimal_solutions) {
-        Cost current{0, t_max};
+        Cost current{0, 0};
         Vertex source, target;
         EdgeProperty eprop;
 
-        for (auto const& edge: solution) {
+        for (auto const& edge: reverse(solution)) {
             source = boost::source(edge, g);
             target = boost::target(edge, g);
             eprop = g[edge];
-            path.push_back(Path{g[source].code, eprop.code, g[target].code, current.second, eprop.wait_time(current.second) + current.second, current.first});
+            cout << "Pushing segment: " << g[source].code << ", " << eprop.code << ", " << g[target].code << ", " << current.second  << ", "<< eprop.wait_time(current.second) + current.second  << ", "<< current.first << endl;
+            path.push_back(Path{g[source].code, g[edge].code, g[target].code, current.second, eprop.wait_time(current.second) + current.second, current.first});
             current = eprop.weight(current, t_max);
         }
+        cout << "Pushing segment: " << g[target].code << ", , , " << current.second  << ", "<< P_L_INF  << ", "<< current.first << endl;
         path.push_back(Path{g[target].code, "", "", current.second, P_L_INF, current.first});
         break;
     }

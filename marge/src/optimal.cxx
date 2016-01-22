@@ -73,7 +73,11 @@ void Optimal::add_edge(string_view src, string_view dst, string_view code, const
     }
 }
 
-vector<Path> Optimal::find_path(string_view src, string_view dst, const long t_start, const long t_max) {
+vector<Path> Optimal::find_path(string_view src, string_view dst, long t_start, long t_max) {
+
+    if (ignore_cost)
+        t_max = P_L_INF;
+
     if (vertex_map.find(src) == vertex_map.end()) {
         throw invalid_argument("No source <> found");
     }

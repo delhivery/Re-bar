@@ -19,7 +19,7 @@ template <typename T, size_t N> array<T, N> to_buffer(unsigned int value) {
     size_t t_size = sizeof(T) * CHAR_BIT;
 
     for (int i = N; i > 0; i--) {
-        buffer[N - i] = (value >> (t_size * (i - 1))) & 0xFF;
+        buffer[i] = (value >> (t_size * (i - 1))) & 0xFF;
     }
     return buffer;
 }

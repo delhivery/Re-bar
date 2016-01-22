@@ -19,7 +19,7 @@ using std::experimental::string_view;
 const double P_D_INF = numeric_limits<double>::infinity();
 const double N_D_INF = -1 * P_D_INF;
 
-const long P_L_INF = 0;
+const long P_L_INF = LONG_MAX;
 const long N_L_INF = -1 * P_L_INF;
 
 const long TIME_DURINAL = 24 * 3600;
@@ -183,7 +183,7 @@ class BaseGraph {
          */
         EdgeProperty lookup(string_view vertex, string_view edge);
 
-        virtual vector<Path> find_path(string_view src, string_view dst, const long t_start, const long t_max) = 0;
+        virtual vector<Path> find_path(string_view src, string_view dst, long t_start, long t_max) = 0;
 
         /**
          * Helper function which takes in an instance of the Graph and kwargs and invokes add vertex on the instance.

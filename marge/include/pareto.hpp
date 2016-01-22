@@ -33,7 +33,7 @@ class TraversalDominance {
 
 class Pareto : public BaseGraph {
     public:
-        vector<Path> find_path(string_view src, string_view dst, const long t_start, const long t_max);
+        vector<Path> find_path(string_view src, string_view dst, long t_start, long t_max);
 };
 
 #endif

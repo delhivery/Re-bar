@@ -15,21 +15,24 @@ EP tries to recommend a route which the shipment should thus take, considering a
 
 # Details!
 Re-bar consists of following moving parts:
-- [x] A consumer to read shipment status (currently Kinesis only)
-- [x] A parser to parse calculated paths, compare them against provided status, and update with results/recommendations
-- [x] A solver to recommend a path between two centers at a provided start time and guaranteed SLA constraint
-- [x] A database to store the list of centers and vehicles connecting them (currently MongoDB only)
-- [x] A writer to read/dump parsed graphs from/to database
-- [ ] A producer to dump parsed information (currently Kinesis only)[#WIP]
+- [ ] Expressor - An ETL tool to load and parse paths based on scans[#WIP]
+- [x] Fletcher - Expected path prediction minimizing the cost against time constraints
 
 
 # SetUp
-Re-bar has moved to scons for its build system. Currently, it depends on the following projects
-* [boost](http://www.boost.org/)
-* [mongocxx](https://github.com/mongodb/mongo-cxx-driver)
-* [aws-sdk-cpp-kinesis](https://github.com/awslabs/aws-sdk-cpp)
+Re-bar has moved to cmake for its build system. Following are the individual project dependencies:
+- Fletcher:
+    * [boost](http://www.boost.org/)
+    * [asio](http://think-async.com/Asio/)
+- Expressor:
+    * [lambda](http://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
 
-Finally to build, just run scons in a terminal
-<pre>
-  #$ scons
-</pre>
+You can use cmake to build the project.
+- Fletcher
+    <pre>
+      #$ git clone git@github.com:delhivery/Re-bar.git
+      #$ cd Re-bar/build
+      #$ cmake ..
+      #$ make
+      #$ sudo make install
+    </pre>
