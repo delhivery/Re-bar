@@ -76,7 +76,6 @@ void BaseGraph::add_vertex(string_view code) {
         VertexProperty vprop{boost::num_vertices(g), code};
         Vertex created = boost::add_vertex(vprop, g);
         vertex_map[vprop.code] = created;
-        cout << "Added vertex: " << vprop.code << endl;
     }
     else {
         throw invalid_argument("Unable to add vertex. Duplicate code specified");
@@ -105,7 +104,6 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
 
         if (created.second) {
             edge_map[eprop.code] = created.first;
-            cout << "Added edge: " << eprop.code << endl;
         }
         else {
             throw runtime_error("Unable to create edge.");

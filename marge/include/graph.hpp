@@ -176,7 +176,7 @@ class BaseGraph {
         /**
          * Adds an edge to the graph given its source vertex src, destination vertex dst, unique human readable code, time of departure, duration of traversal, processing time incurred for aggregation at source/outbound at source/inbound at destination and the cost incurred on traversal via the edge.
          */
-        void add_edge(string_view src, string_view dest, string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost);
+        virtual void add_edge(string_view src, string_view dest, string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost);
 
         /**
          * Finds and returns the properties of an edge given its source vertex and its unique human readeable name

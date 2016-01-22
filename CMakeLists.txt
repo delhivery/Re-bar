@@ -22,8 +22,8 @@ set(CMAKE_BUILD_TYPE Release)
 
 # Build flags for build types
 set(CMAKE_CXX_FLAGS "-std=c++14")
-set(CMAKE_CXX_FLAGS_DEBUG "-O0 -g -pipe -march=native")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2 -pipe -march=native")
+set(CMAKE_CXX_FLAGS_DEBUG "-Wall -O0 -g -pipe -march=native")
+set(CMAKE_CXX_FLAGS_RELEASE "-Wall -O2 -pipe -march=native")
 
 add_subdirectory(marge)
 add_subdirectory(jezik)

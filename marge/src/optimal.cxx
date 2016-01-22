@@ -51,7 +51,16 @@ void Optimal::run_dijkstra(Vertex src, Vertex dst, DistanceMap& dmap, Predecesso
                     visited[target] = 1;
                 }
                 else if (visited[target] == 1) {
-                    if (edge_iterated < dmap[target]) {
+                    bool less = false;
+
+                    if (ignore_cost) {
+                        less = edge_iterated.second < dmap[target].second;
+                    }
+                    else {
+                        less = edge_iterated < dmap[target];
+                    }
+
+                    if (less) {
                         dmap[target] = edge_iterated;
                         pmap[target] = *e_iter;
                         bin_heap.push(make_pair(target, dmap[target]));
@@ -65,12 +74,7 @@ void Optimal::run_dijkstra(Vertex src, Vertex dst, DistanceMap& dmap, Predecesso
 Optimal::Optimal(bool _ignore_cost) : ignore_cost(_ignore_cost) {}
 
 void Optimal::add_edge(string_view src, string_view dst, string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
-    if (ignore_cost) {
-        BaseGraph::add_edge(src, dst, code, dep, dur, tip, tap, top, 0);
-    }
-    else {
-        BaseGraph::add_edge(src, dst, code, dep, dur, tip, tap, top, cost);
-    }
+    BaseGraph::add_edge(src, dst, code, dep, dur, tip, tap, top, cost);
 }
 
 vector<Path> Optimal::find_path(string_view src, string_view dst, long t_start, long t_max) {
@@ -117,13 +121,13 @@ vector<Path> Optimal::find_path(string_view src, string_view dst, long t_start, 
         VertexProperty vprop = g[current];
 
         if(first) {
-            path.push_back(Path{vprop.code, "", "", distance.second, departure, distance.first});
+            path.push_back(Path{g[current].code, "", "", distance.second, departure, distance.first});
             first = false;
         }
         else {
             EdgeProperty eprop = g[inbound];
             departure = distance.second + eprop.wait_time(distance.second);
-            path.push_back(Path{vprop.code, eprop.code, g[boost::target(inbound, g)].code, distance.second, departure, distance.first});
+            path.push_back(Path{g[current].code, g[inbound].code, g[boost::target(inbound, g)].code, distance.second, departure, distance.first});
         }
 
         if (current == source) {

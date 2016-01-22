@@ -79,21 +79,19 @@ vector<Path> Pareto::find_path(string_view src, string_view dst, long t_start, l
         boost::default_r_c_shortest_paths_visitor()
     );
 
-    cout << "Source, Connection, Destination, Arrival, Departure, Cost" << endl;
     for (auto const& solution: optimal_solutions) {
         Cost current{0, 0};
-        Vertex source, target;
+        Vertex target = destination;
+        Vertex source;
         EdgeProperty eprop;
 
         for (auto const& edge: reverse(solution)) {
             source = boost::source(edge, g);
             target = boost::target(edge, g);
             eprop = g[edge];
-            cout << "Pushing segment: " << g[source].code << ", " << eprop.code << ", " << g[target].code << ", " << current.second  << ", "<< eprop.wait_time(current.second) + current.second  << ", "<< current.first << endl;
             path.push_back(Path{g[source].code, g[edge].code, g[target].code, current.second, eprop.wait_time(current.second) + current.second, current.first});
             current = eprop.weight(current, t_max);
         }
-        cout << "Pushing segment: " << g[target].code << ", , , " << current.second  << ", "<< P_L_INF  << ", "<< current.first << endl;
         path.push_back(Path{g[target].code, "", "", current.second, P_L_INF, current.first});
         break;
     }

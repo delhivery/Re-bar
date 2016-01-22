@@ -16,7 +16,7 @@ void Jezik::read(char* buffer, size_t length) {
     }
     catch (const exception& exc) {
         cerr << "Error occurred while attempting to read from socket. " << exc.what() << endl;
-        throw exc;
+        throw;
     }
 }
 
@@ -108,7 +108,7 @@ Server::Server(asio::io_service& io_service, tcp::endpoint& endpoint, function<j
     }
     catch (const exception& exc) {
         cerr << "Exception occurred while listening to socket: " << exc.what() << endl;
-        throw exc;
+        throw;
     }
 }
 
