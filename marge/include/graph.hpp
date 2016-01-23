@@ -41,7 +41,14 @@ bool operator < (const Cost&, const Cost&);
  * @brief Structure representing a bundled properties of a vertex in a graph/tree.
  */
 struct VertexProperty {
+    /**
+     * @brief Index of vertex in graph
+     */
     size_t index;
+
+    /**
+     * @brief Unique human readeable name for vertex
+     */
     string code;
 
     /**
@@ -169,8 +176,31 @@ struct EdgeProperty {
  * @brief Structure representing a segment in the traversal of the graph/tree.
  */
 struct Path {
-    string_view src, conn, dst;
-    long arr, dep;
+    /**
+     * @brief Source vertex in segment
+     */
+    string_view src;
+    /**
+     * @brief Edge used to traverse to destination vertex in segment
+     */
+    string_view conn;
+    /**
+     * @brief Destination vertex in segment
+     */
+    string_view dst;
+    /**
+     * @brief Time of arrival at source vertex
+     */
+    long arr;
+
+    /**
+     * @brief Time of departure from source vertex
+     */
+    long dep;
+
+    /**
+     * @brief Cumulative cost of arriving at the source vertex
+     */
     double cost;
 
     /**
@@ -199,9 +229,24 @@ typedef boost::graph_traits<Graph>::edge_descriptor Edge;
  */
 class BaseGraph {
     protected:
+        /**
+         * @brief Actual graph, stored as a bgl::adjacency_list
+         */
         Graph g;
+
+        /**
+         * @brief Mapping for verbose vertex names to vertices in graph
+         */
         map<string, Vertex, less<>> vertex_map;
+
+        /**
+         * @brief Mapping for verbose edge names to edges in graph
+         */
         map<string, Edge, less<>> edge_map;
+
+        /**
+         * @brief Mutex to handle locks for read/write on graph
+         */
         mutable shared_timed_mutex graph_mutex;
 
     public:

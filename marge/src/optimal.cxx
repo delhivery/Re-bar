@@ -73,10 +73,6 @@ void Optimal::run_dijkstra(Vertex src, Vertex dst, DistanceMap& dmap, Predecesso
 
 Optimal::Optimal(bool _ignore_cost) : ignore_cost(_ignore_cost) {}
 
-void Optimal::add_edge(string_view src, string_view dst, string_view code, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
-    BaseGraph::add_edge(src, dst, code, dep, dur, tip, tap, top, cost);
-}
-
 vector<Path> Optimal::find_path(string_view src, string_view dst, long t_start, long t_max) {
 
     if (ignore_cost)

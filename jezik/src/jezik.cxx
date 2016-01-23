@@ -3,6 +3,8 @@
 #include <cstring>
 #include <utility>
 
+Jezik::Jezik (shared_ptr<tcp::socket> _socket_ptr) : socket_ptr(_socket_ptr) {}
+
 void Jezik::read(unsigned char* buffer) {
     socket_ptr->read_some(asio::buffer(buffer, sizeof(unsigned char)));
 }
@@ -25,6 +27,8 @@ void Jezik::do_write(string_view response) {
     socket_ptr->write_some(asio::buffer(response.to_string()));
 }
 
+ArgumentToken::ArgumentToken(shared_ptr<tcp::socket> socket_ptr) : Jezik(socket_ptr) {}
+
 void ArgumentToken::do_read_body_length() {
     read(body_length);
 }
@@ -42,6 +46,8 @@ void ArgumentToken::do_read() {
 string_view ArgumentToken::value() const {
     return string_view(data, int(body_length[0]));
 }
+
+Argument::Argument(shared_ptr<tcp::socket> socket_ptr) : Jezik(socket_ptr) {}
 
 void Argument::do_read() {
     do_read_argument_type();
@@ -77,6 +83,8 @@ void Argument::do_read_argument_type() {
 pair<string_view, any> Argument::value() const {
     return data;
 }
+
+Command::Command(shared_ptr<tcp::socket> socket_ptr) : Jezik(socket_ptr) {}
 
 void Command::do_read() {
     read(mode);
