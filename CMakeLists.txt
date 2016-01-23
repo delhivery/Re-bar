@@ -2,7 +2,35 @@
 cmake_minimum_required(VERSION 2.8.9)
 
 # Projct being built
-project(rebar)
+project(rebar CXX)
+
+if ("${CMAKE_COMPILER_IS_GNUCXX}")
+    if ("${CMAKE_CXX_COMPILER_VERSION}" MATCHES "5\\.3\\.[0-9]")
+        message(STATUS "${GREEN}Supported CXX compiler detected.${RESET}")
+    else ()
+        message(FATAL_ERROR "Your compiler is too old. ${CMAKE_CXX_COMPILER_VERSION} detected. 5.3.0 or greater required")
+    endif()
+else ()
+    message(FATAL_ERROR "Unsupported compiler: ${CMAKE_CXX_COMPILER_ID}")
+endif()
+
+find_package (Boost 1.48.0 REQUIRED COMPONENTS graph)
+
+if (Boost_FOUND)
+    include_directories(${Boost_INCLUDE_DIRS})
+    message( STATUS "${GREEN}Found BGL include at:${Boost_INCLUDE_DIRS}${RESET}" )
+else ()
+    message( FATAL_ERROR "${RED}Failed to locate bgl.${RESET}" )
+endif()
+
+find_path(asio_INCLUDE asio.hpp HINTS "/usr/include" "/usr/local/include" "/opt/local/include" )
+
+if (asio_INCLUDE)
+    include_directories(${asio_INCLUDE})
+    message( STATUS "${Green}Found ASIO include at: ${asio_INCLUDE}${RESET}" )
+else ()
+    message( FATAL_ERROR "${RED}Failed to locate ASIO dependency.${RESET}" )
+endif()
 
 # Set binary dir
 set(CMAKE_BINARY_DIR ${CMAKE_SOURCE_DIR}/build)

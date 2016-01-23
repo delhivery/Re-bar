@@ -3,10 +3,20 @@
 #include <cstring>
 #include <utility>
 
+class SocketClosedException : public exception {};
+
 Jezik::Jezik (shared_ptr<tcp::socket> _socket_ptr) : socket_ptr(_socket_ptr) {}
 
 void Jezik::read(unsigned char* buffer) {
-    socket_ptr->read_some(asio::buffer(buffer, sizeof(unsigned char)));
+    asio::error_code error;
+    socket_ptr->read_some(asio::buffer(buffer, sizeof(unsigned char)), error);
+
+    if (error == asio::error::eof) {
+        throw SocketClosedException();
+    }
+    else if (error) {
+        throw asio::system_error(error);
+    }
 }
 
 void Jezik::read(char* buffer, size_t length) {
@@ -14,7 +24,15 @@ void Jezik::read(char* buffer, size_t length) {
         length = sizeof(buffer);
     }
     try {
-        socket_ptr->read_some(asio::buffer(buffer, length));
+        asio::error_code error;
+        socket_ptr->read_some(asio::buffer(buffer, length), error);
+
+        if (error == asio::error::eof) {
+            throw SocketClosedException();
+        }
+        else if (error) {
+            throw asio::system_error(error);
+        }
     }
     catch (const exception& exc) {
         cerr << "Error occurred while attempting to read from socket. " << exc.what() << endl;
@@ -100,13 +118,18 @@ void Command::do_read() {
 
 void Command::start(function<json_map(int, string_view, const map<string, any>&) > handler) {
     try {
-        do_read();
-        string response = handler(mode[0], string_view(command, 4), kwargs).to_string();
-        do_write(response);
+        while(true) {
+            do_read();
+            string response = handler(mode[0], string_view(command, 4), kwargs).to_string();
+            do_write(response);
+        }
+    }
+    catch (const SocketClosedException& exc) {
         socket_ptr->close();
+        return;
     }
     catch (const exception& exc) {
-        cerr << "Exception occurred while parsing/executing command: " << exc.what();
+        cerr << "Exception occurred while parsing/executing command: " << exc.what() << endl;
     }
 }
 
