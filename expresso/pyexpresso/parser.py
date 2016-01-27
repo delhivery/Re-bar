@@ -71,7 +71,7 @@ class Parser:
         self.__segments.append(segment)
         return len(self.__segments)
 
-    def add_segments(self, segments, new=False):
+    def add_segments(self, segments, novi=False):
         '''
         Add multiple segments to parser
         '''
@@ -79,8 +79,8 @@ class Parser:
             raise TypeError('List expected. Got {}'.format(type(segments)))
 
         for segment in segments:
-            self.add_segment(subgraph=new, **segment)
-            new = False
+            self.add_segment(subgraph=novi, **segment)
+            novi = False
 
     def mark_inbound(self, scan_datetime, rmk=None, fail=False):
         '''
@@ -179,3 +179,9 @@ class Parser:
             if match(segment, kwargs):
                 return index
         return None
+
+    def value(self):
+        '''
+        Return the entire graph as a list
+        '''
+        return self.__segments
