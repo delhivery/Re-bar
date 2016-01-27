@@ -130,6 +130,8 @@ void Command::start(function<json_map(int, string_view, const map<string, any>&)
     }
     catch (const exception& exc) {
         cerr << "Exception occurred while parsing/executing command: " << exc.what() << endl;
+        socket_ptr->close();
+        return;
     }
 }
 
