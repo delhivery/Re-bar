@@ -9,7 +9,7 @@ def number_to_bytes(number):
     '''
     if (number > 255):
         raise Exception(
-            'Supported range is 0-255. Unsupported value provided: {}'.format(i
+            'Supported range is 0-255. Unsupported value provided: {}'.format(
                 number
             )
         )
@@ -73,7 +73,7 @@ class Client:
         Initializes a connection to re-bar
         '''
         self.__handler = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.__handler.connect(host, port)
+        self.__handler.connect((host, port))
 
     def close(self):
         '''
@@ -86,17 +86,17 @@ class Client:
         Executes a command against server and returns the json response
         '''
         self.__handler.sendall(command_to_bytes(mode, command, **kwargs))
-        body_length = struct.unpack('I', handler.recv(4))[0]
-        return json.loads(this.__handler.recv(body_length).decode('utf-8'))
+        body_length = struct.unpack('I', self.__handler.recv(4))[0]
+        return json.loads(self.__handler.recv(body_length).decode('utf-8'))
 
-    def add_vertex(self, vertices):
+    def add_vertex(self, vertex):
         '''
         Add a vertex to solver
         '''
         response = {}
 
-        if isinstance(vertices, str):
-            return self.execute("ADDV", code=vertices)
+        if isinstance(vertex, str):
+            return self.execute("ADDV", code=vertex)
         raise TypeError(
             'Vertices should be a code or a list of codes. Got {}'.format(
                 type(vertices)
@@ -110,7 +110,7 @@ class Client:
         response = {}
 
         if isinstance(vertices, list):
-            for (vertex in vertices):
+            for vertex in vertices:
                 response[vertex] = self.add_vertex(vertex)
         else:
             raise TypeError(
@@ -130,17 +130,17 @@ class Client:
         if not isinstance(source, str):
             raise TypeError('Source should be a code. Got {}'.format(
                 type(connection)
-            )
+            ))
         
         if not isinstance(destination, str):
             raise TypeError('Destination should be a code. Got {}'.format(
                 type(connection)
-            )
+            ))
         
         if not isinstance(code, str):
             raise TypeError('Connection should be a code. Got {}'.format(
                 type(code)
-            )
+            ))
 
         if not isinstance(tip, int):
             raise TypeError(
@@ -175,6 +175,7 @@ class Client:
                 'Duration should be an integer. Got {}'.format(
                     type(tip)
                 )
+            )
 
         if not(isinstance(cost, int) or isinstance(cost, float)) and cost is not None:
             raise TypeError(
@@ -184,19 +185,19 @@ class Client:
             )
 
         kwargs = {
-            'src' = source,
-            'dst' = destination,
-            'conn'= code,
-            'tip' = tip,
-            'tap' = tap,
-            'top' = top
+            'src' : source,
+            'dst' : destination,
+            'conn': code,
+            'tip' : tip,
+            'tap' : tap,
+            'top' : top
         }
 
         if departure is None and duration is None and cost is None:
             return self.execute("ADDC",  **kwargs)
         elif departure is not None and duration is not None and cost is not None:
-            kwargs['dep']
-            kwargs['dur']
+            kwargs['dep'] = departure
+            kwargs['dur'] = duration
             kwargs['cost'] = float(cost)
             return self.execute("ADDE", **kwargs)
         raise ValueError(
@@ -214,7 +215,7 @@ class Client:
         response = {}
 
         if isintance(edges, list):
-            for (edge in edges):
+            for edge in edges:
                 response[edge['code']] = self.add_edge(**edge)
         else:
             raise TypeError('Required a list of edges. Got {}'.format(
