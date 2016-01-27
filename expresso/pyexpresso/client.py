@@ -1,3 +1,7 @@
+'''
+Implements a client to fletcher
+'''
+
 import json
 import socket
 import struct
@@ -7,7 +11,7 @@ def number_to_bytes(number):
     '''
     Convert a number to bytes to send across a socket as a single byte
     '''
-    if (number > 255):
+    if number > 255:
         raise Exception(
             'Supported range is 0-255. Unsupported value provided: {}'.format(
                 number
@@ -39,9 +43,9 @@ def kwargs_to_bytes(kwargs):
 
     for key, value in kwargs.items():
 
-        if type(value) is int:
+        if isinstance(value, int):
             data += keyword_to_bytes("INT")
-        elif type(value) is str:
+        elif isinstance(value, str):
             data += keyword_to_bytes("STR")
         else:
             data += keyword_to_bytes("DBL")
@@ -51,9 +55,12 @@ def kwargs_to_bytes(kwargs):
 
 def command_to_bytes(mode, command, **kwargs):
     '''
-    Converts a mode, command and named argument combination to re-bar supported protocol
+    Converts a mode, command and named argument combination to re-bar
+    supported protocol
     '''
-    return number_to_bytes(mode) + keyword_to_bytes(command) + number_to_bytes(len(kwargs)) + kwargs_to_bytes(kwargs)
+    return (
+        number_to_bytes(mode) + keyword_to_bytes(command) +
+        number_to_bytes(len(kwargs)) + kwargs_to_bytes(kwargs))
 
 
 class Client:
@@ -93,13 +100,11 @@ class Client:
         '''
         Add a vertex to solver
         '''
-        response = {}
-
         if isinstance(vertex, str):
             return self.execute("ADDV", code=vertex)
         raise TypeError(
             'Vertices should be a code or a list of codes. Got {}'.format(
-                type(vertices)
+                type(vertex)
             )
         )
 
@@ -120,23 +125,39 @@ class Client:
             )
         return response
 
-    def add_edge(
-            self, source=None, destination=None, code=None,
-            tip=None, tap=None, top=None,
-            departure=None, duration=None, cost=None):
+    def add_edge(self, **kwargs):
         '''
-        Add an edge to solver
+        Add an edge to solver. Parameters
+            [in]source: code for source vertex
+            [in]destination: code for destination vertex
+            [in]code: code for connection
+            [in]tip: time for inbound processing
+            [in]tap: time for aggregation processing
+            [in]top: time for outbound processing
+            [in]departure: time of departure
+            [in]duration: duration of connection traversal
+            [in]cost: cost of connection traversal
         '''
+        source = kwargs.get('source', None)
+        destination = kwargs.get('destination', None)
+        code = kwargs.get('code', None)
+        tip = kwargs.get('tip', None)
+        tap = kwargs.get('tap', None)
+        top = kwargs.get('top', None)
+        departure = kwargs.get('departure', None)
+        duration = kwargs.get('duration', None)
+        cost = kwargs.get('cost', None)
+
         if not isinstance(source, str):
             raise TypeError('Source should be a code. Got {}'.format(
-                type(connection)
+                type(source)
             ))
-        
+
         if not isinstance(destination, str):
             raise TypeError('Destination should be a code. Got {}'.format(
-                type(connection)
+                type(destination)
             ))
-        
+
         if not isinstance(code, str):
             raise TypeError('Connection should be a code. Got {}'.format(
                 type(code)
@@ -151,10 +172,8 @@ class Client:
 
         if not isinstance(tap, int):
             raise TypeError(
-                'Aggregation processing time should be an integer. Got {}'.format(
-                    type(tap)
-                )
-            )
+                'Aggregation processing time should be an '
+                'integer. Got {}'.format(type(tap)))
 
         if not isinstance(top, int):
             raise TypeError(
@@ -177,7 +196,9 @@ class Client:
                 )
             )
 
-        if not(isinstance(cost, int) or isinstance(cost, float)) and cost is not None:
+        if not(
+                isinstance(cost, int) or isinstance(cost, float)) and (
+                    cost is not None):
             raise TypeError(
                 'Cost should be a numeric type. Got {}'.format(
                     type(cost)
@@ -185,17 +206,20 @@ class Client:
             )
 
         kwargs = {
-            'src' : source,
-            'dst' : destination,
+            'src': source,
+            'dst': destination,
             'conn': code,
-            'tip' : tip,
-            'tap' : tap,
-            'top' : top
+            'tip': tip,
+            'tap': tap,
+            'top': top
         }
 
         if departure is None and duration is None and cost is None:
-            return self.execute("ADDC",  **kwargs)
-        elif departure is not None and duration is not None and cost is not None:
+            return self.execute("ADDC", **kwargs)
+        elif (
+                departure is not None and
+                duration is not None and
+                cost is not None):
             kwargs['dep'] = departure
             kwargs['dur'] = duration
             kwargs['cost'] = float(cost)
@@ -214,13 +238,12 @@ class Client:
         '''
         response = {}
 
-        if isintance(edges, list):
+        if isinstance(edges, list):
             for edge in edges:
                 response[edge['code']] = self.add_edge(**edge)
         else:
             raise TypeError('Required a list of edges. Got {}'.format(
-                type(edges))
-            )
+                type(edges)))
         return response
 
     def lookup(self, source, edge):
@@ -229,8 +252,7 @@ class Client:
         '''
         if not isinstance(source, str):
             raise TypeError('Source should be a code. Got {}'.format(
-                type(source))
-            )
+                type(source)))
 
         if not isinstance(edge, str):
             raise TypeError('Edge should be a code. Got {}'.format(type(edge)))
@@ -242,21 +264,21 @@ class Client:
         '''
         if not isinstance(source, str):
             raise TypeError('Source should be a code. Got {}'.format(
-                type(source))
-            )
+                type(source)))
 
         if not isinstance(destination, str):
             raise TypeError('Destination should be a code. Got {}'.format(
-                type(destination))
-            )
+                type(destination)))
 
         if not isinstance(t_start, int):
-            raise TypeError('Arrival time at source should be an integer. Got {}'.format(
-                type(t_start))
+            raise TypeError(
+                'Arrival time at source should be an integer. Got {}'.format(
+                    type(t_start)
+                )
             )
 
         if not isinstance(t_max, int):
             raise TypeError('Promise date should be an integer. Got {}'.format(
-                type(t_max))
-            )
-        return self.execute("FIND", src=source, dst=destination, beg=t_start, tmax=t_max)
+                type(t_max)))
+        return self.execute(
+            "FIND", src=source, dst=destination, beg=t_start, tmax=t_max)
