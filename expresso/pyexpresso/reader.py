@@ -46,12 +46,14 @@ class ScanReader:
     Class to read a package scan and load the appropriate graph
     '''
 
-    def __init__(self, scan_dict):
+    def __init__(self, scan_dict, host='Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com', port=80):
         '''
         Initialize a scan reader off a package scan
         '''
         self.parser = Parser()
         self.__waybill = scan_dict['wbn']
+        self.__host = host
+        self.__port = port
 
         if scan_dict.get('ivd', None) is None:
             return
@@ -115,7 +117,7 @@ class ScanReader:
         '''
         Create a subgraph via a TCP call to fletcher
         '''
-        client = Client(host='Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com', port=80)
+        client = Client(host=self.__host, port=self.__port)
         response = self.parser.add_segments(client.get_path(
             location, destination, scan_datetime, promise_datetime))
         self.parser.add_segments(response, subgraph=True, **response)

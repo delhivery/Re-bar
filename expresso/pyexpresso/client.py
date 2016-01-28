@@ -99,7 +99,6 @@ class Client:
         '''
         self.__handler.sendall(command_to_bytes(mode, command, **kwargs))
         headers = self.__handler.recv(4)
-        print 'Headers: {}. Type: {}'.format(headers, type(headers))
         body_length = struct.unpack('I', headers)[0]
         return json.loads(self.__handler.recv(body_length).decode('utf-8'))
 
