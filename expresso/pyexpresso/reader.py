@@ -4,7 +4,7 @@ Exposes a reader for scans off kinesis stream
 import datetime
 import json
 import uuid
-# import boto3
+import boto3
 
 from .client import Client
 from .parser import Parser
