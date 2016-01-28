@@ -7,8 +7,8 @@ import socket
 import struct
 import sys
 
-if sys.version_info < (3,0):
-    str = unicode
+if sys.version_info >= (3,0):
+    unicode = str
 
 
 def number_to_bytes(number):
@@ -50,7 +50,7 @@ def kwargs_to_bytes(kwargs):
 
         if isinstance(value, int):
             data += keyword_to_bytes("INT")
-        elif isinstance(value, str):
+        elif isinstance(value, str) or isinstance(value, unicode):
             data += keyword_to_bytes("STR")
         else:
             data += keyword_to_bytes("DBL")
@@ -107,7 +107,7 @@ class Client:
         '''
         Add a vertex to solver
         '''
-        if isinstance(vertex, str):
+        if isinstance(vertex, str) or isinstance(vertex, unicode):
             return self.execute("ADDV", code=vertex)
         raise TypeError(
             'Vertices should be a code or a list of codes. Got {}'.format(
@@ -155,17 +155,17 @@ class Client:
         duration = kwargs.get('duration', None)
         cost = kwargs.get('cost', None)
 
-        if not isinstance(source, str):
+        if not isinstance(source, str) and not isinstance(source, unicode):
             raise TypeError('Source should be a code. Got {}'.format(
                 type(source)
             ))
 
-        if not isinstance(destination, str):
+        if not isinstance(destination, str) and not isinstance(destination, unicode):
             raise TypeError('Destination should be a code. Got {}'.format(
                 type(destination)
             ))
 
-        if not isinstance(code, str):
+        if not isinstance(code, str) and not isinstance(code, unicode):
             raise TypeError('Connection should be a code. Got {}'.format(
                 type(code)
             ))
@@ -257,11 +257,11 @@ class Client:
         '''
         Fetch attributes of edge in solver
         '''
-        if not isinstance(source, str):
+        if not isinstance(source, str) and not isinstance(source, unicode):
             raise TypeError('Source should be a code. Got {}'.format(
                 type(source)))
 
-        if not isinstance(edge, str):
+        if not isinstance(edge, str) and not isinstance(edge, unicode):
             raise TypeError('Edge should be a code. Got {}'.format(type(edge)))
         return self.execute("LOOK", src=source, conn=edge)
 
@@ -269,11 +269,11 @@ class Client:
         '''
         Find a path using solver
         '''
-        if not isinstance(source, str):
+        if not isinstance(source, str) and not isinstance(source, unicode):
             raise TypeError('Source should be a code. Got {}'.format(
                 type(source)))
 
-        if not isinstance(destination, str):
+        if not isinstance(destination, str) and not isinstance(destination, unicode):
             raise TypeError('Destination should be a code. Got {}'.format(
                 type(destination)))
 
