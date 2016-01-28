@@ -38,9 +38,11 @@ def mod_path(path, start_time, sol='RCSP'):
             'conn': connection,
             'p_arr': arrival,
             'p_dep': departure, 
-            'cst': cost
+            'cst': cost,
             'sol': sol,
         }
+        segments.append(segment)
+    return segments
 
 def load_json_from_s3(waybill):
     '''
@@ -154,5 +156,11 @@ class ScanReader:
             solver_out = client.get_path(location, destination, scan_datetime, promise_datetime)
 
             if solver_out.get('path', None):
-                solver_out = mod_path(solver_out, scan_datetime)
+                solver_out = mod_path(solver_out['path'], scan_datetime)
                 self.parser.add_segments(solver_out, True)
+            else:
+                solver_out = client.get_path(location, destination, scan_datetime, promise_datetime, mode=1)
+
+                if solver_out.get('path', None):
+                    solver_out = mod_path(solver_out['path'], scan_datetime)
+                    self.parser.add_segments(solver_out, True, 'STSP')

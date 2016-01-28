@@ -264,7 +264,7 @@ class Client:
             raise TypeError('Edge should be a code. Got {}'.format(type(edge)))
         return self.execute("LOOK", src=source, conn=edge)
 
-    def get_path(self, source, destination, t_start, t_max):
+    def get_path(self, source, destination, t_start, t_max, mode=0):
         '''
         Find a path using solver
         '''
@@ -287,4 +287,4 @@ class Client:
             raise TypeError('Promise date should be an integer. Got {}'.format(
                 type(t_max)))
         return self.execute(
-            "FIND", src=source, dst=destination, beg=t_start, tmax=t_max)
+            "FIND", mode=mode, src=source, dst=destination, beg=t_start, tmax=t_max)
