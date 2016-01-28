@@ -8,10 +8,39 @@ import boto3
 
 from .client import Client
 from .parser import Parser
+from .mapper import VERTEX_NAME_CODE_MAPPING
 
 S3CLIENT = boto3.client('s3')
 S3BUCKET = 'expath'
 
+
+def mod_path(path, start_time, sol='RCSP'):
+    '''
+    Convert a path to a segment
+    '''
+    segments = []
+
+    for path_segment in path:
+        departure = path_segment['departure_from_source']
+        departure = departure + start_time if departure < 9000000000000000000 else departure
+
+        arrival = path_segment['arrival_at_source']
+        arrival = arrival + start_time if arrival < 9000000000000000000 else arrival
+
+        source = path_segment['source']
+        destination = path_segment['destination']
+        connection = path_segment['connection']
+
+        cost = path_segment['cost_reaching_source']
+        segment = {
+            'src': source,
+            'dst': destination,
+            'conn': connection,
+            'p_arr': arrival,
+            'p_dep': departure, 
+            'cst': cost
+            'sol': sol,
+        }
 
 def load_json_from_s3(waybill):
     '''
@@ -118,6 +147,12 @@ class ScanReader:
         Create a subgraph via a TCP call to fletcher
         '''
         client = Client(host=self.__host, port=self.__port)
-        response = self.parser.add_segments(client.get_path(
-            location, destination, scan_datetime, promise_datetime))
-        self.parser.add_segments(response, subgraph=True, **response)
+        location = VERTEX_NAME_CODE_MAPPING.get(location.split(' (')[0], None)
+        destination = VERTEX_NAME_CODE_MAPPING.get(destination.split(' (')[0], None)
+
+        if location and destination:
+            solver_out = client.get_path(location, destination, scan_datetime, promise_datetime)
+
+            if solver_out.get('path', None):
+                solver_out = mod_path(solver_out, scan_datetime)
+                self.parser.add_segments(solver_out, True)
