@@ -1,10 +1,10 @@
 '''
 Exposes a reader for scans off kinesis stream
 '''
-
+import datetime
 import json
 import uuid
-import boto3
+# import boto3
 
 from .client import Client
 from .parser import Parser
@@ -17,23 +17,27 @@ def load_json_from_s3(waybill):
     '''
     Load graph data from s3
     '''
-    path = '/tmp/{}{}'.format(uuid.uuid4(), waybill)
-    S3CLIENT.download_file(S3BUCKET, waybill, path)
-    handler = open(path, 'r')
-    data = json.load(handler)
-    handler.close()
-    return data
+    # path = '/tmp/{}{}'.format(uuid.uuid4(), waybill)
+    # try:
+    #     S3CLIENT.download_file(S3BUCKET, waybill, path)
+    #     handler = open(path, 'r')
+    #     data = json.load(handler)
+    #     handler.close()
+    #     return data
+    # except Exception as e:
+    #     return []
+    return []
 
 
 def store_to_s3(waybill, data):
     '''
     Store graph data to s3
     '''
-    path = '/tmp/{}{}'.format(uuid.uuid4(), waybill)
-    handler = open(path, 'w')
-    handler.write(json.dumps(data))
-    handler.close()
-    S3CLIENT.upload_file(path, S3BUCKET, waybill)
+    # path = '/tmp/{}{}'.format(uuid.uuid4(), waybill)
+    # handler = open(path, 'w')
+    # handler.write(json.dumps(data))
+    # handler.close()
+    # S3CLIENT.upload_file(path, S3BUCKET, waybill)
     return json.dumps(data)
 
 
@@ -53,6 +57,12 @@ class ScanReader:
             return
 
         current_scan = scan_dict['cs']
+        epoch = datetime.datetime(1970, 1, 1)
+        current_scan['sd'] = int((datetime.datetime.strptime(
+            current_scan['sd'][:19], '%Y-%m-%dT%H:%M:%S') - epoch).total_seconds())
+        scan_dict['pdd'] = int((datetime.datetime.strptime(
+            scan_dict['pdd'][:19], '%Y-%m-%dT%H:%M:%S') - epoch).total_seconds())
+
         self.load_data(
             current_scan['sl'], scan_dict['cn'],
             current_scan['sd'], scan_dict['pdd'])
@@ -105,7 +115,7 @@ class ScanReader:
         '''
         Create a subgraph via a TCP call to fletcher
         '''
-        client = Client('Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com', '80')
+        client = Client(host='Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com', port=80)
         response = self.parser.add_segments(client.get_path(
             location, destination, scan_datetime, promise_datetime))
         self.parser.add_segments(response, subgraph=True, **response)

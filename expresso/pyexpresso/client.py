@@ -5,6 +5,10 @@ Implements a client to fletcher
 import json
 import socket
 import struct
+import sys
+
+if sys.version_info < (3,0):
+    str = unicode
 
 
 def number_to_bytes(number):
@@ -17,14 +21,15 @@ def number_to_bytes(number):
                 number
             )
         )
-    return bytes([number])
+    return chr(number)
 
 
 def keyword_to_bytes(keyword):
     '''
     Converts an argument to bytes to send across a socket as string
     '''
-    return bytes(keyword, "UTF-8")
+    return str(keyword).encode('UTF-8')
+    # return bytes(keyword, "UTF-8")
 
 
 def param_to_bytes(param):
@@ -93,7 +98,9 @@ class Client:
         Executes a command against server and returns the json response
         '''
         self.__handler.sendall(command_to_bytes(mode, command, **kwargs))
-        body_length = struct.unpack('I', self.__handler.recv(4))[0]
+        headers = self.__handler.recv(4)
+        print 'Headers: {}. Type: {}'.format(headers, type(headers))
+        body_length = struct.unpack('I', headers)[0]
         return json.loads(self.__handler.recv(body_length).decode('utf-8'))
 
     def add_vertex(self, vertex):
