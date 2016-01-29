@@ -28,6 +28,8 @@ class Parser:
         Optionally add segments from existing data
         '''
         self.active = None
+        self.__segments = []
+        self.active = None
 
     def deactivate(self):
         '''
@@ -35,7 +37,7 @@ class Parser:
         '''
         for idx, segment in enumerate(self.__segments):
             if segment['st'] == 'FUTURE':
-                self.__segments[idx]['st'] = 'INACTIVE'
+                self.__segments[idx]['st'] = 'INACT'
 
     def add_segment(self, subgraph=False, **kwargs):
         '''
@@ -47,13 +49,16 @@ class Parser:
             'conn': kwargs['conn'],
             'p_arr': kwargs['p_arr'],
             'p_dep': kwargs['p_dep'],
-            'sol': kwargs['sol'],
             'cst': kwargs['cst'],
             'a_arr': kwargs.get('a_arr', None),
             'a_dep': kwargs.get('a_dep', None),
             'st':  kwargs.get('st', 'FUTURE'),
             'rmk': kwargs.get('rmk', []),
         }
+
+        for key, value in kwargs.items():
+            if key not in ['src', 'dst', 'conn', 'p_arr', 'p_dep', 'cst', 'a_arr', 'a_dep', 'st', 'rmk', 'idx', 'par']:
+                segment[key] = value
 
         segment['idx'] = kwargs.get('idx', len(self.__segments))
 
@@ -108,10 +113,28 @@ class Parser:
             self.__segments[self.active]['st'] = 'FAIL'
             self.deactivate()
         else:
+            self.__segments[self.active]['st'] = 'REACHED'
             self.active = self.lookup(**{
                 'par': self.__segments[self.active]['idx'],
                 'st': 'FUTURE'
             })
+            self.__segments[self.active]['st'] = 'ACTIVE'
+
+    def make_new(self, connection, intermediary):
+        '''
+        Make a duplicate node from old active to new intermediary and mark it reached
+        '''
+        segment = {}
+
+        for key, value in self.__segments[self.active].items():
+            segment[key] = value
+        segment['conn'] = connection
+        segment['dst'] = intermediary
+        segment['st'] = 'REACHED'
+        segment['idx'] = len(self.__segments)
+        segment['par'] = self.__segments[self.active]['par']
+        self.__segments.append(segment)
+        self.active = segment['idx']
 
     def parse_inbound(self, location, scan_datetime):
         '''
@@ -132,9 +155,11 @@ class Parser:
                 self.mark_inbound(scan_datetime, rmk='WARN_LATE_ARRIVAL')
                 return True
             else:
+                print('Late arrival. Got {}'.format(scan_datetime))
                 self.mark_inbound(
                     scan_datetime, rmk='FAIL_LATE_ARRIVAL', fail=True)
         else:
+            print('Location mismatch. Got {}'.format(location))
             self.mark_inbound(
                 scan_datetime, rmk='LOCATION_MISMATCH', fail=True)
         return False
@@ -160,12 +185,15 @@ class Parser:
                         scan_datetime, rmk='WARN_LATE_DEPARTURE')
                     return True
                 else:
+                    print('Connection mismatch. Different date: {}'.format(scan_datetime))
                     self.mark_outbound(
                         scan_datetime, rmk='CONNECTION_MISMATCH', fail=True)
             else:
+                print('Connection mismatch. Got {}'.format(connection))
                 self.mark_outbound(
                     scan_datetime, rmk='CONNECTION_MISMATCH', fail=True)
         else:
+            print('Out: Location mismatch. Got {}'.format(location))
             self.mark_outbound(
                 scan_datetime, rmk='LOCATION_MISMATCH', fail=True)
         return False

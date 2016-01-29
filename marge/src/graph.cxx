@@ -147,7 +147,7 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
     }
 }
 
-EdgeProperty BaseGraph::lookup(string_view vertex, string_view edge) {
+pair<EdgeProperty, VertexProperty> BaseGraph::lookup(string_view vertex, string_view edge) {
     if (vertex_map.find(vertex) == vertex_map.end())
         throw domain_error("No source vertex<" + vertex.to_string() + "> found in database");
 
@@ -161,7 +161,8 @@ EdgeProperty BaseGraph::lookup(string_view vertex, string_view edge) {
         throw invalid_argument("No connection<" + edge.to_string() + "> from source<" + vertex.to_string() + ">");
     }
 
-    return g[edesc];
+    Vertex edest = boost::target(edesc, g);
+    return std::make_pair(g[edesc], g[edest]);
 }
 
 json_map BaseGraph::addv(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
@@ -244,13 +245,14 @@ json_map BaseGraph::look(shared_ptr<BaseGraph> solver, const map<string, any>& k
         auto edge_property = solver->lookup(vertex, edge);
 
         json_map conn;
-        conn["code"] = edge_property.code;
-        conn["dep"]  = edge_property._dep;
-        conn["dur"]  = edge_property._dur;
-        conn["tip"]  = edge_property._tip;
-        conn["tap"]  = edge_property._tap;
-        conn["top"]  = edge_property._top;
-        conn["cost"] = edge_property.cost;
+        conn["code"] = edge_property.first.code;
+        conn["dep"]  = edge_property.first._dep;
+        conn["dur"]  = edge_property.first._dur;
+        conn["tip"]  = edge_property.first._tip;
+        conn["tap"]  = edge_property.first._tap;
+        conn["top"]  = edge_property.first._top;
+        conn["cost"] = edge_property.first.cost;
+        conn["dst"] = edge_property.second.code;
 
         response["connection"] = conn;
         response["success"]    = true;

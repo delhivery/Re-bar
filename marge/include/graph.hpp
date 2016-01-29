@@ -312,7 +312,7 @@ class BaseGraph {
          * @param[in] : Edge name
          * @return Property of matching edge
          */
-        EdgeProperty lookup(string_view, string_view);
+        pair<EdgeProperty, VertexProperty> lookup(string_view, string_view);
 
         /**
          * @brief Finds and returns a path based on various relaxation criteria
