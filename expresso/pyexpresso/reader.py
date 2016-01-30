@@ -8,6 +8,8 @@ from .utils import (
     iso_to_seconds, center_name_to_code,
     pretty, mod_path, load_from_local, store_to_local)
 
+MODES = ['RCSP', 'STSP']
+
 
 class ScanReader(object):
     '''
@@ -119,7 +121,7 @@ class ScanReader(object):
         sout = self.__client.get_path(src, dst, sdt, pdd, mode=mode)
 
         if sout.get('path', None):
-            sout = mod_path(sout['path'], sdt, pdd=pdd, sol=mode)
+            sout = mod_path(sout['path'], sdt, pdd=pdd, sol=MODES[mode])
             self.__parser.add_segments(sout, novi=True)
             self.__parser.arrival = sdt
             return True

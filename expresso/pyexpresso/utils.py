@@ -11,7 +11,9 @@ import boto3
 
 from tabulate import tabulate
 
-from .mapper import VERTEX_NAME_CODE_MAPPING
+VNCMAP_HANDLE = open('fixtures/vertex_name_code_mapping.json', 'r')
+VERTEX_NAME_CODE_MAPPING = json.load(VNCMAP_HANDLE)
+VNCMAP_HANDLE.close()
 
 EPOCH = datetime.datetime(1970, 1, 1)
 S3CLIENT = boto3.client('s3')
@@ -54,9 +56,6 @@ def pretty(records):
     if records:
         keys = records[0].keys()
         table = []
-
-        if 'rmk' in keys:
-            keys.remove('rmk')
 
         for data in records:
             if data['st']:

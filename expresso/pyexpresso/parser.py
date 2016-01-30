@@ -32,16 +32,51 @@ class Parser(object):
                 self.__segments[idx]['st'] = 'INACT'
 
     @property
+    def arrival(self):
+        '''
+        Get the actual arrival time at active vertex
+        '''
+        return self.__segments[self.active]['a_arr']
+
+    @arrival.setter
     def arrival(self, sdt):
         '''
         Set actual arrival at active vertex
         '''
         self.__segments[self.active]['a_arr'] = sdt
 
+    def add_nullseg(self):
+        '''
+        Add a null segment
+        '''
+        segment = {
+            'src': None,
+            'dst': None,
+            'conn': None,
+            'p_arr': None,
+            'a_arr': None,
+            'p_dep': None,
+            'a_dep': None,
+            'cst': None,
+            'st': 'REACHED',
+            'rmk': [],
+            'idx': 0,
+            'par': None,
+            'sol': None,
+            'pdd': None,
+        }
+        self.__segments.append(segment)
+        self.active = 0
+
     def add_segment(self, subgraph=False, **kwargs):
         '''
         Add a segment to parser
         '''
+        if subgraph:
+
+            if len(self.__segments) == 0:
+                self.add_nullseg()
+
         segment = {
             'src': kwargs['src'],
             'dst': kwargs['dst'],
@@ -64,9 +99,7 @@ class Parser(object):
         segment['idx'] = kwargs.get('idx', len(self.__segments))
 
         if not subgraph:
-            segment['par'] = kwargs.get(
-                'par',
-                len(self.__segments) - 1 if len(self.__segments) > 0 else None)
+            segment['par'] = kwargs.get('par', len(self.__segments) - 1)
         else:
             segment['par'] = self.active
             segment['st'] = 'ACTIVE'
@@ -100,6 +133,7 @@ class Parser(object):
         if fail:
             self.__segments[self.active]['st'] = 'FAIL'
             self.deactivate()
+            self.active = self.__segments[self.active]['par']
 
     def mark_outbound(self, scan_datetime, rmk=None, fail=False):
         '''
@@ -113,6 +147,7 @@ class Parser(object):
         if fail:
             self.__segments[self.active]['st'] = 'FAIL'
             self.deactivate()
+            self.active = self.__segments[self.active]['par']
         else:
             self.__segments[self.active]['st'] = 'REACHED'
             self.active = self.lookup(**{
