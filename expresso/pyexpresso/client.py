@@ -5,10 +5,6 @@ Implements a client to fletcher
 import json
 import socket
 import struct
-import sys
-
-if sys.version_info >= (3,0):
-    unicode = str
 
 
 def number_to_bytes(number):
@@ -68,7 +64,7 @@ def command_to_bytes(mode, command, **kwargs):
         number_to_bytes(len(kwargs)) + kwargs_to_bytes(kwargs))
 
 
-class Client:
+class Client(object):
     '''
     Client to re-bar.
 
@@ -159,7 +155,9 @@ class Client:
                 type(source)
             ))
 
-        if not isinstance(destination, str) and not isinstance(destination, unicode):
+        if (
+                not isinstance(destination, str) and
+                not isinstance(destination, unicode)):
             raise TypeError('Destination should be a code. Got {}'.format(
                 type(destination)
             ))
@@ -264,15 +262,19 @@ class Client:
             raise TypeError('Edge should be a code. Got {}'.format(type(edge)))
         return self.execute("LOOK", src=source, conn=edge)
 
-    def get_path(self, source, destination, t_start, t_max, mode=0):
+    def get_path(self, source, destination, t_start, t_max, **kwargs):
         '''
         Find a path using solver
         '''
+        mode = kwargs.get('mode', 0)
+
         if not isinstance(source, str) and not isinstance(source, unicode):
             raise TypeError('Source should be a code. Got {}'.format(
                 type(source)))
 
-        if not isinstance(destination, str) and not isinstance(destination, unicode):
+        if (
+                not isinstance(destination, str) and
+                not isinstance(destination, unicode)):
             raise TypeError('Destination should be a code. Got {}'.format(
                 type(destination)))
 
@@ -287,4 +289,5 @@ class Client:
             raise TypeError('Promise date should be an integer. Got {}'.format(
                 type(t_max)))
         return self.execute(
-            "FIND", mode=mode, src=source, dst=destination, beg=t_start, tmax=t_max)
+            "FIND", mode=mode, src=source, dst=destination,
+            beg=t_start, tmax=t_max)

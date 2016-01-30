@@ -1,19 +1,10 @@
 '''
 This class exposes parser and its utilities to update a recommended path
 '''
+from .utils import match
 
 
-def match(obj, secondary):
-    '''
-    Returns True if all secondary conditions are met by obj else False
-    '''
-    for key, value in secondary.items():
-        if obj.get(key, None) != value:
-            return False
-    return True
-
-
-class Parser:
+class Parser(object):
     '''
     Class representing a path with utilities to parse through it
     '''
@@ -36,8 +27,16 @@ class Parser:
         Deactivate all future edges
         '''
         for idx, segment in enumerate(self.__segments):
+
             if segment['st'] == 'FUTURE':
                 self.__segments[idx]['st'] = 'INACT'
+
+    @property
+    def arrival(self, sdt):
+        '''
+        Set actual arrival at active vertex
+        '''
+        self.__segments[self.active]['a_arr'] = sdt
 
     def add_segment(self, subgraph=False, **kwargs):
         '''
@@ -57,7 +56,9 @@ class Parser:
         }
 
         for key, value in kwargs.items():
-            if key not in ['src', 'dst', 'conn', 'p_arr', 'p_dep', 'cst', 'a_arr', 'a_dep', 'st', 'rmk', 'idx', 'par']:
+            if key not in [
+                    'src', 'dst', 'conn', 'p_arr', 'p_dep', 'cst',
+                    'a_arr', 'a_dep', 'st', 'rmk', 'idx', 'par']:
                 segment[key] = value
 
         segment['idx'] = kwargs.get('idx', len(self.__segments))
@@ -122,7 +123,8 @@ class Parser:
 
     def make_new(self, connection, intermediary):
         '''
-        Make a duplicate node from old active to new intermediary and mark it reached
+        Make a duplicate node from old active to new intermediary
+        and mark it reached
         '''
         segment = {}
 
@@ -155,11 +157,11 @@ class Parser:
                 self.mark_inbound(scan_datetime, rmk='WARN_LATE_ARRIVAL')
                 return True
             else:
-                print('Late arrival. Got {}'.format(scan_datetime))
+                # print('Late arrival. Got {}'.format(scan_datetime))
                 self.mark_inbound(
                     scan_datetime, rmk='FAIL_LATE_ARRIVAL', fail=True)
         else:
-            print('Location mismatch. Got {}'.format(location))
+            # print('Location mismatch. Got {}'.format(location))
             self.mark_inbound(
                 scan_datetime, rmk='LOCATION_MISMATCH', fail=True)
         return False
@@ -185,15 +187,12 @@ class Parser:
                         scan_datetime, rmk='WARN_LATE_DEPARTURE')
                     return True
                 else:
-                    print('Connection mismatch. Different date: {}'.format(scan_datetime))
                     self.mark_outbound(
                         scan_datetime, rmk='CONNECTION_MISMATCH', fail=True)
             else:
-                print('Connection mismatch. Got {}'.format(connection))
                 self.mark_outbound(
                     scan_datetime, rmk='CONNECTION_MISMATCH', fail=True)
         else:
-            print('Out: Location mismatch. Got {}'.format(location))
             self.mark_outbound(
                 scan_datetime, rmk='LOCATION_MISMATCH', fail=True)
         return False
@@ -208,6 +207,7 @@ class Parser:
                 return index
         return None
 
+    @property
     def value(self):
         '''
         Return the entire graph as a list

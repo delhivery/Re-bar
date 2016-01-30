@@ -39,7 +39,8 @@ def push_to_stream(package, stream):
 def test_handler(stream):
     for data in stream:
         value = json.loads(base64.b64decode(data))
-        scanner = ScanReader(CLIENT, value, host='127.0.0.1', port=9000)
+        scanner = ScanReader(CLIENT, host='127.0.0.1', port=9000)
+        scanner.read(value)
     CLIENT.close()
 
 def run(load=False):
@@ -56,6 +57,7 @@ def run(load=False):
 
     for thread in threads:
         thread.join()
+
     test_handler(stream)
 
 def prepare():
