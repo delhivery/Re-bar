@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    	<meta charset='utf-8'>
+        <title>Visualize Expected Path</title>
+        <script type='text/javascript' src='https://code.jquery.com/jquery-2.2.0.min.js'></script>
+        <script type='text/javascript' src='https://d3js.org/d3.v4.0.0-alpha.12.min.js'></script>
+        <script type='text/javascript' src='fixtures/data.js'></script>
+        <script type='text/javascript'>
+            $(document).ready(function() {
+                var index = -1;
+                var data = parsed_data;
+
+                $('#prev').click(function() {
+                    if (index > 0)
+                        draw(data[--index]);
+                });
+
+                $('#next').click(function() {
+                    if (index < data.length)
+                        draw(data[++index]);
+                });
+
+                function getColor(state, ignore) {
+                    if (state === 'ACTIVE')
+                        return 'blue';
+                    if (state === 'REACHED')
+                        return 'brown';
+                    if (state === 'INACT')
+                        return 'gray';
+                    if (state === 'FUTURE')
+                        return 'green';
+                    return 'red';
+                };
+
+                function draw(data) {
+
+                    var RECT_WIDTH = 256,
+                        RECT_HEIGHT = RECT_WIDTH / 4,
+                        RECT_BORDER_RADIUS = RECT_WIDTH / 32,
+                        BORDER_STROKE = RECT_WIDTH / 32,
+                        LEFT_SEP_MULT = 0.25,
+                        RIGHT_SEP_MULT = 1 - LEFT_SEP_MULT,
+                        FONT_SIZE = 8,
+                        OFFSET_X = RECT_WIDTH / 8,
+                        OFFSET_Y = RECT_WIDTH / 8,
+                        DISTANCE_X = RECT_WIDTH * 2,
+                        DISTANCE_Y = RECT_HEIGHT * 2;
+
+                    d3.select('#graph').select('svg').remove();
+                    var graph = d3.select('#graph').append('svg');
+
+                    graph.attr('width', '3840px')
+                         .attr('height', '1768px')
+                         .text('Expected Path - Traversal');
+
+                    var segments = data.segments;
+                    var scan = data.scan;
+
+                    var nodes = [];
+
+                    var depth = 0;
+
+                    segments.forEach( function(segment, index, segments) {
+                        var node = {};
+
+                        if (segment.par === undefined || segment.par === null) {
+                        	node.x = OFFSET_X;
+                        	node.y = OFFSET_Y;
+                        }
+                        else {
+                        	if (segment.idx - segment.par != 1) {
+                        		depth += 1;
+                        		node.y = nodes[0].y + DISTANCE_Y * depth;
+                        		if (node.y == 928) {
+                        			console.log('Reached 928');
+                        		}
+                        	}
+                        	else {
+                        		node.y = nodes[segment.par].y;
+                        	}
+                        	node.x = nodes[segment.par].x + DISTANCE_X;
+                        }
+
+                        node.state = segment.st;
+                        node.code = segment.src;
+                        node.edge = segment.conn;
+                        node.rmk = segment.rmk;
+                        node.conn = segment.conn;
+                        nodes.push(node);
+                    });
+
+                    var links = [];
+
+                    segments.forEach( function(segment, index, segments) {
+                        if (segment.par != undefined) {
+                            links.push({
+                                source: nodes[segment.par],
+                                target: nodes[segment.idx]
+                            });
+                        }
+                    });
+
+                    var vertices = graph.selectAll('vertices')
+                                        .data(nodes)
+                                        .enter()
+                                        .append('svg:rect')
+                                        .attr('x', function(d) { return d.x })
+                                        .attr('y', function(d) { return d.y })
+                                        .attr('rx', RECT_BORDER_RADIUS)
+                                        .attr('width', RECT_WIDTH)
+                                        .attr('height', RECT_HEIGHT)
+                                        .attr('fill', function(d) { return getColor(d.state, d.a_arr); })
+                                        .attr('stroke-width', BORDER_STROKE)
+                                        .attr('stroke-dasharray', '5,5');
+
+                    var arrSep = graph.selectAll('vertex.arr_sep')
+                                      .data(nodes)
+                                      .enter()
+                                      .append('svg:line')
+                                      .attr('x1', function(d) { return d.x + LEFT_SEP_MULT * RECT_WIDTH; })
+                                      .attr('y1', function(d) { return d.y; })
+                                      .attr('x2', function(d) { return d.x + LEFT_SEP_MULT * RECT_WIDTH; })
+                                      .attr('y2', function(d) { return d.y + RECT_HEIGHT; })
+                                      .style('stroke', '#000');
+
+                    var depSep = graph.selectAll('vertex.dep_sep')
+                                      .data(nodes)
+                                      .enter()
+                                      .append('svg:line')
+                                      .attr('x1', function(d) { return d.x + RIGHT_SEP_MULT * RECT_WIDTH; })
+                                      .attr('y1', function(d) { return d.y; })
+                                      .attr('x2', function(d) { return d.x + RIGHT_SEP_MULT * RECT_WIDTH; })
+                                      .attr('y2', function(d) { return d.y + RECT_HEIGHT; })
+                                      .style('stroke', '#000');
+
+                    var arrSepSep = graph.selectAll('vertex.arr_sep_vsep')
+                                         .data(nodes)
+                                         .enter()
+                                         .append('svg:line')
+                                         .attr('x1', function(d) { return d.x; })
+                                         .attr('y1', function(d) { return d.y + RECT_HEIGHT / 2; })
+                                         .attr('x2', function(d) { return d.x + LEFT_SEP_MULT * RECT_WIDTH; })
+                                         .attr('y2', function(d) { return d.y + RECT_HEIGHT / 2; })
+                                         .style('stroke', '#000');
+
+                    var depSepSep = graph.selectAll('vertex.dep_sep_vsep')
+                                         .data(nodes)
+                                         .enter()
+                                         .append('svg:line')
+                                         .attr('x1', function(d) { return d.x + RIGHT_SEP_MULT * RECT_WIDTH; })
+                                         .attr('y1', function(d) { return d.y + RECT_HEIGHT / 2; })
+                                         .attr('x2', function(d) { return d.x + RECT_WIDTH; })
+                                         .attr('y2', function(d) { return d.y + RECT_HEIGHT / 2; })
+                                         .style('stroke', '#000');
+
+                    var vertexCodes = graph.selectAll('vertex.codes')
+                                           .data(nodes)
+                                           .enter()
+                                           .append('text')
+                                           .attr('x', function(d) { return d.x + RECT_WIDTH / 2; })
+                                           .attr('y', function(d) { return d.y + RECT_HEIGHT / 2; })
+                                           .attr('text-anchor', 'middle')
+                                           .text(function(d) { return d.code; })
+                                           .attr('font-family', 'Helvetica, sans-serif')
+                                           .attr('font-size', FONT_SIZE)
+                                           .attr('fill', 'white');
+
+                    var vertexComments = graph.selectAll('vertex.comments')
+                                              .data(nodes)
+                                              .enter()
+                                              .append('text')
+                                              .attr('x', function(d) { return d.x + RECT_WIDTH / 2; })
+                                              .attr('y', function(d) { return d.y - FONT_SIZE; })
+                                              .attr('text-anchor', 'middle')
+                                              .text(function(d) { return d.rmk.join(', '); })
+                                              .attr('font-family', 'Helvetica, sans-serif')
+                                              .attr('font-size', FONT_SIZE)
+                                              .attr('fill', 'black');
+
+                    var edges = graph.selectAll('edges')
+                                     .data(links)
+                                     .enter()
+                                     .append('svg:line')
+                                     .attr('x1', function(d) { return d.source.x + RECT_WIDTH; })
+                                     .attr('y1', function(d) { return d.source.y + RECT_HEIGHT / 2; })
+                                     .attr('x2', function(d) { return d.target.x; })
+                                     .attr('y2', function(d) { return d.target.y + RECT_HEIGHT / 2 })
+                                     .style('stroke', function(d) { return getColor(d.source.state, d.source.a_arr); });
+
+                    var edgeNames = graph.selectAll('edge.names')
+                                         .data(links)
+                                         .enter()
+                                         .append('text')
+                                         .attr('x', function(d) { return (d.source.x + d.target.x + RECT_WIDTH) / 2;})
+                                         .attr('y', function(d) { return (d.source.y + d.target.y + RECT_HEIGHT) / 2;})
+                                         .attr('transform', function(d) {
+                                            var rotation = Math.atan2((d.target.y - d.source.y), (d.target.x - d.source.x)) * 90 / Math.PI;
+                                            var x = (d.source.x + d.target.x + RECT_WIDTH) / 2;
+                                            var y = (d.source.y + d.target.y + RECT_HEIGHT) / 2;
+                                            return "rotate(" + rotation + "," +  x + "," +  y+ ")";
+                                         })
+                                         .attr('text-anchor', 'middle')
+                                         .text(function(d) { return d.source.conn; })
+                                         .attr('font-family', 'Helvetica, sans-serif')
+                                         .attr('font-size', FONT_SIZE)
+                                         .attr('fill', 'black');
+                }
+
+                draw(data[++index]);
+
+            });
+        </script>
+    </head>
+    <body>
+        <div class='graph' id='graph'></div>
+        <button id="prev">Previous Scan</button>
+        <button id="next">Next Scan</button>
+    </body>
+</html>

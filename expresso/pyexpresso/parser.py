@@ -121,11 +121,13 @@ class Parser(object):
             self.add_segment(subgraph=novi, **segment)
             novi = False
 
-    def mark_inbound(self, scan_datetime, rmk=None, fail=False):
+    def mark_inbound(self, scan_datetime, rmk=None, fail=False, arrived = False):
         '''
         Mark inbound against path
         '''
-        self.__segments[self.active]['a_arr'] = scan_datetime
+
+        if arrived:
+            self.__segments[self.active]['a_arr'] = scan_datetime
 
         if rmk:
             self.__segments[self.active]['rmk'].append(rmk)
@@ -135,11 +137,12 @@ class Parser(object):
             self.deactivate()
             self.active = self.__segments[self.active]['par']
 
-    def mark_outbound(self, scan_datetime, rmk=None, fail=False):
+    def mark_outbound(self, scan_datetime, rmk=None, fail=False, departed=False):
         '''
         Mark outbound against path
         '''
-        self.__segments[self.active]['a_dep'] = scan_datetime
+        if departed:
+            self.__segments[self.active]['a_dep'] = scan_datetime
 
         if rmk:
             self.__segments[self.active]['rmk'].append(rmk)
@@ -156,20 +159,41 @@ class Parser(object):
             })
             self.__segments[self.active]['st'] = 'ACTIVE'
 
-    def make_new(self, connection, intermediary):
+    def make_new(self, connection, intermediary, source=None):
         '''
         Make a duplicate node from old active to new intermediary
         and mark it reached
         '''
+        if source is None:
+            source = self.active
         segment = {}
 
-        for key, value in self.__segments[self.active].items():
+        for key, value in self.__segments[source].items():
             segment[key] = value
         segment['conn'] = connection
         segment['dst'] = intermediary
         segment['st'] = 'REACHED'
         segment['idx'] = len(self.__segments)
-        segment['par'] = self.__segments[self.active]['par']
+        self.__segments.append(segment)
+        self.active = segment['idx']
+
+    def make_new_blank(self, src, dst, cid, sdt):
+        segment = {
+            'src': src,
+            'dst': dst,
+            'conn': cid,
+            'p_arr': None,
+            'a_arr': None,
+            'p_dep': None,
+            'a_dep': sdt,
+            'cst': self.__segments[self.active]['cst'],
+            'st': 'REACHED',
+            'rmk': [],
+            'par': self.active,
+            'sol': self.__segments[self.active]['sol'],
+            'pdd': self.__segments[self.active]['pdd'],
+        }
+        segment['idx'] = len(self.__segments)
         self.__segments.append(segment)
         self.active = segment['idx']
 
@@ -185,20 +209,28 @@ class Parser(object):
         a_seg = self.__segments[self.active]
 
         if a_seg['src'] == location:
+
+            if a_seg['a_arr']:
+                # Duplicate inbound. Ignore
+                return True
+
             if a_seg['p_arr'] >= scan_datetime:
-                self.mark_inbound(scan_datetime)
+                self.mark_inbound(scan_datetime, arrived=True)
                 return True
             elif scan_datetime < a_seg['p_dep']:
-                self.mark_inbound(scan_datetime, rmk='WARN_LATE_ARRIVAL')
+                self.mark_inbound(scan_datetime, rmk='WARN_LATE_ARRIVAL', arrived=True)
                 return True
             else:
-                # print('Late arrival. Got {}'.format(scan_datetime))
                 self.mark_inbound(
-                    scan_datetime, rmk='FAIL_LATE_ARRIVAL', fail=True)
+                    scan_datetime, rmk='FAIL_LATE_ARRIVAL', fail=True, arrived=True)
         else:
-            # print('Location mismatch. Got {}'.format(location))
-            self.mark_inbound(
-                scan_datetime, rmk='LOCATION_MISMATCH', fail=True)
+            if a_seg['a_arr']:
+                # Expecting outbound, inbound happened
+                self.mark_inbound(scan_datetime, rmk='UNEXPECTED_INBOUND', fail=True, arrived=False)
+                self.make_new(None, location, a_seg['idx'])
+            else:
+                self.mark_inbound(
+                    scan_datetime, rmk='LOCATION_MISMATCH', fail=True, arrived=False)
         return False
 
     def parse_outbound(self, location, connection, scan_datetime):
@@ -210,16 +242,20 @@ class Parser(object):
             raise ValueError('No active nodes found')
         a_seg = self.__segments[self.active]
 
-        if a_seg['src'] == location:
+        if not a_seg['a_arr']:
+            # Expecting inbound, outbound happened
+            self.mark_inbound(scan_datetime, rmk='UNEXPECTED_OUTBOUND', fail=True)
+
+        elif a_seg['src'] == location:
 
             if a_seg['conn'] == connection:
 
                 if a_seg['p_dep'] >= scan_datetime:
-                    self.mark_outbound(scan_datetime)
+                    self.mark_outbound(scan_datetime, departed=True)
                     return True
                 elif a_seg['p_dep'] - scan_datetime < 24 * 3600:
                     self.mark_outbound(
-                        scan_datetime, rmk='WARN_LATE_DEPARTURE')
+                        scan_datetime, rmk='WARN_LATE_DEPARTURE', departed=True)
                     return True
                 else:
                     self.mark_outbound(
@@ -230,6 +266,7 @@ class Parser(object):
         else:
             self.mark_outbound(
                 scan_datetime, rmk='LOCATION_MISMATCH', fail=True)
+            self.make_new(None, location, a_seg['idx'])
         return False
 
     def lookup(self, **kwargs):

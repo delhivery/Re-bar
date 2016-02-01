@@ -63,11 +63,17 @@ def test_handler(stream):
     Run tests on streamed data.
     Stream simulates Kinesis behavior
     '''
+    fhandle = open('fixtures/data.json', 'w')
+    records = []
+
     for data in stream:
         value = json.loads(base64.b64decode(data))
-        scanner = ScanReader(CLIENT, host='127.0.0.1', port=9000)
-        scanner.read(value)
+        reader = ScanReader(CLIENT, host='127.0.0.1', port=9000, store=True)
+        reader.read(value)
+        records.extend(reader.data)
     CLIENT.close()
+    fhandle.write(json.dumps(records))
+    fhandle.close()
 
 def run(load=False):
     '''

@@ -30,7 +30,14 @@ class ScanReader(object):
         self.__port = port
         self.__waybill = None
         self.__store = store
-        self.__data = {}
+        self.__data = []
+
+    @property
+    def data(self):
+        '''
+        Returns status of graph on parsing edge
+        '''
+        return self.__data
 
     def read(self, scan_dict):
         '''
@@ -67,7 +74,12 @@ class ScanReader(object):
                 if not success:
                     self.create(
                         scan['src'], scan['dst'], scan['sdt'], scan['pdd'])
-            pretty(self.__parser.value)
+
+                if self.__store:
+                    self.__data.append({
+                        'segments': self.__parser.value,
+                        'scan': scan,
+                    })
 
         elif scan['act'] in ['+L', '+C']:
             success = self.__parser.parse_outbound(
@@ -75,7 +87,12 @@ class ScanReader(object):
 
             if not success:
                 self.predict(**scan)
-            pretty(self.__parser.value)
+
+            if self.__store:
+                self.__data.append({
+                    'segments': self.__parser.value,
+                    'scan': scan
+                })
         # store_to_s3(self.__waybill, self.parser.value())
         store_to_local(self.__waybill, self.__parser.value)
 
@@ -98,7 +115,12 @@ class ScanReader(object):
             self.__parser.add_segments(segments)
         else:
             self.create(src, dst, sdt, pdd)
-            pretty(self.__parser.value)
+
+            if self.__store:
+                self.__data.append({
+                    'segments': self.__parser.value,
+                    'scan': {},
+                })
 
     def predict(self, **data):
         '''
@@ -110,8 +132,9 @@ class ScanReader(object):
         if c_data.get('connection', None):
             lat = data['sdt'] + c_data['connection']['dur']
             itd = c_data['connection']['dst']
-            self.__parser.make_new(data['cid'], itd)
+            self.__parser.make_new_blank(data['src'], itd, data['cid'], data['sdt'])
             self.create(itd, data['dst'], lat, data['pdd'])
+            self.__parser.arrival = None
 
     def solve(self, src, dst, sdt, pdd, **kwargs):
         '''
