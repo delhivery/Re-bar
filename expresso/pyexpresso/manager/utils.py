@@ -120,7 +120,7 @@ def load_from_local(waybill):
     '''
     Load graph from local
     '''
-    path = '/home/amitprakash/tests/{}'.format(waybill)
+    path = 'tests/{}'.format(waybill)
     data = []
 
     try:
@@ -136,7 +136,7 @@ def store_to_local(waybill, data):
     '''
     Write graph to local
     '''
-    path = '/home/amitprakash/tests/{}'.format(waybill)
+    path = 'tests/{}'.format(waybill)
     handler = open(path, 'w')
     handler.write(json.dumps(data))
     handler.close()

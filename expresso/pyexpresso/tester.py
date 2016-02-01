@@ -10,8 +10,8 @@ import threading
 
 from bson import ObjectId, json_util
 
-from .manager.client import Client
-from .manager.reader import ScanReader
+from manager.client import Client
+from manager.reader import ScanReader
 
 # PACKAGES = requests.GET(
 #     'https://hq.delhivery.com/api/p/info/23033712570/.json').json();
@@ -28,7 +28,7 @@ HANDLE = open('fixtures/edges.json', 'r')
 EDGES = json.load(HANDLE)
 HANDLE.close()
 
-CLIENT = Client(host='127.0.0.1', port=9000)
+CLIENT = Client(host='Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com', port=80)
 
 
 class DTEncoder(json.JSONEncoder):
@@ -72,7 +72,7 @@ def test_handler(stream):
 
     for data in stream:
         value = json.loads(base64.b64decode(data))
-        reader = ScanReader(CLIENT, S3CLIENT, S3BUCKET, store=True)
+        reader = ScanReader(CLIENT, store=True)
         try:
             reader.read(value)
         except ValueError:
