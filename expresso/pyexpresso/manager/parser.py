@@ -20,7 +20,6 @@ class Parser(object):
         '''
         self.active = None
         self.__segments = []
-        self.active = None
 
     def deactivate(self):
         '''
@@ -121,7 +120,7 @@ class Parser(object):
             self.add_segment(subgraph=novi, **segment)
             novi = False
 
-    def mark_inbound(self, scan_datetime, rmk=None, fail=False, arrived = False):
+    def mark_inbound(self, scan_datetime, rmk=None, fail=False, arrived=False):
         '''
         Mark inbound against path
         '''
@@ -137,7 +136,8 @@ class Parser(object):
             self.deactivate()
             self.active = self.__segments[self.active]['par']
 
-    def mark_outbound(self, scan_datetime, rmk=None, fail=False, departed=False):
+    def mark_outbound(
+            self, scan_datetime, rmk=None, fail=False, departed=False):
         '''
         Mark outbound against path
         '''
@@ -178,6 +178,9 @@ class Parser(object):
         self.active = segment['idx']
 
     def make_new_blank(self, src, dst, cid, sdt):
+        '''
+        Make a new node from provided parameters and mark it reached
+        '''
         segment = {
             'src': src,
             'dst': dst,
@@ -196,6 +199,13 @@ class Parser(object):
         segment['idx'] = len(self.__segments)
         self.__segments.append(segment)
         self.active = segment['idx']
+
+    def mark_termination(self, msg):
+        '''
+        Mark termination of ExPath due to bad/missing data
+        '''
+        self.__segments[self.active]['rmk'].append(msg)
+        self.__segments[self.active]['st'] = 'FAIL'
 
     def parse_inbound(self, location, scan_datetime):
         '''
@@ -218,19 +228,24 @@ class Parser(object):
                 self.mark_inbound(scan_datetime, arrived=True)
                 return True
             elif scan_datetime < a_seg['p_dep']:
-                self.mark_inbound(scan_datetime, rmk='WARN_LATE_ARRIVAL', arrived=True)
+                self.mark_inbound(
+                    scan_datetime, rmk='WARN_LATE_ARRIVAL', arrived=True)
                 return True
             else:
                 self.mark_inbound(
-                    scan_datetime, rmk='FAIL_LATE_ARRIVAL', fail=True, arrived=True)
+                    scan_datetime, rmk='FAIL_LATE_ARRIVAL', fail=True,
+                    arrived=True)
         else:
             if a_seg['a_arr']:
                 # Expecting outbound, inbound happened
-                self.mark_inbound(scan_datetime, rmk='UNEXPECTED_INBOUND', fail=True, arrived=False)
+                self.mark_inbound(
+                    scan_datetime, rmk='UNEXPECTED_INBOUND', fail=True,
+                    arrived=False)
                 self.make_new(None, location, a_seg['idx'])
             else:
                 self.mark_inbound(
-                    scan_datetime, rmk='LOCATION_MISMATCH', fail=True, arrived=False)
+                    scan_datetime, rmk='LOCATION_MISMATCH', fail=True,
+                    arrived=False)
         return False
 
     def parse_outbound(self, location, connection, scan_datetime):
@@ -243,8 +258,8 @@ class Parser(object):
         a_seg = self.__segments[self.active]
 
         if not a_seg['a_arr']:
-            # Expecting inbound, outbound happened
-            self.mark_inbound(scan_datetime, rmk='UNEXPECTED_OUTBOUND', fail=True)
+            self.mark_inbound(
+                scan_datetime, rmk='UNEXPECTED_OUTBOUND', fail=True)
 
         elif a_seg['src'] == location:
 
@@ -255,7 +270,8 @@ class Parser(object):
                     return True
                 elif a_seg['p_dep'] - scan_datetime < 24 * 3600:
                     self.mark_outbound(
-                        scan_datetime, rmk='WARN_LATE_DEPARTURE', departed=True)
+                        scan_datetime, rmk='WARN_LATE_DEPARTURE',
+                        departed=True)
                     return True
                 else:
                     self.mark_outbound(

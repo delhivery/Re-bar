@@ -5,8 +5,8 @@ from operator import itemgetter
 
 from .parser import Parser
 from .utils import (
-    iso_to_seconds, center_name_to_code,
-    pretty, mod_path, load_from_local, store_to_local)
+    iso_to_seconds, center_name_to_code, mod_path, load_from_local,
+    load_from_s3, store_to_local, store_to_s3)
 
 MODES = ['RCSP', 'STSP']
 
@@ -16,18 +16,14 @@ class ScanReader(object):
     Class to read a package scan and load the appropriate graph
     '''
 
-    def __init__(
-            self, client, store=False,
-            host='Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com',
-            port=80):
+    def __init__(self, client, s3client=None, s3bucket=None, store=False):
         '''
         Initialize a scan reader off a package scan
         '''
-        # client = Client(host=self.__host, port=self.__port)
         self.__client = client
+        self.__s3client = s3client
+        self.__s3bucket = s3bucket
         self.__parser = Parser()
-        self.__host = host
-        self.__port = port
         self.__waybill = None
         self.__store = store
         self.__data = []
@@ -49,8 +45,22 @@ class ScanReader(object):
             return
         scan_dict['cs']['sd'] = iso_to_seconds(scan_dict['cs']['sd'])
         scan_dict['pdd'] = iso_to_seconds(scan_dict['pdd'])
-        scan_dict['cs']['sl'] = center_name_to_code(scan_dict['cs']['sl'])
-        scan_dict['cn'] = center_name_to_code(scan_dict['cn'])
+
+        try:
+            scan_dict['cs']['sl'] = center_name_to_code(scan_dict['cs']['sl'])
+        except KeyError:
+            self.__parser.mark_termination(
+                'MISSING DATA. BAD CENTER: {}'.format(
+                    scan_dict['cs']['sl']))
+            raise ValueError
+
+        try:
+            scan_dict['cn'] = center_name_to_code(scan_dict['cn'])
+        except KeyError:
+            self.__parser.mark_termination(
+                'MISSING DATA. BAD CENTER: {}'.format(scan_dict['cn'])
+            )
+            raise ValueError
 
         scan = {
             'src': scan_dict['cs']['sl'],
@@ -63,6 +73,12 @@ class ScanReader(object):
                 'ps', None) == scan_dict['cs'].get(
                     'pid', None)) else False,
         }
+
+        if scan['act'] in ['+C', '<C']:
+            scan['pri'] = True
+
+            if scan.get('cid', None) is None:
+                scan['cid'] = scan.get('pid', None)
 
         self.load(scan['src'], scan['dst'], scan['sdt'], scan['pdd'])
 
@@ -78,8 +94,7 @@ class ScanReader(object):
                 if self.__store:
                     self.__data.append({
                         'segments': self.__parser.value,
-                        'scan': scan,
-                    })
+                        'scan': scan})
 
         elif scan['act'] in ['+L', '+C']:
             success = self.__parser.parse_outbound(
@@ -91,24 +106,24 @@ class ScanReader(object):
             if self.__store:
                 self.__data.append({
                     'segments': self.__parser.value,
-                    'scan': scan
-                })
-        # store_to_s3(self.__waybill, self.parser.value())
-        store_to_local(self.__waybill, self.__parser.value)
+                    'scan': scan})
 
-    @property
-    def data(self):
-        '''
-        Return the parsed output
-        '''
-        return self.__data
+        if self.__store:
+            store_to_local(self.__waybill, self.__parser.value)
+        else:
+            store_to_s3(
+                self.__s3client, self.__s3bucket, self.__waybill,
+                self.__parser.value())
 
     def load(self, src, dst, sdt, pdd):
         '''
         Get or create graph data
         '''
-        # data = load_from_s3(self.__waybill)
-        segments = load_from_local(self.__waybill)
+        if self.__store:
+            segments = load_from_local(self.__waybill)
+        else:
+            segments = load_from_s3(
+                self.__s3client, self.__s3bucket, self.__waybill)
 
         if segments:
             segments = sorted(segments, key=itemgetter('idx'), reverse=False)
@@ -126,15 +141,18 @@ class ScanReader(object):
         '''
         Make prediction from outbound connection to arrival at destination
         '''
-
         c_data = self.__client.lookup(data['src'], data['cid'])
 
         if c_data.get('connection', None):
             lat = data['sdt'] + c_data['connection']['dur']
             itd = c_data['connection']['dst']
-            self.__parser.make_new_blank(data['src'], itd, data['cid'], data['sdt'])
+            self.__parser.make_new_blank(
+                data['src'], itd, data['cid'], data['sdt'])
             self.create(itd, data['dst'], lat, data['pdd'])
             self.__parser.arrival = None
+        else:
+            self.__parser.mark_termination(
+                'MISSING DATA: {}'.format(data['cid']))
 
     def solve(self, src, dst, sdt, pdd, **kwargs):
         '''

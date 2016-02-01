@@ -8,17 +8,13 @@ import json
 import uuid
 
 import boto3
-
-from tabulate import tabulate
+import botocore
 
 VNCMAP_HANDLE = open('fixtures/vertex_name_code_mapping.json', 'r')
 VERTEX_NAME_CODE_MAPPING = json.load(VNCMAP_HANDLE)
 VNCMAP_HANDLE.close()
 
 EPOCH = datetime.datetime(1970, 1, 1)
-S3CLIENT = boto3.client('s3')
-S3BUCKET = 'expath'
-
 
 def match(obj, secondary):
     '''
@@ -102,18 +98,20 @@ def mod_path(path, start_time, **kwargs):
     return segments
 
 
-def load_from_s3(waybill):
+def load_from_s3(client, bucket, waybill):
     '''
     Load graph data from s3
     '''
     path = '/tmp/{}{}'.format(uuid.uuid4(), waybill)
     try:
-        S3CLIENT.download_file(S3BUCKET, waybill, path)
+        client.download_file(bucket, waybill, path)
         handler = open(path, 'r')
         data = json.load(handler)
         handler.close()
         return data
-    except boto3.exceptions.S3TransferFailedError:
+    except (
+            boto3.exceptions.S3TransferFailedError,
+            botocore.exceptions.ClientError):
         return []
     return []
 
@@ -144,7 +142,7 @@ def store_to_local(waybill, data):
     handler.close()
 
 
-def store_to_s3(waybill, data):
+def store_to_s3(client, bucket, waybill, data):
     '''
     Store graph data to s3
     '''
@@ -152,5 +150,4 @@ def store_to_s3(waybill, data):
     handler = open(path, 'w')
     handler.write(json.dumps(data))
     handler.close()
-    S3CLIENT.upload_file(path, S3BUCKET, waybill)
-    return json.dumps(data)
+    client.upload_file(path, bucket, waybill)

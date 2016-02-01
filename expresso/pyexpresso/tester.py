@@ -1,20 +1,24 @@
 '''
 Sample parser for ExPath Client
 '''
-#!/usr/bin/env python
 import base64
 import datetime
 import json
 import threading
 
+# import requests
+
 from bson import ObjectId, json_util
 
-from pyexpresso.client import Client
-from pyexpresso.reader import ScanReader
+from .manager.client import Client
+from .manager.reader import ScanReader
 
+# PACKAGES = requests.GET(
+#     'https://hq.delhivery.com/api/p/info/23033712570/.json').json();
 HANDLE = open('fixtures/packages.json', 'r')
 PACKAGES = json.load(HANDLE)
 HANDLE.close()
+
 
 HANDLE = open('fixtures/vertices.json', 'r')
 VERTICES = json.load(HANDLE)
@@ -23,7 +27,6 @@ HANDLE.close()
 HANDLE = open('fixtures/edges.json', 'r')
 EDGES = json.load(HANDLE)
 HANDLE.close()
-
 
 CLIENT = Client(host='127.0.0.1', port=9000)
 
@@ -40,10 +43,11 @@ class DTEncoder(json.JSONEncoder):
             return json.dumps(obj, default=json_util.default)
         return super(DTEncoder, self).default(obj)
 
+
 def push_to_stream(package, stream):
     '''
-    Push package information off HQ to a stream which tests are going to execute
-    Stream simulates Kinesis behavior
+    Push package information off HQ to a stream which tests are going to
+    execute. Stream simulates Kinesis behavior
     '''
     npack = {}
 
@@ -68,12 +72,16 @@ def test_handler(stream):
 
     for data in stream:
         value = json.loads(base64.b64decode(data))
-        reader = ScanReader(CLIENT, host='127.0.0.1', port=9000, store=True)
-        reader.read(value)
+        reader = ScanReader(CLIENT, S3CLIENT, S3BUCKET, store=True)
+        try:
+            reader.read(value)
+        except ValueError:
+            continue
         records.extend(reader.data)
     CLIENT.close()
     fhandle.write(json.dumps(records))
     fhandle.close()
+
 
 def run(load=False):
     '''
@@ -85,7 +93,8 @@ def run(load=False):
     stream = []
 
     for package in [PACKAGES[0]]:
-        thread = threading.Thread(target=push_to_stream, args=(package, stream))
+        thread = threading.Thread(
+            target=push_to_stream, args=(package, stream))
         thread.start()
         threads.append(thread)
 
@@ -93,6 +102,7 @@ def run(load=False):
         thread.join()
 
     test_handler(stream)
+
 
 def prepare():
     '''
