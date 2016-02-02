@@ -70,16 +70,17 @@ def test_handler(stream):
     '''
     fhandle = open('fixtures/data.json', 'w')
     records = []
+    client = Client(host='127.0.0.1', port=9000)
 
     for data in stream:
         value = json.loads(base64.b64decode(data))
-        reader = ScanReader(CLIENT, store=True)
+        reader = ScanReader(client, store=True)
         try:
             reader.read(value)
         except ValueError:
             continue
         records.extend(reader.data)
-    CLIENT.close()
+    client.close()
     fhandle.write(json.dumps(records))
     fhandle.close()
 
@@ -105,47 +106,44 @@ def run(load=False):
     test_handler(stream)
 
 
+def add_vertex_chunk(VERTICES):
+    client = Client(host='127.0.0.1', port=9000)
+    client.add_vertices(VERTICES)
+    client.close()
+
+def add_edge_chunk(EDGES):
+    client = Client(host='127.0.0.1', port=9000)
+    client.add_edges(EDGES)
+    client.close()
+
 def prepare():
     '''
     Dump vertex/edge data from fixtures to Fletcher
     '''
 
-    CHUNK_SIZE = 100
-    print('Adding vertices')
-
-    def add_vertex_chunk(VERTICES):
-        threads = []
-
-        for vertex in VERTICES:
-            client = Client(host='127.0.0.1', port=9000)
-            thread = threading.Thread(target=client.add_vertex, args=[vertex])
-            thread.start()
-            threads.append(thread)
-
-        for thread in threads:
-            thread.join()
-
-    print ('Adding vertices')
-    for vertices in chunks(VERTICES, CHUNK_SIZE):
-        add_vertex_chunk(vertices)
-    print ('Added vertices')
-
-    print ('Adding edges')
     threads = []
 
-    for edges in chunks(EDGES, CHUNK_SIZE):
-        client = Client(host='127.0.0.1', port=9000)
-        thread = threading.Thread(target=client.add_edges, args=[edges])
+    for vertices in chunks(VERTICES, len(VERTICES) / 8):
+        thread = threading.Thread(target=add_vertex_chunk, args=[vertices])
         thread.start()
         threads.append(thread)
+    print ('Adding vertices over {} threads.'.format(len(threads)))
 
     for thread in threads:
         thread.join()
+    print ('Added vertices')
 
-    print('Added edges')
 
-    # CLIENT.add_vertices(VERTICES)
-    # CLIENT.add_edges(EDGES)
+    for edges in chunks(EDGES, len(EDGES) / 16):
+        thread = threading.Thread(target=add_edge_chunk, args=[edges])
+        thread.start()
+        threads.append(thread)
+    print ('Adding edges over {} threads'.format(len(threads)))
+
+    for thread in threads:
+        thread.join()
+    print ('Added edges')
+
 
 def chunks(lst, chunk_size):
 

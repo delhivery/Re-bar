@@ -23,6 +23,17 @@ else ()
     message( FATAL_ERROR "${RED}Failed to locate bgl.${RESET}" )
 endif()
 
+find_package (Doxygen)
+
+if (Doxygen_FOUND)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in
+        ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+    add_custom_target(doc ${DOXYGEN_EXECUTABLE}
+        ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile WORKING_DIRECTORY
+        ${CMAKE_CURRENT_BINARY_DIR} COMMENT "Generating API documentation with
+        Doxygen" VERBATIM)
+endif()
+
 find_path(asio_INCLUDE asio.hpp HINTS "/usr/include" "/usr/local/include" "/opt/local/include" )
 
 if (asio_INCLUDE)

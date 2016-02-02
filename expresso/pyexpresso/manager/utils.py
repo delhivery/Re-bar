@@ -16,6 +16,7 @@ VNCMAP_HANDLE.close()
 
 EPOCH = datetime.datetime(1970, 1, 1)
 
+
 def match(obj, secondary):
     '''
     Returns True if all secondary conditions are met by obj else False
@@ -44,24 +45,48 @@ def center_name_to_code(name):
     return VERTEX_NAME_CODE_MAPPING.get(name, None)
 
 
-def pretty(records):
+def validate(scan_dict):
     '''
-    Print path data in a pretty way
+    Perform validations and transformations on scan dictionary
     '''
 
-    if records:
-        keys = records[0].keys()
-        table = []
+    if scan_dict['ivd', None] is None:
+        return False
 
-        for data in records:
-            if data['st']:
-                output = []
+    try:
+        scan_dict['cs']['sd'] = iso_to_seconds(scan_dict['cs']['sd'])
+        scan_dict['pdd'] = iso_to_seconds(scan_dict['pdd'])
 
-                for key in keys:
-                    output.append(data[key])
-                table.append(output)
-        print(tabulate(table, headers=keys))
-        print('\n\n\n')
+    except (ValueError, TypeError, KeyError):
+        return False
+    center = None
+
+    try:
+        center = scan_dict['cs']['sl']
+        scan_dict['cs']['sl'] = center_name_to_code(center)
+
+        center = scan_dict['cn']
+        scan_dict['cn'] = center_name_to_code(center)
+
+    except KeyError:
+        raise ValueError('BAD CENTER: {}'.format(center))
+
+    except (ValueError, TypeError):
+        return False
+
+    if scan_dict['cs'].get('act', None) in ['+C', '<C']:
+
+        if (
+                scan_dict['cs'].get('cid', None) is None and
+                scan_dict['cs'].get('pid', None) is not None):
+            scan_dict['cs']['cid'] = scan_dict['cs']['pid']
+            scan_dict['cs']['pri'] = True
+
+    else:
+        scan_dict['cs']['pri'] = (
+            scan_dict['cs'].get('pid', None) ==
+            scan_dict['cs'].get('ps', None))
+    return True
 
 
 def mod_path(path, start_time, **kwargs):

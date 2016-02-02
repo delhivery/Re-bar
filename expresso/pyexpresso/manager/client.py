@@ -140,26 +140,26 @@ class Client(object):
             [in]duration: duration of connection traversal
             [in]cost: cost of connection traversal
         '''
-        source = kwargs.get('source', None)
-        destination = kwargs.get('destination', None)
-        code = kwargs.get('code', None)
+        source = kwargs.get('src', None)
+        destination = kwargs.get('dst', None)
+        code = kwargs.get('conn', None)
         tip = kwargs.get('tip', None)
         tap = kwargs.get('tap', None)
         top = kwargs.get('top', None)
-        departure = kwargs.get('departure', None)
-        duration = kwargs.get('duration', None)
+        departure = kwargs.get('dep', None)
+        duration = kwargs.get('dur', None)
         cost = kwargs.get('cost', None)
 
         if not isinstance(source, str) and not isinstance(source, unicode):
-            raise TypeError('Source should be a code. Got {}'.format(
-                type(source)
+            raise TypeError('Source should be a code. Got {}: {}'.format(
+                type(source), kwargs
             ))
 
         if (
                 not isinstance(destination, str) and
                 not isinstance(destination, unicode)):
-            raise TypeError('Destination should be a code. Got {}'.format(
-                type(destination)
+            raise TypeError('Destination should be a code. Got {}: {}'.format(
+                type(destination), kwargs
             ))
 
         if not isinstance(code, str) and not isinstance(code, unicode):
@@ -244,7 +244,7 @@ class Client(object):
 
         if isinstance(edges, list):
             for edge in edges:
-                response[edge['code']] = self.add_edge(**edge)
+                response[edge['conn']] = self.add_edge(**edge)
         else:
             raise TypeError('Required a list of edges. Got {}'.format(
                 type(edges)))

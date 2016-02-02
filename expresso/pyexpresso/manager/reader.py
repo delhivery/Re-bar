@@ -5,8 +5,8 @@ from operator import itemgetter
 
 from .parser import Parser
 from .utils import (
-    iso_to_seconds, center_name_to_code, mod_path, load_from_local,
-    load_from_s3, store_to_local, store_to_s3)
+    mod_path, load_from_local,
+    load_from_s3, store_to_local, store_to_s3, validate)
 
 MODES = ['RCSP', 'STSP']
 
@@ -41,26 +41,14 @@ class ScanReader(object):
         '''
         self.__waybill = scan_dict['wbn']
 
-        if scan_dict.get('ivd', None) is None:
-            return
-        scan_dict['cs']['sd'] = iso_to_seconds(scan_dict['cs']['sd'])
-        scan_dict['pdd'] = iso_to_seconds(scan_dict['pdd'])
-
         try:
-            scan_dict['cs']['sl'] = center_name_to_code(scan_dict['cs']['sl'])
-        except KeyError:
-            self.__parser.mark_termination(
-                'MISSING DATA. BAD CENTER: {}'.format(
-                    scan_dict['cs']['sl']))
-            raise ValueError
+            is_valid = validate(scan_dict)
 
-        try:
-            scan_dict['cn'] = center_name_to_code(scan_dict['cn'])
-        except KeyError:
-            self.__parser.mark_termination(
-                'MISSING DATA. BAD CENTER: {}'.format(scan_dict['cn'])
-            )
-            raise ValueError
+            if not is_valid:
+                return
+        except ValueError as err:
+            self.__parser.mark_termination('{}'.format(err))
+            raise
 
         scan = {
             'src': scan_dict['cs']['sl'],
@@ -69,32 +57,21 @@ class ScanReader(object):
             'pdd': scan_dict['pdd'],
             'act': scan_dict['cs'].get('act', None),
             'cid': scan_dict['cs'].get('cid', None),
-            'pri': True if (scan_dict['cs'].get(
-                'ps', None) == scan_dict['cs'].get(
-                    'pid', None)) else False,
+            'pri': scan_dict['cs'].get('pri', False),
         }
-
-        if scan['act'] in ['+C', '<C']:
-            scan['pri'] = True
-
-            if scan.get('cid', None) is None:
-                scan['cid'] = scan.get('pid', None)
 
         self.load(scan['src'], scan['dst'], scan['sdt'], scan['pdd'])
 
-        if scan['act'] in ['<L', '<C']:
+        if scan['act'] in ['<L', '<C'] and scan['pri']:
+            success = self.__parser.parse_inbound(scan['src'], scan['sdt'])
 
-            if scan['pri']:
-                success = self.__parser.parse_inbound(scan['src'], scan['sdt'])
+            if not success:
+                self.create(
+                    scan['src'], scan['dst'], scan['sdt'], scan['pdd'])
 
-                if not success:
-                    self.create(
-                        scan['src'], scan['dst'], scan['sdt'], scan['pdd'])
-
-                if self.__store:
-                    self.__data.append({
-                        'segments': self.__parser.value,
-                        'scan': scan})
+            if self.__store:
+                self.__data.append({
+                    'segments': self.__parser.value, 'scan': scan})
 
         elif scan['act'] in ['+L', '+C']:
             success = self.__parser.parse_outbound(
