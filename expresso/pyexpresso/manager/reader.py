@@ -113,7 +113,7 @@ class ScanReader(object):
         else:
             store_to_s3(
                 self.__s3client, self.__s3bucket, self.__waybill,
-                self.__parser.value())
+                self.__parser.value)
 
     def load(self, src, dst, sdt, pdd):
         '''

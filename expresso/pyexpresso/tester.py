@@ -28,7 +28,8 @@ HANDLE = open('fixtures/edges.json', 'r')
 EDGES = json.load(HANDLE)
 HANDLE.close()
 
-CLIENT = Client(host='Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com', port=80)
+# CLIENT = Client(host='Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com', port=80)
+# CLIENT = Client(host='127.0.0.1', port=9000)
 
 
 class DTEncoder(json.JSONEncoder):
@@ -108,5 +109,45 @@ def prepare():
     '''
     Dump vertex/edge data from fixtures to Fletcher
     '''
-    CLIENT.add_vertices(VERTICES)
-    CLIENT.add_edges(EDGES)
+
+    CHUNK_SIZE = 100
+    print('Adding vertices')
+
+    def add_vertex_chunk(VERTICES):
+        threads = []
+
+        for vertex in VERTICES:
+            client = Client(host='127.0.0.1', port=9000)
+            thread = threading.Thread(target=client.add_vertex, args=[vertex])
+            thread.start()
+            threads.append(thread)
+
+        for thread in threads:
+            thread.join()
+
+    print ('Adding vertices')
+    for vertices in chunks(VERTICES, CHUNK_SIZE):
+        add_vertex_chunk(vertices)
+    print ('Added vertices')
+
+    print ('Adding edges')
+    threads = []
+
+    for edges in chunks(EDGES, CHUNK_SIZE):
+        client = Client(host='127.0.0.1', port=9000)
+        thread = threading.Thread(target=client.add_edges, args=[edges])
+        thread.start()
+        threads.append(thread)
+
+    for thread in threads:
+        thread.join()
+
+    print('Added edges')
+
+    # CLIENT.add_vertices(VERTICES)
+    # CLIENT.add_edges(EDGES)
+
+def chunks(lst, chunk_size):
+
+    for idx in range(0, len(lst), chunk_size):
+        yield lst[idx : idx + chunk_size]
