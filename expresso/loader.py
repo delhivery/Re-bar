@@ -20,21 +20,23 @@ HANDLE = open('fixtures/edges.json', 'r')
 EDGES = json.load(HANDLE)
 HANDLE.close()
 
-CLIENT = Client(host=FLETCHER_HOST, port=FLETCHER_PORT)
-
 
 def add_vertex_chunk(vertices):
     '''
     Add a bunch of vertices to fletcher
     '''
-    CLIENT.add_vertices(vertices)
+    client = Client(host=FLETCHER_HOST, port=FLETCHER_PORT)
+    client.add_vertices(vertices)
+    client.close()
 
 
 def add_edge_chunk(edges):
     '''
     Add a bunch of edges to fletcher
     '''
-    CLIENT.add_edges(edges)
+    client = Client(host=FLETCHER_HOST, port=FLETCHER_PORT)
+    client.add_edges(edges)
+    client.close()
 
 
 def chunks(lst, chunk_size):
