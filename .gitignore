@@ -29,5 +29,6 @@
 *.sw*
 lib/*
 build
+tests
 bin/*
 *.pyc

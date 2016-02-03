@@ -1,7 +1,7 @@
+#!/usr/bin/env python
 '''
 Load connection data into fletcher
 '''
-#!/usr/bin/env python
 from __future__ import print_function
 
 import json
