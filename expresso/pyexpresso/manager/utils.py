@@ -181,18 +181,22 @@ def store_to_local(waybill, data):
     '''
     Write graph to local
     '''
-    path = 'tests/{}'.format(waybill)
-    handler = open(path, 'w')
-    handler.write(json.dumps(data))
-    handler.close()
+
+    if data:
+        path = 'tests/{}'.format(waybill)
+        handler = open(path, 'w')
+        handler.write(json.dumps(data))
+        handler.close()
 
 
 def store_to_s3(client, bucket, waybill, data):
     '''
     Store graph data to s3
     '''
-    path = '/tmp/{}{}'.format(uuid.uuid4(), waybill)
-    handler = open(path, 'w')
-    handler.write(json.dumps(data))
-    handler.close()
-    client.upload_file(path, bucket, waybill)
+
+    if data:
+        path = '/tmp/{}{}'.format(uuid.uuid4(), waybill)
+        handler = open(path, 'w')
+        handler.write(json.dumps(data))
+        handler.close()
+        client.upload_file(path, bucket, waybill)
