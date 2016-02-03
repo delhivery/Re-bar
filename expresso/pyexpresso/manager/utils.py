@@ -14,6 +14,8 @@ VNCMAP_HANDLE = open('fixtures/vertex_name_code_mapping.json', 'r')
 VERTEX_NAME_CODE_MAPPING = json.load(VNCMAP_HANDLE)
 VNCMAP_HANDLE.close()
 
+INV_MAPPING = {VALUE: KEY for KEY, VALUE in VERTEX_NAME_CODE_MAPPING.items()}
+
 EPOCH = datetime.datetime(1970, 1, 1)
 
 
@@ -45,12 +47,30 @@ def center_name_to_code(name):
     return VERTEX_NAME_CODE_MAPPING.get(name, None)
 
 
+def prettify(segments):
+    '''
+    Convert center codes to user readeable format
+    '''
+    tsegments = []
+
+    for segment in segments:
+        tsegment = {}
+
+        for key, value in segment.items():
+            tsegment[key] = value
+
+        tsegment['src'] = INV_MAPPING.get(tsegment['src'], None)
+        tsegment['dst'] = INV_MAPPING.get(tsegment['dst'], None)
+        tsegments.append(tsegment)
+    return tsegments
+
+
 def validate(scan_dict):
     '''
     Perform validations and transformations on scan dictionary
     '''
 
-    if scan_dict['ivd', None] is None:
+    if scan_dict.get('ivd', None) is None:
         return False
 
     try:

@@ -5,11 +5,10 @@
         <title>Visualize Expected Path</title>
         <script type='text/javascript' src='https://code.jquery.com/jquery-2.2.0.min.js'></script>
         <script type='text/javascript' src='https://d3js.org/d3.v4.0.0-alpha.12.min.js'></script>
-        <script type='text/javascript' src='fixtures/data.js'></script>
         <script type='text/javascript'>
             $(document).ready(function() {
                 var index = -1;
-                var data = parsed_data;
+                var data = {};
 
                 $('#prev').click(function() {
                     if (index > 0)
@@ -35,13 +34,13 @@
 
                 function draw(data) {
 
-                    var RECT_WIDTH = 256,
+                    var RECT_WIDTH = 128,
                         RECT_HEIGHT = RECT_WIDTH / 4,
                         RECT_BORDER_RADIUS = RECT_WIDTH / 32,
                         BORDER_STROKE = RECT_WIDTH / 32,
                         LEFT_SEP_MULT = 0.25,
                         RIGHT_SEP_MULT = 1 - LEFT_SEP_MULT,
-                        FONT_SIZE = 8,
+                        FONT_SIZE = 12,
                         OFFSET_X = RECT_WIDTH / 8,
                         OFFSET_Y = RECT_WIDTH / 8,
                         DISTANCE_X = RECT_WIDTH * 2,
@@ -211,10 +210,22 @@
 
             });
         </script>
+        <style type='text/css'>
+            body, #graph {
+                width: 100%;
+                height: 100%;
+                overflow: auto;
+            }
+        </style>
     </head>
     <body>
+        <form method='GET' action='/'>
+            <input name='wbn' type='text' placeholder='Enter Waybill' />
+            <input type='submit' value='Populate' />
+        </form>
         <button id="prev">Previous Scan</button>
         <button id="next">Next Scan</button>
-        <div class='graph' id='graph'></div>
+        <div class='graph' id='graph'>
+        </div>
     </body>
 </html>

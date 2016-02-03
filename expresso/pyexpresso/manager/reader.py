@@ -5,7 +5,7 @@ from operator import itemgetter
 
 from .parser import Parser
 from .utils import (
-    mod_path, load_from_local,
+    mod_path, load_from_local, prettify,
     load_from_s3, store_to_local, store_to_s3, validate)
 
 MODES = ['RCSP', 'STSP']
@@ -59,7 +59,6 @@ class ScanReader(object):
             'cid': scan_dict['cs'].get('cid', None),
             'pri': scan_dict['cs'].get('pri', False),
         }
-
         self.load(scan['src'], scan['dst'], scan['sdt'], scan['pdd'])
 
         if scan['act'] in ['<L', '<C'] and scan['pri']:
@@ -71,7 +70,7 @@ class ScanReader(object):
 
             if self.__store:
                 self.__data.append({
-                    'segments': self.__parser.value, 'scan': scan})
+                    'segments': prettify(self.__parser.value), 'scan': scan})
 
         elif scan['act'] in ['+L', '+C']:
             success = self.__parser.parse_outbound(
@@ -82,7 +81,7 @@ class ScanReader(object):
 
             if self.__store:
                 self.__data.append({
-                    'segments': self.__parser.value,
+                    'segments': prettify(self.__parser.value),
                     'scan': scan})
 
         if self.__store:
@@ -110,7 +109,7 @@ class ScanReader(object):
 
             if self.__store:
                 self.__data.append({
-                    'segments': self.__parser.value,
+                    'segments': prettify(self.__parser.value),
                     'scan': {},
                 })
 
@@ -128,6 +127,8 @@ class ScanReader(object):
             self.create(itd, data['dst'], lat, data['pdd'])
             self.__parser.arrival = None
         else:
+            self.__parser.make_new_blank(
+                data['src'], None, data['cid'], data['sdt'])
             self.__parser.mark_termination(
                 'MISSING DATA: {}'.format(data['cid']))
 

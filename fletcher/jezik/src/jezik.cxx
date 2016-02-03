@@ -1,6 +1,8 @@
 #include <jezik.hpp>
 
 #include <cstring>
+#include <iostream>
+#include <thread>
 #include <utility>
 
 class SocketClosedException : public exception {};
@@ -9,6 +11,7 @@ Jezik::Jezik (shared_ptr<tcp::socket> _socket_ptr) : socket_ptr(_socket_ptr) {}
 
 void Jezik::read(unsigned char* buffer) {
     asio::error_code error;
+
     socket_ptr->read_some(asio::buffer(buffer, sizeof(unsigned char)), error);
 
     if (error == asio::error::eof) {
@@ -102,7 +105,7 @@ pair<string_view, any> Argument::value() const {
     return data;
 }
 
-Command::Command(shared_ptr<tcp::socket> socket_ptr) : Jezik(socket_ptr) {}
+Command::Command(tcp::socket socket) : Jezik(make_shared<tcp::socket>(move(socket))) {}
 
 void Command::do_read() {
     read(mode);
@@ -135,9 +138,13 @@ void Command::start(function<json_map(int, string_view, const map<string, any>&)
     }
 }
 
-Server::Server(asio::io_service& io_service, tcp::endpoint& endpoint, function<json_map(int, string_view, const map<string, any>&)> _handler) : Jezik(make_shared<tcp::socket>(ref(io_service))), acceptor(io_service, endpoint) , handler(_handler) {
+void do_read(shared_ptr<Command> command_ptr, function<json_map(int, string_view, const map<string, any>&) > handler) {
+    command_ptr->start(handler);
+}
+
+Server::Server(asio::io_service& io_service, tcp::endpoint& endpoint, function<json_map(int, string_view, const map<string, any>&)> _handler) : acceptor(io_service, endpoint) ,  socket(io_service) , handler(_handler){
     try {
-        do_read();
+        do_accept();
     }
     catch (const exception& exc) {
         cerr << "Exception occurred while listening to socket: " << exc.what() << endl;
@@ -145,10 +152,13 @@ Server::Server(asio::io_service& io_service, tcp::endpoint& endpoint, function<j
     }
 }
 
-void Server::do_read() {
-    acceptor.async_accept(*socket_ptr, [this](const asio::error_code ec) {
-        if (!ec)
-            make_shared<Command>(socket_ptr)->start(handler);
-        do_read();
+void Server::do_accept() {
+    acceptor.async_accept(socket, [this](const asio::error_code ec) {
+        if (!ec) {
+            shared_ptr<Command> command = make_shared<Command>(std::move(socket));
+            std::thread thread(do_read, command, handler);
+            thread.detach();
+        }
+        do_accept();
     });
 }

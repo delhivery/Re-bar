@@ -15,8 +15,9 @@ EP tries to recommend a route which the shipment should thus take, considering a
 
 # Details!
 Re-bar consists of following moving parts:
-- [ ] Expressor - An ETL tool to load and parse paths based on scans[#WIP]
+- [x] Expressor - An ETL tool to load and parse paths based on scans[#WIP]
 - [x] Fletcher - Expected path prediction minimizing the cost against time constraints
+- [x] Gopher - A GUI front-end to visualize ExPath data on a singular waybill
 
 
 # SetUp
@@ -26,6 +27,8 @@ Re-bar has moved to cmake for its build system. Following are the individual pro
     * [asio](http://think-async.com/Asio/)
 - Expresso:
     * [lambda](http://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
+- Gopher
+    * [python](http://python.org/)
 
 You can use cmake to build the project.
 - Fletcher

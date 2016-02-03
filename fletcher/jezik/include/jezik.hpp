@@ -228,7 +228,7 @@ class Command : public Jezik, public enable_shared_from_this<Command>  {
          * @brief Default constructs an instance of command to read from an accepted tcp socket
          * @param[in] : Pointer to socket against which connection has been established
          */
-        Command(shared_ptr<tcp::socket>);
+        Command(tcp::socket);
 
         /**
          * @brief Implementaion of the virtual function to read the command from the socket
@@ -243,14 +243,21 @@ class Command : public Jezik, public enable_shared_from_this<Command>  {
 };
 
 /**
+ * @brief Allow reading command in a separate thread
+ */
+void do_read(shared_ptr<Command>, function<json_map(int, string_view, const map<string, any>&) >);
+
+/**
  * @brief Class implementing the server responsible for accepting TCP connections.
  */
-class Server : public Jezik {
+class Server {
     private:
         /**
          * @brief An acceptor to bind a socket to an endpoint
          */
         tcp::acceptor acceptor;
+
+        tcp::socket socket;
 
         /**
          * @brief A functor which takes a Command as input and passes it on to an appropriate solver
@@ -261,7 +268,7 @@ class Server : public Jezik {
         /**
          * @brief Implementation of virtual function to accept a TCP connection, pass it on to a parser and listen for further connections.
          */
-        void do_read();
+        void do_accept();
 
         /**
          * @brief Default constructs a server
