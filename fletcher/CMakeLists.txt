@@ -4,6 +4,8 @@ cmake_minimum_required(VERSION 2.8.9)
 # Projct being built
 project(rebar CXX)
 
+include(GNUInstallDirs)
+
 if ("${CMAKE_COMPILER_IS_GNUCXX}")
     if ("${CMAKE_CXX_COMPILER_VERSION}" MATCHES "5\\.3\\.[0-9]")
         message(STATUS "${GREEN}Supported CXX compiler detected.${RESET}")
