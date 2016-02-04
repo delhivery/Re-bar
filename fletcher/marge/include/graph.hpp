@@ -22,8 +22,7 @@ using std::experimental::string_view;
 const double P_D_INF = numeric_limits<double>::infinity();
 const double N_D_INF = -1 * P_D_INF;
 
-const long P_L_INF = LONG_MAX;
-const long N_L_INF = -1 * P_L_INF;
+const long P_L_INF = 4102444800;
 
 const long TIME_DURINAL = 24 * 3600;
 
