@@ -58,7 +58,6 @@ def prettify(segments):
 
         for key, value in segment.items():
             tsegment[key] = value
-
         tsegment['src'] = INV_MAPPING.get(tsegment['src'], None)
         tsegment['dst'] = INV_MAPPING.get(tsegment['dst'], None)
         tsegments.append(tsegment)

@@ -21,7 +21,7 @@ from pyexpresso.manager import Client
 from pyexpresso.manager import ScanReader
 
 PACKAGE_URI = 'https://hq.delhivery.com/api/p/info/{}/.json'
-HOST_NAME = '172.16.3.130'
+HOST_NAME = '0.0.0.0'
 PORT_NUMBER = 8000
 FLETCHER_HOST = '127.0.0.1'
 FLETCHER_PORT = 9000
@@ -51,10 +51,6 @@ def push_to_stream(package, stream):
         npack[key] = value
 
     npack['s'] = []
-
-    if "ivd" not in npack:
-        import ipdb
-        ipdb.set_trace()
 
     for status in package['s']:
         npack['s'].append(status)

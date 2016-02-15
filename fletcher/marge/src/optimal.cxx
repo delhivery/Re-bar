@@ -133,5 +133,7 @@ vector<Path> Optimal::find_path(string_view src, string_view dst, long t_start, 
         inbound = predecessors[current];
         current = boost::source(inbound, g);
     } while (true);
+
+    std::reverse(path.begin(), path.end());
     return path;
 }

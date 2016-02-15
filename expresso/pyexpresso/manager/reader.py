@@ -40,6 +40,7 @@ class ScanReader(object):
         Read a scan and update the graph as needed
         '''
         self.__waybill = scan_dict['wbn']
+        src_raw = scan_dict.get('cs', {}).get('sl', None).split(' (')[0]
 
         try:
             is_valid = validate(scan_dict)
@@ -51,6 +52,7 @@ class ScanReader(object):
             raise
 
         scan = {
+            'src_raw': src_raw,
             'src': scan_dict['cs']['sl'],
             'dst': scan_dict['cn'],
             'sdt': scan_dict['cs']['sd'],
