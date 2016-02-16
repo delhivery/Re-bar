@@ -36,3 +36,4 @@ EP/node_modules/*
 dist/*
 EP/output.js
 EP/test.js
+EP/event.json
