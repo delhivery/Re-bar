@@ -25,7 +25,9 @@ Re-bar has moved to cmake for its build system. Following are the individual pro
 - Fletcher:
     * [boost](http://www.boost.org/)
     * [asio](http://think-async.com/Asio/)
-- Expresso:
+- PyExpresso:
+    * [lambda](http://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
+- NoExpresso:
     * [lambda](http://docs.aws.amazon.com/lambda/latest/dg/welcome.html)
 - Gopher
     * [python](http://python.org/)
