@@ -15,7 +15,7 @@ EP tries to recommend a route which the shipment should thus take, considering a
 
 # Details!
 Re-bar consists of following moving parts:
-- [x] Expressor - An ETL tool to load and parse paths based on scans[#WIP]
+- [x] Expressor - An ETL tool to load and parse paths based on scans
 - [x] Fletcher - Expected path prediction minimizing the cost against time constraints
 - [x] Gopher - A GUI front-end to visualize ExPath data on a singular waybill
 
