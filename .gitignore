@@ -33,7 +33,7 @@ tests
 bin/*
 *.pyc
 EP/node_modules/*
-dist/*
+EP/dist/*
 EP/output.js
 EP/test.js
 EP/event.json
