@@ -2,9 +2,6 @@ var Q = require('q');
 var AWS = require('aws-sdk');
 var config = require('./config.json')
 
-
-
-
 AWS.config.update({
         accessKeyId: config.AWS_ACCESS_KEY_ID,
         secretAccessKey: config.AWS_SECRET_ACCESS_KEY,
@@ -29,7 +26,6 @@ var pushToKinesis = function(data){
             deferred.resolve(false)
         }
         else{
-            // console.log(data);
             deferred.resolve(true)
         }
     });

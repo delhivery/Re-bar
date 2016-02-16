@@ -1,4 +1,3 @@
-// require('buffer');
 var net = require('net');
 var Q = require('q');
 
@@ -98,11 +97,7 @@ var Client = Class({
         var length = 0
 
         this.__handler.on('data', function (chunk) {
-            // console.log('============ON==============')
             data += chunk
-            // console.log('Got chunk Length '+ chunk.length)
-            // console.log('Data Length '+ data.length)
-            // console.log(data)
             that.__handler.end()
 
         });
@@ -111,7 +106,6 @@ var Client = Class({
             if (data === ''){
                 return
             }
-            // console.log('**********END*********')
             var json = {}
             var json_string = data.slice(4)
 
@@ -128,7 +122,6 @@ var Client = Class({
             }
             data = ''
             that.close()
-            // console.log('')
             deferred.resolve(json);
         });
 
@@ -207,7 +200,6 @@ var Client = Class({
 
         var command = "FIND";
         var kwargs = {"src":source, "dst":destination, "beg":t_start, "tmax":t_max};
-        // console.log(command, mode, kwargs)
         this.execute(command, mode, kwargs).then(function (value) {
             deferred.resolve(value);
         });

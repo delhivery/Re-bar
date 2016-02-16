@@ -118,15 +118,9 @@ var load_from_local = function(waybill){
 
     fs.readFile(path, function(err, data){
         if (err){
-            // console.error(err)
             deferred.resolve([])
         } else {
             var data = JSON.parse(data.toString());
-            // console.log('after load')
-            // data.forEach( function(elem, index) {
-            //     console.log(elem['idx'] + ' ' +elem['st'] + ' ' +elem['src'] + ' ' +elem['dst'] + ' '+ elem['conn'] +' ' +elem['rmk'])
-            // });
-            // console.log('')
             deferred.resolve(data);
         }
     })
@@ -137,15 +131,11 @@ var load_from_local = function(waybill){
 var store_to_local = function(waybill, data){
     var deferred = Q.defer()
     path = 'tests/' + waybill
-    // data.forEach( function(elem, index) {
-    //     console.log(elem['idx'] + ' ' +elem['st'] + ' ' +elem['src'] + ' ' +elem['dst'] + ' ' +elem['rmk'])
-    // });
     data.sort(compare)
-    // console.log('before save')
-    // data.forEach( function(elem, index) {
-    //     console.log(elem['idx'] + ' ' +elem['st'] + ' ' +elem['src'] + ' ' +elem['dst'] + ' '+ elem['conn'] +' ' +elem['rmk'])
-    // });
-    // console.log()
+    data.forEach( function(elem, index) {
+        console.log(waybill + ' ' + elem['idx'] + ' ' +elem['st'] + ' ' +elem['src'] + ' ' +elem['dst'] + ' '+ elem['conn'] +' ' +elem['rmk'])
+    });
+    console.log()
 
     fs.writeFile(path, JSON.stringify(data), 'utf-8', function(){
         deferred.resolve(JSON.stringify(data))
@@ -158,7 +148,6 @@ var store_to_s3 = function(waybill, data){
     var deferred = Q.defer()
 
     data.sort(compare)
-    // console.log('before save to S3')
     data.forEach( function(elem, index) {
         console.log(waybill + ' ' + elem['idx'] + ' ' +elem['st'] + ' ' +elem['src'] + ' ' +elem['dst'] + ' '+ elem['conn'] +' ' +elem['rmk'])
     });
@@ -176,7 +165,6 @@ var store_to_s3 = function(waybill, data){
             throw err
         }
         else {
-            // console.log("Successfully uploaded data to "+ config.BUCKET +"/"+waybill);
             deferred.resolve(JSON.stringify(data))
         }
      });
@@ -193,10 +181,8 @@ var load_from_s3 = function(waybill){
 
     s3.getObject(params, function(err, data) {
         if (err) {
-            // console.log(waybill + ' NOT FOUND on s3');
             deferred.resolve([])
         } else {
-            // console.log(waybill + ' FOUND on s3');
             deferred.resolve(JSON.parse(data.Body.toString()))
         }
     });

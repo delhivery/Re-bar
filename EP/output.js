@@ -41,5 +41,3 @@ prompt.get(['waybill'], function (err, result) {
   console.log('  waybill: ' + result.waybill);
     readOutput(result.waybill)
 });
-
-// readOutput(195073756840)

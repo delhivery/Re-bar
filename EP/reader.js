@@ -31,9 +31,6 @@ var ScanReader = Class({
 
 
     read: function(scan_dict){
-        // console.log('')
-        // console.log('')
-        // console.log('----------start------------')
         var deferred = Q.defer()
         this.__waybill = scan_dict['wbn']
 
@@ -42,7 +39,7 @@ var ScanReader = Class({
                 scan_dict['cs']['sd'] = Utils.iso_to_seconds(scan_dict['cs']['sd'])
                 scan_dict['pdd'] = Utils.iso_to_seconds(scan_dict['pdd'])
             } catch (err) {
-                console.log('Error: BAD datetime '+ err)
+                console.error('Error: BAD datetime '+ err)
                 deferred.resolve(false)
             }
 
@@ -54,7 +51,7 @@ var ScanReader = Class({
                 center = scan_dict['cn']
                 Utils.center_name_to_code(center)
             } catch(err) {
-                console.log('Error: BAD Center '+ err)
+                console.error('Error: BAD Center '+ err)
                 this.__parser.mark_termination(err)
                 deferred.resolve(false)
             }

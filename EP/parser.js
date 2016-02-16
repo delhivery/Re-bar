@@ -227,7 +227,7 @@ var Parser = Class({
 
         if (a_seg['src'] === location){
             if (a_seg['a_arr'] !== null){
-                console.log('Duplicate inbound')
+                console.error('Duplicate inbound')
                 return true
             }
             if (a_seg['p_arr'] >= scan_datetime){
@@ -260,11 +260,6 @@ var Parser = Class({
         }
 
         a_seg = this.__segments[this.active]
-
-        // console.log(JSON.stringify(a_seg))
-        // console.log('location '+ location)
-        // console.log('connection '+ connection)
-        // console.log('scan_datetime '+ scan_datetime)
 
         if (a_seg['a_arr'] === null){
             this.mark_inbound(scan_datetime, 'UNEXPECTED_OUTBOUND', true, false)
