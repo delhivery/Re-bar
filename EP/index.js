@@ -9,6 +9,14 @@ var util = require('util')
 var pushToKinesis = require('./kinesis').pushToKinesis;
 var config = require('./config.json')
 
+
+Object.keys(config).forEach( function(config_key, index) {
+    if (config[config_key] === "") {
+        throw 'Configuration Not Defined for '+ config_key
+        process.exit()
+    }
+});
+
 MODES = ['RCSP', 'STSP']
 VERTEX_NAME_CODE_MAPPING = require('./mapper.json')
 

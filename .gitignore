@@ -32,3 +32,5 @@ build
 tests
 bin/*
 *.pyc
+EP/node_modules/*
+dist/*

@@ -1,19 +1,19 @@
 {
-    "AWS_ACCESS_KEY_ID": "AKIAIXSHNJIXK3WILL6A",
+    "AWS_ACCESS_KEY_ID": "",
 
-    "AWS_SECRET_ACCESS_KEY": "a5+D0DVz04M2sAwBZ7ojWCHbUPsWRRrGXH/YrJ+B",
+    "AWS_SECRET_ACCESS_KEY": "",
 
-    "AWS_REGION": "us-east-1",
+    "AWS_REGION": "",
 
-    "BUCKET": "kuldeeprishi",
+    "BUCKET": "",
 
-    "STORAGE": "production",
+    "STORAGE": "",
 
-    "KINESIS_STREAM" : "expath",
+    "KINESIS_STREAM" : "",
 
-    "HOST" : "Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com",
+    "HOST" : "",
 
-    "PORT" : 80
+    "PORT" : ""
 }
 
 
