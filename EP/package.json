@@ -1,0 +1,24 @@
+{
+  "name": "EP",
+  "version": "1.0.0",
+  "description": "Expected Path",
+  "private": "true",
+  "dependencies": {
+    "async": "^1.5.2",
+    "deepcopy": "^0.6.1",
+    "dev": "^0.1.3",
+    "node-uuid": "^1.4.7",
+    "prompt": "^1.0.0",
+    "q": "^1.4.1",
+    "request": "^2.69.0",
+    "prompt": "1.0.0"
+  },
+  "devDependencies": {
+    "fs": "0.0.2",
+    "grunt": "^0.4.5",
+    "grunt-aws-lambda": "^0.10.0",
+    "prompt": "^1.0.0"
+  },
+  "author": "Kuldeep K. Rishi",
+  "license": "BSD"
+}
