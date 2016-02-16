@@ -12,7 +12,8 @@ var config = require('./config.json')
 
 Object.keys(config).forEach( function(config_key, index) {
     if (config[config_key] === "") {
-        throw 'Configuration Not Defined for '+ config_key
+        var err = 'Configuration Not Defined for: '+ config_key
+        console.log(err)
         process.exit()
     }
 });
