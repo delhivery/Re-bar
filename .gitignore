@@ -37,3 +37,4 @@ dist/*
 output.js
 test.js
 event.json
+.rope*
