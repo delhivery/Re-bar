@@ -1,5 +1,0 @@
-Import('env')
-
-env = env.Clone()
-lib = env.StaticLibrary('dijkstra', ['dijkstra.cxx'])
-Return("lib")
