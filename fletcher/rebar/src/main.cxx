@@ -6,13 +6,6 @@
 #include "jezik.hpp"
 #include "weld.hpp"
 
-/*template <typename T> map<string, function<json_map(shared_ptr<T>, const map<string, any>&)> > Weld<T>::welder = {
-    {"ADDV", T::addv},
-    {"ADDE", T::adde},
-    {"LOOK", T::look},
-    {"FIND", T::find}
-};*/
-
 const string_view DEFAULT_HOST{"127.0.0.1"};
 const short int DEFAULT_PORT = 9000;
 
