@@ -1,3 +1,10 @@
+/**
+ * Main Lambda function
+ *
+ * @module index
+ */
+
+
 require('buffer');
 require('events').EventEmitter.prototype._maxListeners = 200;
 
@@ -21,7 +28,12 @@ Object.keys(config).forEach( function(config_key, index) {
 var CLIENT = new Client(config.HOST, config.PORT)
 
 
-// handles data recieved from kinesis
+/**
+ * handlePayload from kinesis
+ *
+ * @method handlePayload
+ * @return null
+ */
 function handlePayload(records, callback) {
     async.eachSeries(records, function(record, callbackFromForEach){
         var record = Utils.decode_record(record)

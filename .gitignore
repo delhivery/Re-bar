@@ -32,8 +32,9 @@ build
 tests
 bin/*
 *.pyc
-node_modules/*
+node_modules
 dist/*
+out
 output.js
 test.js
 event.json

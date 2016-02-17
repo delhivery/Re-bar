@@ -1,3 +1,10 @@
+/**
+ * This class exposes parser and its utilities to update a recommended path
+ *
+ * @module parser
+ */
+
+
 var fs = require('fs');
 var net = require('net');
 var Utils = require('./utils')
@@ -6,27 +13,25 @@ var Utils = require('./utils')
 VERTEX_NAME_CODE_MAPPING = require('./mapper.json')
 
 
-var Class = function(methods) {
-    var klass = function() {
-        this.initialize.apply(this, arguments);
-    };
-
-    for (var property in methods) {
-       klass.prototype[property] = methods[property];
-    }
-
-    if (!klass.prototype.initialize) klass.prototype.initialize = function(){};
-
-    return klass;
-};
-
-
-var Parser = Class({
+/**
+ * Class representing a path with utilities to parse through it
+ *
+ * @class Parser
+ * @constructor
+ */
+var Parser = Utils.Class({
     initialize: function(){
         this.active = null
         this.__segments = []
     },
 
+
+    /**
+     * Deactivate all future edges
+     *
+     * @method deactivate
+     * @return null
+     */
     deactivate: function(){
         that = this
         that.__segments.forEach(function(val, idx){
@@ -37,6 +42,13 @@ var Parser = Class({
 
     },
 
+    /**
+     * Get the actual arrival time at active vertex
+     *
+     * @method arrival
+     * @param {Integer} epoch timestamp
+     * @return if sdt is passed will Set actual arrival at active vertex else will return the actual arrival time at active vertex
+     */
     arrival: function(sdt){
         if (sdt === undefined){
             return this.__segments[this.active]['a_arr']
@@ -45,6 +57,11 @@ var Parser = Class({
         }
     },
 
+    /**
+     * Add a null segment
+     *
+     * @method add_nullseg
+     */
     add_nullseg: function(){
         var segment = {
             'src': null,
@@ -66,6 +83,13 @@ var Parser = Class({
         this.active = 0
     },
 
+    /**
+     * Add a segment to parser
+     *
+     * @method add_segment
+     * @params {Boolean} subgraph
+     * @params {Object} kwargs
+     */
     add_segment: function(subgraph, kwargs){
 
         if (subgraph === true){
@@ -114,6 +138,11 @@ var Parser = Class({
         return this.__segments.length
     },
 
+    /**
+     * Add multiple segments to parser
+     *
+     * @method add_segments
+     */
     add_segments: function(segments, novi){
         var self = this
         if (novi === undefined){
@@ -129,6 +158,12 @@ var Parser = Class({
         })
 
     },
+
+    /**
+     * Mark inbound against path
+     *
+     * @method mark_inbound
+     */
     mark_inbound: function(scan_datetime, rmk, fail, arrived){
         var active  = this.active
 
@@ -147,6 +182,12 @@ var Parser = Class({
         }
     },
 
+
+    /**
+     * Mark outbound against path
+     *
+     * @method mark_outbound
+     */
     mark_outbound: function(scan_datetime, rmk, fail, departed){
         if (departed){
             this.__segments[this.active]['a_dep'] = scan_datetime
@@ -173,6 +214,12 @@ var Parser = Class({
         }
     },
 
+
+    /**
+     * Make a duplicate node from old active to new intermediary and mark it reached
+     *
+     * @method make_new
+     */
     make_new: function(connection, intermediary, source){
         if (source === undefined || source === null){
             source = this.active
@@ -190,6 +237,11 @@ var Parser = Class({
         this.active = segment['idx']
     },
 
+    /**
+     * Make a new node from provided parameters and mark it reached
+     *
+     * @method make_new_blank
+     */
     make_new_blank: function(src, dst, cid, sdt){
         var segment = {
             'src': src,
@@ -212,11 +264,24 @@ var Parser = Class({
         this.active = active
     },
 
+    /**
+     * Mark termination of ExPath due to bad/missing data
+     *
+     * @method mark_termination
+     */
     mark_termination: function(msg){
         this.__segments[this.active]['rmk'].push(msg)
         this.__segments[this.active]['st'] = 'FAIL'
     },
 
+    /**
+     * Parse inbound against graph <br>
+     *   [in] location: Location at which inbound has been performed <br>
+     *  [in] scan_datetime: Date time of inscan <br>
+     *  [out] boolean: True on successful inbound, False on failed inbound <br>
+     *
+     * @method parse_inbound
+     */
     parse_inbound: function(location, scan_datetime){
         if (this.active == null){
             var err = 'ERROR (parse_inbound): No active nodes found'
@@ -253,6 +318,11 @@ var Parser = Class({
         return false
     },
 
+    /**
+     * Parse outbound against graph
+     *
+     * @method parse_outbound
+     */
     parse_outbound: function(location, connection, scan_datetime){
         if (this.active == null) {
             console.error('ERROR (parse_outbound): No active nodes found')
@@ -291,6 +361,11 @@ var Parser = Class({
         return false
     },
 
+    /**
+     * Return the index for segment matching kwargs
+     *
+     * @method lookup
+     */
     lookup: function(kwargs){
         idx = null
         this.__segments.forEach(function(segment, index){
@@ -301,6 +376,11 @@ var Parser = Class({
         return idx
     },
 
+    /**
+     * Return the entire graph as a list
+     *
+     * @method value
+     */
     value: function(){
         return this.__segments
     }

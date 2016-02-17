@@ -1,24 +1,22 @@
+/**
+ * Exposes a reader for scans off kinesis stream
+ *
+ * @module reader
+ */
+
 var Q = require('q');
 var Parser = require('./parser').Parser;
 var Utils = require('./utils')
 
 MODES = ['RCSP', 'STSP']
 
-var Class = function(methods) {
-    var klass = function() {
-        this.initialize.apply(this, arguments);
-    };
 
-    for (var property in methods) {
-       klass.prototype[property] = methods[property];
-    }
-
-    if (!klass.prototype.initialize) klass.prototype.initialize = function(){};
-
-    return klass;
-};
-
-var ScanReader = Class({
+/**
+ * Class to read a package scan and load the appropriate graph
+ *
+ * @class ScanReader
+ */
+var ScanReader = Utils.Class({
     initialize: function(client, host, port, store) {
         this.__client = client
         this.__parser = new Parser()
@@ -29,7 +27,11 @@ var ScanReader = Class({
         this.__data = []
     },
 
-
+    /**
+     * Read a scan and update the graph as needed
+     *
+     * @method read
+     */
     read: function(scan_dict){
         var deferred = Q.defer()
         this.__waybill = scan_dict['wbn']
@@ -144,10 +146,20 @@ var ScanReader = Class({
         return deferred.promise
     },
 
+    /**
+     * Returns status of graph on parsing edge
+     *
+     * @method data
+     */
     data: function(){
         return self.__data
     },
 
+    /**
+     * Get or create graph data
+     *
+     * @method load
+     */
     load: function(src, dst, sdt, pdd){
         var deferred = Q.defer()
         var self = this
@@ -168,6 +180,11 @@ var ScanReader = Class({
         return deferred.promise
     },
 
+    /**
+     * Make prediction from outbound connection to arrival at destination
+     *
+     * @method predict
+     */
     predict: function(data){
         var deferred = Q.defer()
         var self = this
@@ -192,6 +209,11 @@ var ScanReader = Class({
         return deferred.promise
     },
 
+    /**
+     * Calls the underlying client to fletcher to populate graph data
+     *
+     * @method solve
+     */
     solve: function(src, dst, sdt, pdd, kwargs){
         var deferred = Q.defer()
         var mode = 0
@@ -216,6 +238,11 @@ var ScanReader = Class({
         return deferred.promise;
     },
 
+    /**
+     * Create (sub)graph. RCSP attempted with fallback to STSP
+     *
+     * @method create
+     */
     create: function(src, dst, sdt, pdd){
         var deferred = Q.defer()
         var that = this

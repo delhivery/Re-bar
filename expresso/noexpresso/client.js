@@ -1,23 +1,50 @@
+/**
+ * Implements a client to fletcher
+ *
+ * @module client
+ */
+
 var net = require('net');
 var Q = require('q');
+var Utils = require('./utils')
 
 
+/**
+ * Convert a number to bytes to send across a socket as a single byte
+ *
+ * @method number_to_bytes
+ */
 function number_to_bytes(number) {
     var buff = new Buffer(1);
     buff.writeUInt8(number, 0);
     return buff;
 }
 
+/**
+ * Converts an argument to bytes to send across a socket as string
+ *
+ * @method keyword_to_bytes
+ */
 function keyword_to_bytes(keyword) {
     var buff = new Buffer(keyword, 'utf-8');
     return buff;
 }
 
+/**
+ * Converts an arguments to bytes with a header prefix specifying its length
+ *
+ * @method param_to_bytes
+ */
 function param_to_bytes(param) {
     param = '' + param;
     return number_to_bytes(param.length) + keyword_to_bytes(param);
 }
 
+/**
+ * Convert a map of named arguments to re-bar supported protocol
+ *
+ * @method kwargs_to_bytes
+ */
 function kwargs_to_bytes(kwargs) {
     var data = new Buffer(0);
 
@@ -41,6 +68,11 @@ function kwargs_to_bytes(kwargs) {
     return data;
 }
 
+/**
+ * Converts a mode, command and named argument combination to re-bar supported protocol
+ *
+ * @method command_to_bytes
+ */
 function command_to_bytes(mode, command, kwargs) {
     var m = number_to_bytes(mode),
         c = keyword_to_bytes(command),
@@ -52,20 +84,17 @@ function command_to_bytes(mode, command, kwargs) {
 }
 
 
-var Class = function(methods) {
-    var klass = function() {
-        this.initialize.apply(this, arguments);
-    };
-
-    for (var property in methods) {
-       klass.prototype[property] = methods[property];
-    }
-
-    if (!klass.prototype.initialize) klass.prototype.initialize = function(){};
-
-    return klass;
-};
-var Client = Class({
+/**
+ * Client to re-bar.
+ *
+ * @class Client
+ */
+var Client = Utils.Class({
+    /**
+     * Initializes a connection to re-bar
+     *
+     * @method initialize
+     */
     initialize: function(host, port){
         this.HOST = host
         this.PORT = port
@@ -73,15 +102,30 @@ var Client = Class({
         this.__handler.connect({'host': this.HOST, 'port': this.PORT})
     },
 
+    /**
+     * Reconnects the connection against server
+     *
+     * @method reconnect
+     */
     reconnect: function(){
         this.__handler.connect({'host': this.HOST, 'port': this.PORT})
     },
 
+    /**
+     * Terminates the connection against server
+     *
+     * @method close
+     */
     close: function(){
         this.__handler.end()
         this.__handler.destroy()
     },
 
+    /**
+     * Executes a command against server and returns the json response
+     *
+     * @method execute
+     */
     execute: function(command, mode, kwargs) {
 
         var deferred = Q.defer()
@@ -128,6 +172,11 @@ var Client = Class({
         return deferred.promise;
     },
 
+    /**
+     * Add a vertex to solver
+     *
+     * @method add_vertex
+     */
     add_vertex: function(vertex){
         if (typeof(vertex) != 'string') {
             throw 'Vertices should be a code or a list of codes. Got '+vertex
@@ -135,6 +184,11 @@ var Client = Class({
         return this.execute("ADDV", undefined, {"code": vertex})
     },
 
+    /**
+     * Initializes a connection to re-bar
+     *
+     * @method add_vertices
+     */
     add_vertices: function(vertices){
         var response = {}
         var dis = this
@@ -144,6 +198,20 @@ var Client = Class({
         return response
     },
 
+    /**
+     *  Add an edge to solver. Parameters <br>
+     *   [in]source: code for source vertex <br>
+     *   [in]destination: code for destination vertex <br>
+     *   [in]code: code for connection <br>
+     *   [in]tip: time for inbound processing <br>
+     *   [in]tap: time for aggregation processing <br>
+     *   [in]top: time for outbound processing <br>
+     *   [in]departure: time of departure <br>
+     *   [in]duration: duration of connection traversal <br>
+     *   [in]cost: cost of connection traversal <br>
+     *
+     * @method add_edge
+     */
     add_edge: function(kwargs){
         var source = kwargs['source'] || null
         var destination = kwargs['destination'] || null
@@ -178,6 +246,11 @@ var Client = Class({
         }
     },
 
+    /**
+     * Add edges to solver
+     *
+     * @method add_edges
+     */
     add_edges: function(edges){
         var response = {}
         edges.forEach(function(edge){
@@ -186,6 +259,11 @@ var Client = Class({
         return response
     },
 
+    /**
+     * Fetch attributes of edge in solver
+     *
+     * @method lookup
+     */
     lookup: function(source, edge){
         var command = "LOOK"
         var mode = 0
@@ -193,6 +271,11 @@ var Client = Class({
         return this.execute(command, mode, kwargs)
     },
 
+    /**
+     * Find a path using solver
+     *
+     * @method get_path
+     */
     get_path: function(source, destination, t_start, t_max, mode){
         var deferred = Q.defer()
         if (mode == undefined)

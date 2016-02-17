@@ -1,3 +1,9 @@
+/**
+ * Utitlity functions for various components of NoExpresso
+ *
+ * @module utils
+ */
+
 var AWS = require('aws-sdk');
 var Q = require('q');
 var fs = require('fs');
@@ -5,6 +11,26 @@ var uuid = require('node-uuid');
 var config = require('./config.json')
 
 var VERTEX_NAME_CODE_MAPPING = require('./mapper.json')
+
+
+/**
+ * Base Class
+ *
+ * @class Class
+ */
+var Class = function(methods) {
+    var klass = function() {
+        this.initialize.apply(this, arguments);
+    };
+
+    for (var property in methods) {
+       klass.prototype[property] = methods[property];
+    }
+
+    if (!klass.prototype.initialize) klass.prototype.initialize = function(){};
+
+    return klass;
+};
 
 
 var INV_MAPPING = (function(){
@@ -24,10 +50,21 @@ AWS.config.update({
 
 var s3 = new AWS.S3();
 
+/**
+ * Convert an ISO datetime string to seconds since epoch
+ *
+ * @method iso_to_seconds
+ */
 var iso_to_seconds = function(iso_string){
     return parseInt( new Date(iso_string).getTime()/1000)
 }
 
+
+/**
+ * Convert a path to a segment
+ *
+ * @method mod_path
+ */
 var mod_path = function(path, start_time, kwargs){
     var segments = [];
 
@@ -66,7 +103,11 @@ var mod_path = function(path, start_time, kwargs){
     return segments
 }
 
-
+/**
+ * Convert a center name to center code
+ *
+ * @method center_name_to_code
+ */
 var center_name_to_code = function(cn_unicode){
     var name = cn_unicode
     if (cn_unicode != undefined && cn_unicode.indexOf(' (') > 0){
@@ -75,12 +116,20 @@ var center_name_to_code = function(cn_unicode){
     return VERTEX_NAME_CODE_MAPPING[name] || null
 }
 
-
+/**
+ * Convert center codes to user readeable format
+ *
+ * @method pretty
+ */
 var pretty = function(data){
     console.log(data)
 }
 
-
+/**
+ * compares segments on basis of index (this as function to sort method)
+ *
+ * @method compare
+ */
 var compare = function(a,b) {
   if (a.idx < b.idx)
     return -1;
@@ -90,10 +139,14 @@ var compare = function(a,b) {
     return 0;
 }
 
-
+/**
+ * Check if package is in return flow
+ *
+ * @method isReturnPackage
+ */
 function isReturnPackage(record){
     var cs = record['cs']
-    if (['RT', 'PU'].indexOf(cs['st']) >= 0 ){
+    if (['RT', 'PU', 'PP'].indexOf(cs['st']) >= 0 ){
         return true
     }
     if (['RTO', 'DTO'].indexOf(cs['ss']) >= 0){
@@ -102,7 +155,11 @@ function isReturnPackage(record){
     return false
 }
 
-
+/**
+ * decode kinesis encoded payload to json
+ *
+ * @method decode_record
+ */
 function decode_record(record) {
     var encodedPayload = record.kinesis.data;
     var rawPayload = new Buffer(encodedPayload, 'base64').toString('ascii');
@@ -110,7 +167,11 @@ function decode_record(record) {
     return data
 }
 
-
+/**
+ * Load graph from local
+ *
+ * @method load_from_local
+ */
 var load_from_local = function(waybill){
     var deferred = Q.defer()
     path = 'tests/'+waybill
@@ -127,7 +188,11 @@ var load_from_local = function(waybill){
     return deferred.promise;
 }
 
-
+/**
+ * Write graph to local
+ *
+ * @method store_to_local
+ */
 var store_to_local = function(waybill, data){
     var deferred = Q.defer()
     path = 'tests/' + waybill
@@ -143,7 +208,11 @@ var store_to_local = function(waybill, data){
     return deferred.promise;
 }
 
-
+/**
+ * store graph to S3
+ *
+ * @method store_to_s3
+ */
 var store_to_s3 = function(waybill, data){
     var deferred = Q.defer()
 
@@ -171,7 +240,11 @@ var store_to_s3 = function(waybill, data){
     return deferred.promise;
 }
 
-
+/**
+ * Load graph data from s3
+ *
+ * @method load_from_s3
+ */
 var load_from_s3 = function(waybill){
     var deferred = Q.defer()
     var params = {
@@ -190,7 +263,11 @@ var load_from_s3 = function(waybill){
     return deferred.promise;
 }
 
-
+/**
+ * Returns True if all secondary conditions are met by obj else False
+ *
+ * @method match
+ */
 var match = function(obj, secondary){
     for (var key in secondary){
         if (obj[key] != secondary[key]){
@@ -201,7 +278,11 @@ var match = function(obj, secondary){
 }
 
 
-
+/**
+ * Convert center codes to user readeable format
+ *
+ * @method prettify
+ */
 var prettify = function(segments){
     var tsegments = []
 
@@ -241,4 +322,5 @@ exports.isReturnPackage = isReturnPackage;
 exports.decode_record = decode_record;
 exports.prettify = prettify;
 exports.match = match;
+exports.Class = Class;
 
