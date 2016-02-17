@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset='utf-8'>
+        <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+        <meta name='viewport' content='width=device-width, initial-scale=1'>
+
+        <!-- JQuery -->
+        <script src='https://code.jquery.com/jquery-1.12.0.min.js'></script>
+        <script src='https://code.jquery.com/jquery-migrate-1.2.1.min.js'></script>
+
+        <!-- Bootstrap -->
+        <script src='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js' integrity='sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS' crossorigin='anonymous'></script>
+
+        <!-- JQuery Tooltipster -->
+        <script src='https://cdnjs.cloudflare.com/ajax/libs/tooltipster/3.3.0/js/jquery.tooltipster.js' crossorigin='anonymous'></script>
+        <!--<script src='https://cdnjs.cloudflare.com/ajax/libs/tooltipster/3.3.0/js/jquery.tooltipster.min.js' crossorigin='anonymous'></script>-->
+
+        <!-- Bootstrap -->
+        <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css' integrity='sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7' crossorigin='anonymous'>
+        <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css' integrity='sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r' crossorigin='anonymous'>
+
+        <!-- JQuery Tooltipster -->
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/tooltipster/3.3.0/css/tooltipster.min.css' crossorigin='anonymous'>
+        <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/tooltipster/3.3.0/css/themes/tooltipster-shadow.min.css' crossorigin='anonymous'>
+
+        <title>ExPath 101</title>
+
+        <style type='text/css'>
+            * {
+                margin          : 0;
+                font-family     : Consolas,monaco,monospace; 
+            }
+
+            html, body {
+                height          : 100%;
+                overflow        : hidden;
+            }
+
+            .container {
+                margin          : 1em auto;
+                height          : calc(100% - 2em);
+                overflow        : hidden;
+            }
+
+            .graph {
+                overflow        : hidden;
+                height          : calc(100% - 5em);
+            }
+
+            .graph_container {
+                position        : relative;
+                overflow        : auto;
+                height          : calc(100% - 5em);
+            }
+
+            .scans {
+                position        : fixed;
+                left            : 0;
+                bottom          : 0;
+                width           : 100%;
+                text-align      : center;
+            }
+
+            .scan_list {
+                margin          : 0 auto;
+                display         : inline-block;
+            }
+
+            .vertex {
+                border          : solid 2px;
+                display         : inline-block;
+                height          : 3em;
+                width           : 15em;
+                margin          : 0 auto;
+                text-align      : center;
+                line-height     : 2.5em;
+                position        : absolute;
+                box-shadow      : 0.3em 0.3em 0.3em 0 rgba(0, 0, 0, 0.2);
+            }
+
+            .RCSP {
+                box-shadow      : 0.3em 0.3em 0.3em 0 rgba(0, 255, 0, 0.4);
+            }
+
+            .STSP {
+                box-shadow      : 0.3em 0.3em 0.3em 0 rgba(255, 0, 0, 0.4);
+            }
+
+            .ACTIVE {
+                color           : #3e8f3e;
+                border-color    : #3e8f3e;
+            }
+
+            .FAIL {
+                color           : #b92c28;
+                border-color    : #b92c28;
+            }
+
+            .REACHED {
+                color           : #d58512;
+                border-color    : #d58512;
+            }
+
+            .INACTIVE {
+                color           : #000;
+                border-color    : #000;
+            }
+
+            .FUTURE {
+                color           : #269abc;
+                border-color    : #269abc;
+            }
+
+            .edge {
+                border-top      : 1px solid;
+                position        : absolute;
+                text-align      : center;
+                transform-origin: 0 0;
+            }
+
+            .tipster {
+                list-style      : none;
+                margin          : 0 auto;
+                padding         : 0;
+                text-align      : center;
+                color           : rgba(0, 0, 0, 0.8);
+                line-height     : 2.5em;
+                background      : white;
+                visibility      : hidden;
+            }
+
+            .tooltipster-content .tipster {
+                visibility      : visible;
+            }
+
+            /*
+            .tipster {
+                position        : relative;
+                display         : inline-block;
+                border          : solid 1px rgba(0, 0, 0, 0.2);
+                list-style      : none;
+                margin          : 0 auto;
+                padding         : 0;
+                text-align      : center;
+                color           : rgba(0, 0, 0, 0.8);
+                box-shadow      : 0.2em 0.2em 0.2em 0 rgba(0, 0, 0, 0.2);
+                line-height     : 2.5em;
+                left            : 50%;
+                transform       : translate(-50%, 1.5em);
+                visibility      : hidden;
+                z-index         : 99;
+                background      : white;
+            }*/
+
+            /*
+            .tipster:before, .tipster:after {
+                content         : '';
+                position        : absolute;
+                width           : 1em;
+                height          : 1em;
+                left            : 50%;
+                background      : white;
+                z-index         : 999;
+                transform       : rotate(45deg) translate(-50%, -25%);
+            }
+
+            .tipster:before {
+                border-left     : solid 1px rgba(0, 0, 0, 0.2);
+                border-top      : solid 1px rgba(0, 0, 0, 0.2);
+            }
+
+            .tipster:after {
+                border-right    : solid 1px rgba(0, 0, 0, 0.2);
+                border-bottom   : solid 1px rgba(0, 0, 0, 0.2);
+            }
+
+            .vertex:hover .tipster {
+                visibility      : visible;
+            }*/
+
+            .tipster li {
+                width           : 32em;
+            }
+
+            .tipster li:not(:last-child) {
+                border-bottom   : solid 1px rgba(0, 0, 0, 0.2);
+            }
+
+            .tipster li span {
+                display         : inline-block;
+                text-align      : left;
+            }
+
+            .tipster li span.key {
+                width           : 15em;
+            }
+
+            .tipster li span.value {
+                width           : 15em;
+                min-height      : 1em;
+                margin-left     : 1em;
+            }
+
+            .tipster li.data {
+                padding         : 0.5em;
+            }
+
+            .scan {
+                margin          : 0 2em;
+                position        : relative;
+            }
+
+            .scan.element{
+                width           : 4em;
+                height          : 4em;
+                border          : solid 1px #269abc;
+                background      : #269abc;
+                border-radius   : 4em;
+                box-shadow      : 0.2em 0.2em 0.2em 0 rgba(0, 0, 0, 0.5);
+                float           : left;
+                text-align      : center;
+                line-height     : 4em;
+                color           : #fff;
+                cursor          : pointer;
+            }
+
+            .scan.element.selected {
+                border-color    : #3e8f3e;
+                background      : #3e8f3e;
+            }
+
+            .scan.arrow {
+                border-top      : 1px solid rgba(0, 0, 0, 0.2);
+                top             : 0;
+                margin          : 2em;
+                z-index         : -99;
+            }
+        </style>
+
+        <script type='text/javascript'>
+            grapher = (function() {
+                var graph = {
+                    init: function(target) {
+                        this.NODE_UNITS = 'em';
+                        this.NODE_BREAK_X = 15;
+                        this.NODE_BREAK_Y = 3;
+                        this.NODE_START_X = 0;
+                        this.NODE_START_Y = 0;
+
+                        this.canvas = $('#' + target);
+                    },
+                    makenodes: function(data) {
+                        var par = this;
+
+                        $.each(data, function(record_idx) {
+                            var record = data[record_idx];
+
+                            if (record.p_arr != null)
+                                record.p_arr = parseInt(record.p_arr) == NaN ? record.p_arr : new Date(parseInt(record.p_arr) * 1000);
+
+                            if (record.p_dep != null)
+                                record.p_dep = parseInt(record.p_dep) == NaN ? record.p_dep : new Date(parseInt(record.p_dep) * 1000);
+
+                            if (record.a_arr != null)
+                                record.a_arr = parseInt(record.a_arr) == NaN ? record.a_arr : new Date(parseInt(record.a_arr) * 1000);
+
+                            if (record.a_dep != null)
+                                record.a_dep = parseInt(record.a_dep) == NaN ? record.a_dep : new Date(parseInt(record.a_dep) * 1000);
+
+                            var node = {
+                                idx: record.idx,
+                                lab: record.src,
+                                pdt: record.p_dep,
+                                pat: record.p_arr,
+                                adt: record.a_dep,
+                                aat: record.a_arr,
+                                rmk: record.rmk,
+                                par: record.par,
+                                sta: record.st,
+                                cst: record.cst,
+                                sol: record.sol,
+                                sub: 0
+                            };
+
+                            if (node.par != null && node.par != undefined) {
+                                par.nodes[node.par].sub++;
+                                node.posx = par.nodes[node.par].posx + 2 * par.NODE_BREAK_X;
+                                node.posy = par.nodes[node.par].posy + (par.nodes[node.par].sub - 1) * 2 * par.NODE_BREAK_Y;
+                            }
+                            else {
+                                node.posx = par.NODE_START_X;
+                                node.posy = par.NODE_START_Y;
+                            }
+                            par.nodes.push(node);
+                        });
+                    },
+
+                    makeedges: function(data) {
+                        var par = this;
+
+                        $.each(data, function(record_idx) {
+                            var record = data[record_idx];
+
+
+                            if(record.par != null && record.par != undefined) {
+                                var edge = {
+                                    lab: data[record.par].conn,
+                                    src: record.par,
+                                    dst: record.idx,
+                                    sta: record.st,
+                                };
+
+                                if (par.nodes[edge.src].adt != null && par.nodes[edge.src] != undefined) {
+                                    if (par.nodes[edge.dst].aat != null && par.nodes[edge.dst].aat != undefined) {
+                                        edge.sta = par.nodes[edge.src].sta;
+                                    }
+                                }
+
+                                edge.posx = par.nodes[edge.src].posx + par.NODE_BREAK_X;
+                                edge.posy = par.nodes[edge.src].posy + par.NODE_BREAK_Y / 2;
+                                var dst_y = par.nodes[edge.dst].posy - par.nodes[edge.src].posy;
+                                edge.length = Math.sqrt(par.NODE_BREAK_X * par.NODE_BREAK_X + dst_y * dst_y);
+                                edge.rotation = Math.atan(dst_y / par.NODE_BREAK_X);
+                                par.edges.push(edge);
+                            }
+                        });
+                    },
+                    clear: function() {
+                        $(this.canvas).html('');
+                    },
+                    drawnodes: function() {
+                        var node_blocks = [];
+                        var par = this;
+
+                        $.each(par.nodes, function(node_idx) {
+                            var node = par.nodes[node_idx];
+
+                            var node_block = $('<div />');
+                            $(node_block).addClass('vertex');
+                            $(node_block).addClass(node.sta);
+                            $(node_block).addClass(node.sol);
+                            $(node_block).html(node.lab);
+                            $(node_block).css('top', node.posy + par.NODE_UNITS);
+                            $(node_block).css('left', node.posx + par.NODE_UNITS);
+
+                            $(node_block).append(
+                                $('<ul />').addClass('tipster')
+                                .append(
+                                    $('<li />')
+                                        .addClass('data')
+                                        .append($('<span />').addClass('key').html('Predicted Departure'))
+                                        .append($('<span />').addClass('value').html(node.pdt != null ? node.pdt.toISOString() : node.pdt))
+                                )
+                                .append(
+                                    $('<li />')
+                                        .addClass('data')
+                                        .append($('<span />').addClass('key').html('Predicted Arrival'))
+                                        .append($('<span />').addClass('value').html(node.pat != null ? node.pat.toISOString() : node.pat))
+                                )
+                                .append(
+                                    $('<li />')
+                                        .addClass('data')
+                                        .append($('<span />').addClass('key').html('Actual Departure'))
+                                        .append($('<span />').addClass('value').html(node.adt != null ? node.adt.toISOString() : node.adt))
+                                )
+                                .append(
+                                    $('<li />')
+                                        .addClass('data')
+                                        .append($('<span />').addClass('key').html('Actual Arrival'))
+                                        .append($('<span />').addClass('value').html(node.aat != null ? node.aat.toISOString() : node.aat))
+                                )
+                                .append(
+                                    $('<li />')
+                                        .addClass('data')
+                                        .append($('<span />').addClass('key').html('Cumulative Cost'))
+                                        .append($('<span />').addClass('value').html(node.cst))
+                                )
+                                .append(
+                                    $('<li />')
+                                        .addClass('data')
+                                        .append($('<span />').addClass('key').html('Remarks'))
+                                        .append($('<span />').addClass('value').html(node.rmk))
+                                )
+                            );
+                            node_blocks.push(node_block);
+                        });
+
+                        $(this.canvas).append(node_blocks);
+                    },
+                    drawedges: function() {
+                        var edge_blocks = [];
+                        var par = this;
+
+                        $.each(par.edges, function(edge_idx) {
+                            var edge = par.edges[edge_idx];
+                            var edge_block = $('<div></div>');
+                            $(edge_block).addClass('edge');
+                            $(edge_block).addClass(edge.sta);
+                            $(edge_block).html(edge.lab);
+                            $(edge_block).css('top', edge.posy + par.NODE_UNITS);
+                            $(edge_block).css('left', edge.posx + par.NODE_UNITS);
+                            $(edge_block).css('width', edge.length + par.NODE_UNITS);
+                            $(edge_block).css('transform', 'rotate(' + edge.rotation + 'rad)');
+                            edge_blocks.push(edge_block);
+                        });
+
+                        $(this.canvas).append(edge_blocks);
+                    },
+                    draw: function(data) {
+                        this.nodes = [], this.edges = [];
+                        this.makenodes(data);
+                        this.makeedges(data);
+                        this.clear();
+                        this.drawnodes();
+                        this.drawedges();
+                    }
+                };
+
+                return graph;
+            }());
+
+            scanner = (function() {
+                var scan = {
+                    init: function(target) {
+                        this.canvas = $('#' + target);
+                        this.graph_target = 'graph_container';
+                        this.segments = [];
+                        this.graph = grapher;
+                        var par = this;
+
+                        $(document).on('click', '.element', function() {
+                            $('.element').removeClass('selected');
+                            $(this).addClass('selected');
+                            var idx = $(this).data('idx');
+                            par.graph.draw(par.segments[idx]);
+                        });
+                    },
+                    drawContainers: function() {
+                        $(this.canvas).html('');
+
+                        $(this.canvas).append(
+                            $('<div />').addClass('graph').append(
+                                $('<div />').addClass('graph_container').attr('id', 'graph_container')
+                            )
+                        );
+
+                        $(this.canvas).append(
+                            $('<div />').addClass('scans').append(
+                                $('<div />').addClass('scan_list')
+                            )
+                        );
+                        this.graph.init('graph_container');
+
+                        $(document).scroll(function() {
+                            console.log('Scroling');
+                        });
+                    },
+                    draw: function(data) {
+                        var par = this;
+                        this.drawContainers();
+
+                        $.each(data, function(scan_idx) {
+                            var record = data[scan_idx];
+                            var scan = record.scan;
+                            var segments = record.segments;
+                            par.segments.push(segments);
+                            $(par.canvas).find('.scans .scan_list').append(
+                                $('<div />').addClass('scan').addClass('element').text(scan.act).data('idx', scan_idx).append(
+                                    $('<ul />').addClass('tipster')
+                                    .append(
+                                        $('<li />')
+                                            .addClass('data')
+                                            .append($('<span />').addClass('key').html('Scan Date'))
+                                            .append($('<span />').addClass('value').html(scan.sdt != null ? new Date(parseInt(scan.sdt) * 1000).toISOString() : scan.sdt))
+                                    )
+                                    .append(
+                                        $('<li />')
+                                            .addClass('data')
+                                            .append($('<span />').addClass('key').html('Scan Location'))
+                                            .append($('<span />').addClass('value').html(scan.src_raw))
+                                    )
+                                    .append(
+                                        $('<li />')
+                                            .addClass('data')
+                                            .append($('<span />').addClass('key').html('Connection'))
+                                            .append($('<span />').addClass('value').html(scan.cid))
+                                    )
+                                    .append(
+                                        $('<li />')
+                                            .addClass('data')
+                                            .append($('<span />').addClass('key').html('Promise Date'))
+                                            .append($('<span />').addClass('value').html(scan.pdd != null ? new Date(parseInt(scan.pdd) * 1000).toISOString() : scan.pdd))
+                                    )
+                                )
+                            );
+                        });
+
+                        $(this.canvas).find('.scan_list').append(
+                            $('<div />').addClass('scan').addClass('arrow')
+                        );
+
+                        $('.scan_list .element:first').click();
+                    }
+                };
+                return scan;
+            }());
+            $(document).ready(function() {
+                $(document).on('mouseenter', '.vertex:not(.tooltipstered)', function() {
+                    $(this).tooltipster({
+                        functionInit: function(origin, content) {
+                            return origin.find('.tipster');
+                        },
+                        theme: 'tooltipster-shadow',
+                    }).tooltipster('show');
+
+                });
+
+                $(document).on('mouseenter', '.element:not(.tooltipstered)', function() {
+                    $(this).tooltipster({
+                        functionInit: function(origin, content) {
+                            return origin.find('.tipster');
+                        },
+                        theme: 'tooltipster-shadow',
+                    }).tooltipster('show');
+                });
+
+                var graph = scanner;
+                graph.init('container');
+
+                var data =
