@@ -68,7 +68,7 @@ class ScanReader(object):
 
             if not success:
                 self.create(
-                    scan['src'], scan['dst'], scan['sdt'], scan['pdd'])
+                    scan['src'], scan['dst'], (scan['sdt'], 0), scan['pdd'])
 
             if self.__store:
                 self.__data.append({
@@ -107,7 +107,7 @@ class ScanReader(object):
             segments = sorted(segments, key=itemgetter('idx'), reverse=False)
             self.__parser.add_segments(segments)
         else:
-            self.create(src, dst, sdt, pdd)
+            self.create(src, dst, (sdt, 0), pdd)
 
             if self.__store:
                 self.__data.append({
@@ -124,9 +124,11 @@ class ScanReader(object):
         if c_data.get('connection', None):
             lat = data['sdt'] + c_data['connection']['dur']
             itd = c_data['connection']['dst']
+            itd_cst = c_data['connection']['cost']
+
             self.__parser.make_new_blank(
                 data['src'], itd, data['cid'], data['sdt'])
-            self.create(itd, data['dst'], lat, data['pdd'])
+            self.create(itd, data['dst'], (lat, itd_cst), data['pdd'])
             self.__parser.arrival = None
         else:
             self.__parser.make_new_blank(
@@ -139,21 +141,27 @@ class ScanReader(object):
         Calls the underlying client to fletcher to populate graph data
         '''
         mode = kwargs.get('mode', 0)
+        itd_cst = kwargs.pop('itd_cst', 0)
+
         sout = self.__client.get_path(src, dst, sdt, pdd, mode=mode)
 
         if sout.get('path', None):
-            sout = mod_path(sout['path'], sdt, pdd=pdd, sol=MODES[mode])
+            sout = mod_path(
+                sout['path'], sdt, pdd=pdd, sol=MODES[mode],
+                offset=self.__parser.lcost + itd_cst)
             self.__parser.add_segments(sout, novi=True)
             self.__parser.arrival = sdt
             return True
         return False
 
-    def create(self, src, dst, sdt, pdd):
+    def create(self, src, dst, offsets, pdd):
         '''
         Create (sub)graph. RCSP attempted with fallback to STSP
         '''
 
         if src and dst:
+            sdt = offsets[0]
+            itd_cst = offsets[1]
 
-            if not self.solve(src, dst, sdt, pdd):
-                self.solve(src, dst, sdt, pdd, mode=1)
+            if not self.solve(src, dst, sdt, pdd, itd_cst=itd_cst):
+                self.solve(src, dst, sdt, pdd, mode=1, itd_cst=itd_cst)

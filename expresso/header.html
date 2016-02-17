@@ -75,8 +75,16 @@
                 margin          : 0 auto;
                 text-align      : center;
                 line-height     : 2.5em;
-                box-shadow      : 0.3em 0.3em 0.3em 0 rgba(0, 0, 0, 0.3);
                 position        : absolute;
+                box-shadow      : 0.3em 0.3em 0.3em 0 rgba(0, 0, 0, 0.2);
+            }
+
+            .RCSP {
+                box-shadow      : 0.3em 0.3em 0.3em 0 rgba(0, 255, 0, 0.4);
+            }
+
+            .STSP {
+                box-shadow      : 0.3em 0.3em 0.3em 0 rgba(255, 0, 0, 0.4);
             }
 
             .ACTIVE {
@@ -271,6 +279,7 @@
                                 par: record.par,
                                 sta: record.st,
                                 cst: record.cst,
+                                sol: record.sol,
                                 sub: 0
                             };
 
@@ -330,6 +339,7 @@
                             var node_block = $('<div />');
                             $(node_block).addClass('vertex');
                             $(node_block).addClass(node.sta);
+                            $(node_block).addClass(node.sol);
                             $(node_block).html(node.lab);
                             $(node_block).css('top', node.posy + par.NODE_UNITS);
                             $(node_block).css('left', node.posx + par.NODE_UNITS);
@@ -480,7 +490,7 @@
                                         $('<li />')
                                             .addClass('data')
                                             .append($('<span />').addClass('key').html('Promise Date'))
-                                            .append($('<span />').addClass('value').html(scan.pdd != null ? new Date(parseInt(scan.pdd)).toISOString() : scan.pdd))
+                                            .append($('<span />').addClass('value').html(scan.pdd != null ? new Date(parseInt(scan.pdd) * 1000).toISOString() : scan.pdd))
                                     )
                                 )
                             );

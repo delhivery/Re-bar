@@ -20,6 +20,7 @@ class Parser(object):
         '''
         self.active = None
         self.__segments = []
+        self.__lcost = 0
 
     def deactivate(self):
         '''
@@ -66,6 +67,7 @@ class Parser(object):
         }
         self.__segments.append(segment)
         self.active = 0
+        self.__lcost = self.__segments[self.active]['cst']
 
     def add_segment(self, subgraph=False, **kwargs):
         '''
@@ -105,6 +107,7 @@ class Parser(object):
 
         if segment['st'] == 'ACTIVE':
             self.active = segment['idx']
+            self.__lcost = segment['cst']
 
         self.__segments.append(segment)
         return len(self.__segments)
@@ -158,6 +161,7 @@ class Parser(object):
                 'st': 'FUTURE'
             })
             self.__segments[self.active]['st'] = 'ACTIVE'
+            self.__lcost = self.__segments[self.active]['cst']
 
     def make_new(self, connection, intermediary, source=None):
         '''
@@ -174,8 +178,10 @@ class Parser(object):
         segment['dst'] = intermediary
         segment['st'] = 'REACHED'
         segment['idx'] = len(self.__segments)
+        segment['cst'] = self.lcost
         self.__segments.append(segment)
         self.active = segment['idx']
+        self.__lcost = segment['cst']
 
     def make_new_blank(self, src, dst, cid, sdt):
         '''
@@ -189,7 +195,7 @@ class Parser(object):
             'a_arr': None,
             'p_dep': None,
             'a_dep': sdt,
-            'cst': self.__segments[self.active]['cst'],
+            'cst': self.__lcost,
             'st': 'REACHED',
             'rmk': [],
             'par': self.active,
@@ -199,6 +205,7 @@ class Parser(object):
         segment['idx'] = len(self.__segments)
         self.__segments.append(segment)
         self.active = segment['idx']
+        self.__lcost = segment['cst']
 
     def mark_termination(self, msg):
         '''
@@ -301,3 +308,10 @@ class Parser(object):
         Return the entire graph as a list
         '''
         return self.__segments
+
+    @property
+    def lcost(self):
+        '''
+        Minimum cost offset
+        '''
+        return self.__lcost

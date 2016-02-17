@@ -108,7 +108,7 @@ def validate(scan_dict):
     return True
 
 
-def mod_path(path, start_time, **kwargs):
+def mod_path(path, start_time, offset=0, **kwargs):
     '''
     Convert a path to a segment
     '''
@@ -133,7 +133,7 @@ def mod_path(path, start_time, **kwargs):
             'conn': connection,
             'p_arr': arrival,
             'p_dep': departure,
-            'cst': cost,
+            'cst': cost + offset,
         }
 
         for key, value in kwargs.items():
