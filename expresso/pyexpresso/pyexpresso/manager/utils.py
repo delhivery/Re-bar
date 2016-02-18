@@ -64,16 +64,6 @@ def validate(scan_dict):
         return False
     center = None
 
-    try:
-        center = scan_dict['cs']['sl']
-        center = scan_dict['cn']
-
-    except KeyError:
-        raise ValueError('BAD CENTER: {}'.format(center))
-
-    except (ValueError, TypeError):
-        return False
-
     if scan_dict['cs'].get('act', None) in ['+C', '<C']:
 
         if (
