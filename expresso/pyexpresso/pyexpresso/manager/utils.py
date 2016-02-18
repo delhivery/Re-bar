@@ -10,12 +10,6 @@ import uuid
 import boto3
 import botocore
 
-VNCMAP_HANDLE = open('fixtures/vertex_name_code_mapping.json', 'r')
-VERTEX_NAME_CODE_MAPPING = json.load(VNCMAP_HANDLE)
-VNCMAP_HANDLE.close()
-
-INV_MAPPING = {VALUE: KEY for KEY, VALUE in VERTEX_NAME_CODE_MAPPING.items()}
-
 EPOCH = datetime.datetime(1970, 1, 1)
 
 
@@ -39,14 +33,6 @@ def iso_to_seconds(iso_string):
     return int(delta.total_seconds())
 
 
-def center_name_to_code(name):
-    '''
-    Convert a center name to center code
-    '''
-    name = name.split(' (')[0]
-    return VERTEX_NAME_CODE_MAPPING.get(name, None)
-
-
 def prettify(segments):
     '''
     Convert center codes to user readeable format
@@ -58,8 +44,6 @@ def prettify(segments):
 
         for key, value in segment.items():
             tsegment[key] = value
-        tsegment['src'] = INV_MAPPING.get(tsegment['src'], None)
-        tsegment['dst'] = INV_MAPPING.get(tsegment['dst'], None)
         tsegments.append(tsegment)
     return tsegments
 
@@ -82,10 +66,7 @@ def validate(scan_dict):
 
     try:
         center = scan_dict['cs']['sl']
-        scan_dict['cs']['sl'] = center_name_to_code(center)
-
         center = scan_dict['cn']
-        scan_dict['cn'] = center_name_to_code(center)
 
     except KeyError:
         raise ValueError('BAD CENTER: {}'.format(center))
