@@ -31,6 +31,7 @@ var ScanReader = Utils.Class({
      * Read a scan and update the graph as needed
      *
      * @method read
+     * @params {Object} scan_dict
      */
     read: function(scan_dict){
         var deferred = Q.defer()
@@ -159,6 +160,10 @@ var ScanReader = Utils.Class({
      * Get or create graph data
      *
      * @method load
+     * @params {String} src
+     * @params {String} src
+     * @params {Integar} sdt scan datetime
+     * @params {Integar} pdd promise datetime
      */
     load: function(src, dst, sdt, pdd){
         var deferred = Q.defer()
@@ -184,6 +189,7 @@ var ScanReader = Utils.Class({
      * Make prediction from outbound connection to arrival at destination
      *
      * @method predict
+     * @params {Object} data
      */
     predict: function(data){
         var deferred = Q.defer()
@@ -213,6 +219,11 @@ var ScanReader = Utils.Class({
      * Calls the underlying client to fletcher to populate graph data
      *
      * @method solve
+     * @params {String} src
+     * @params {String} src
+     * @params {Integar} sdt scan datetime
+     * @params {Integar} pdd promise datetime
+     * @params {Object} kwargs
      */
     solve: function(src, dst, sdt, pdd, kwargs){
         var deferred = Q.defer()
@@ -242,6 +253,10 @@ var ScanReader = Utils.Class({
      * Create (sub)graph. RCSP attempted with fallback to STSP
      *
      * @method create
+     * @params {String} src
+     * @params {String} src
+     * @params {Integar} sdt scan datetime
+     * @params {Integar} pdd promise datetime
      */
     create: function(src, dst, sdt, pdd){
         var deferred = Q.defer()

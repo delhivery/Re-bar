@@ -1,3 +1,8 @@
+/**
+ * Push data to kinesis
+ *
+ * @module kinesis
+ */
 var Q = require('q');
 var AWS = require('aws-sdk');
 var config = require('./config.json')
@@ -12,6 +17,13 @@ AWS.config.update({
 var kinesis = new AWS.Kinesis({apiVersion: '2013-12-02'});
 
 
+/**
+ * Push Data to Kinesis
+ *
+ * @method pushToKinesis
+ * @params {Object} data
+ * @return return a promise object which resolve to a boolean success value
+ */
 var pushToKinesis = function(data){
     var deferred = Q.defer()
     var params = {

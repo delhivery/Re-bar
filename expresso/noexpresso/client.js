@@ -13,6 +13,8 @@ var Utils = require('./utils')
  * Convert a number to bytes to send across a socket as a single byte
  *
  * @method number_to_bytes
+ * @params {Number} number
+ * @return number conveted to bytes buffer
  */
 function number_to_bytes(number) {
     var buff = new Buffer(1);
@@ -24,6 +26,8 @@ function number_to_bytes(number) {
  * Converts an argument to bytes to send across a socket as string
  *
  * @method keyword_to_bytes
+ * @params {String} keyword
+ * @return keyword conveted to bytes buffer
  */
 function keyword_to_bytes(keyword) {
     var buff = new Buffer(keyword, 'utf-8');
@@ -34,6 +38,8 @@ function keyword_to_bytes(keyword) {
  * Converts an arguments to bytes with a header prefix specifying its length
  *
  * @method param_to_bytes
+ * @params {String} params
+ * @return params conveted to bytes buffer
  */
 function param_to_bytes(param) {
     param = '' + param;
@@ -44,6 +50,8 @@ function param_to_bytes(param) {
  * Convert a map of named arguments to re-bar supported protocol
  *
  * @method kwargs_to_bytes
+ * @params {Object} kwargs
+ * @return kwargs conveted to bytes buffer
  */
 function kwargs_to_bytes(kwargs) {
     var data = new Buffer(0);
@@ -72,6 +80,10 @@ function kwargs_to_bytes(kwargs) {
  * Converts a mode, command and named argument combination to re-bar supported protocol
  *
  * @method command_to_bytes
+ * @params {String} mode
+ * @params {Number} command
+ * @params {Object} kwargs
+ * @return command conveted to bytes buffer
  */
 function command_to_bytes(mode, command, kwargs) {
     var m = number_to_bytes(mode),
@@ -94,6 +106,9 @@ var Client = Utils.Class({
      * Initializes a connection to re-bar
      *
      * @method initialize
+     *
+     * @params {String} host
+     * @params {Number} port
      */
     initialize: function(host, port){
         this.HOST = host
@@ -125,6 +140,12 @@ var Client = Utils.Class({
      * Executes a command against server and returns the json response
      *
      * @method execute
+     *
+     * @params {Number} command
+     * @params {String} mode
+     * @params {Object} kwargs
+     *
+     * @return Returns a promise object which will resolve to a json object on completion
      */
     execute: function(command, mode, kwargs) {
 
@@ -176,6 +197,9 @@ var Client = Utils.Class({
      * Add a vertex to solver
      *
      * @method add_vertex
+     * @params {String} vertes
+     *
+     * @return Returns a promise object which will resolve to a json object on success
      */
     add_vertex: function(vertex){
         if (typeof(vertex) != 'string') {
@@ -188,6 +212,9 @@ var Client = Utils.Class({
      * Initializes a connection to re-bar
      *
      * @method add_vertices
+     * @params {Array} vertes
+     *
+     * @return Returns a promise object which will resolve to a json object on success
      */
     add_vertices: function(vertices){
         var response = {}
@@ -211,6 +238,9 @@ var Client = Utils.Class({
      *   [in]cost: cost of connection traversal <br>
      *
      * @method add_edge
+     * @params {Object} kwargs
+     *
+     * @return Returns a promise object which will resolve to a json object on success
      */
     add_edge: function(kwargs){
         var source = kwargs['source'] || null
@@ -263,6 +293,10 @@ var Client = Utils.Class({
      * Fetch attributes of edge in solver
      *
      * @method lookup
+     * @params {String} source
+     * @params {Integar} edge
+     *
+     * @return Returns a promise object which will resolve to a json object on success
      */
     lookup: function(source, edge){
         var command = "LOOK"
@@ -275,6 +309,13 @@ var Client = Utils.Class({
      * Find a path using solver
      *
      * @method get_path
+     * @params {String} source
+     * @params {String} destination
+     * @params {String} t_start
+     * @params {String} t_max
+     * @params {String} mode
+     *
+     * @return Returns a promise object which will resolve to a json object on success
      */
     get_path: function(source, destination, t_start, t_max, mode){
         var deferred = Q.defer()

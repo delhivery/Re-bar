@@ -30,6 +30,7 @@ var Parser = Utils.Class({
      * Deactivate all future edges
      *
      * @method deactivate
+     * @params None
      * @return null
      */
     deactivate: function(){
@@ -61,6 +62,8 @@ var Parser = Utils.Class({
      * Add a null segment
      *
      * @method add_nullseg
+     * @params null
+     * @return add a null segment with status as REACHED to graph and set active to 0
      */
     add_nullseg: function(){
         var segment = {
@@ -89,6 +92,7 @@ var Parser = Utils.Class({
      * @method add_segment
      * @params {Boolean} subgraph
      * @params {Object} kwargs
+     * @return add a segment to graph and update its active
      */
     add_segment: function(subgraph, kwargs){
 
@@ -142,6 +146,9 @@ var Parser = Utils.Class({
      * Add multiple segments to parser
      *
      * @method add_segments
+     * @params {Array} segments - a list of segments
+     * @params {Boolena} novi - boolen to indicate if its subgraph (default is false)
+     * @return null
      */
     add_segments: function(segments, novi){
         var self = this
@@ -187,6 +194,10 @@ var Parser = Utils.Class({
      * Mark outbound against path
      *
      * @method mark_outbound
+     * @params {Integar} scan_datetime in epoc
+     * @params {String} rmk (remarks)
+     * @params {Boolean} fail
+     * @params {Boolean} departed
      */
     mark_outbound: function(scan_datetime, rmk, fail, departed){
         if (departed){
@@ -219,6 +230,9 @@ var Parser = Utils.Class({
      * Make a duplicate node from old active to new intermediary and mark it reached
      *
      * @method make_new
+     * @params {Integar} connection
+     * @params {String} intermediary
+     * @params {String} source
      */
     make_new: function(connection, intermediary, source){
         if (source === undefined || source === null){
@@ -241,6 +255,10 @@ var Parser = Utils.Class({
      * Make a new node from provided parameters and mark it reached
      *
      * @method make_new_blank
+     * @params {String} src
+     * @params {String} dst
+     * @params {Integar} cid
+     * @params {Integar} sdt as epoch
      */
     make_new_blank: function(src, dst, cid, sdt){
         var segment = {
@@ -268,6 +286,7 @@ var Parser = Utils.Class({
      * Mark termination of ExPath due to bad/missing data
      *
      * @method mark_termination
+     * @params {String} msg
      */
     mark_termination: function(msg){
         this.__segments[this.active]['rmk'].push(msg)
@@ -275,12 +294,12 @@ var Parser = Utils.Class({
     },
 
     /**
-     * Parse inbound against graph <br>
-     *   [in] location: Location at which inbound has been performed <br>
-     *  [in] scan_datetime: Date time of inscan <br>
-     *  [out] boolean: True on successful inbound, False on failed inbound <br>
+     * Parse inbound against graph
      *
      * @method parse_inbound
+     * @params {String} location
+     * @params {Integar} scan_datetime
+     * @return True on successful inbound, False on failed inbound
      */
     parse_inbound: function(location, scan_datetime){
         if (this.active == null){
@@ -322,6 +341,9 @@ var Parser = Utils.Class({
      * Parse outbound against graph
      *
      * @method parse_outbound
+     * @params {String} location
+     * @params {Integar} connection
+     * @params {Integar} scan_datetime
      */
     parse_outbound: function(location, connection, scan_datetime){
         if (this.active == null) {
@@ -365,6 +387,8 @@ var Parser = Utils.Class({
      * Return the index for segment matching kwargs
      *
      * @method lookup
+     * @params {Object} kwargs
+     * @return return the matched index or null
      */
     lookup: function(kwargs){
         idx = null

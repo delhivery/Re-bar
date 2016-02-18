@@ -32,7 +32,8 @@ var CLIENT = new Client(config.HOST, config.PORT)
  * handlePayload from kinesis
  *
  * @method handlePayload
- * @return null
+ * @params {Array} a list of records encoded in base64
+ * @return generate a graph based on records
  */
 function handlePayload(records, callback) {
     async.eachSeries(records, function(record, callbackFromForEach){
@@ -54,7 +55,7 @@ function handlePayload(records, callback) {
 };
 
 
-// main handler for this lambda function
+
 exports.handler = function(event, context) {
     handlePayload(event.Records, function(response){
         console.log('Done')

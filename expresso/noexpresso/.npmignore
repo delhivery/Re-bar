@@ -4,3 +4,4 @@ dist
 *.iml
 *.pyc
 *.py
+out
