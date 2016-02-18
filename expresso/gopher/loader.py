@@ -12,14 +12,6 @@ from pyexpresso.manager import Client
 FLETCHER_HOST = '127.0.0.1'
 FLETCHER_PORT = 9000
 
-HANDLE = open('fixtures/vertices.json', 'r')
-VERTICES = json.load(HANDLE)
-HANDLE.close()
-
-HANDLE = open('fixtures/edges.json', 'r')
-EDGES = json.load(HANDLE)
-HANDLE.close()
-
 
 def add_vertex_chunk(vertices):
     '''
@@ -48,15 +40,25 @@ def chunks(lst, chunk_size):
         yield lst[idx: idx + chunk_size]
 
 
-def prepare():
+def prepare(edge_file):
     '''
     Dump vertex/edge data from fixtures to Fletcher
     '''
 
+    handle = open(edge_file, 'r')
+    edges = json.load(handle)
+    handle.close()
+
+    vertices = set()
+
+    for edge in edges:
+        vertices.add(edge['src'])
+        vertices.add(edge['dst'])
+
     threads = []
 
-    for vertices in chunks(VERTICES, len(VERTICES) / 8):
-        thread = threading.Thread(target=add_vertex_chunk, args=[vertices])
+    for vertices_chunk in chunks(vertices, len(vertices) / 8):
+        thread = threading.Thread(target=add_vertex_chunk, args=[vertices_chunk])
         thread.start()
         threads.append(thread)
     print ('Adding vertices over {} threads.'.format(len(threads)))
@@ -65,8 +67,8 @@ def prepare():
         thread.join()
     print ('Added vertices')
 
-    for edges in chunks(EDGES, len(EDGES) / 16):
-        thread = threading.Thread(target=add_edge_chunk, args=[edges])
+    for edges_chunk in chunks(edges, len(edges) / 16):
+        thread = threading.Thread(target=add_edge_chunk, args=[edges_chunk])
         thread.start()
         threads.append(thread)
     print ('Adding edges over {} threads'.format(len(threads)))
