@@ -78,11 +78,11 @@ vector<Path> Optimal::find_path(string_view src, string_view dst, long t_start, 
     if (ignore_cost)
         t_max = P_L_INF;
 
-    if (vertex_map.find(src) == vertex_map.end()) {
+    if (vertex_map.find(src.to_string()) == vertex_map.end()) {
         throw invalid_argument("No source <> found");
     }
 
-    if (vertex_map.find(dst) == vertex_map.end()) {
+    if (vertex_map.find(dst.to_string()) == vertex_map.end()) {
         throw invalid_argument("No destination<> found");
     }
 

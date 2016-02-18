@@ -59,10 +59,11 @@ def validate(scan_dict):
     try:
         scan_dict['cs']['sd'] = iso_to_seconds(scan_dict['cs']['sd'])
         scan_dict['pdd'] = iso_to_seconds(scan_dict['pdd'])
-
     except (ValueError, TypeError, KeyError):
         return False
-    center = None
+
+    scan_dict['cn'] = scan_dict['cn'].split(' (')[0].strip()
+    scan_dict['cs.sl'] = scan_dict['cs']['sl'].split(' (')[0].strip()
 
     if scan_dict['cs'].get('act', None) in ['+C', '<C']:
 

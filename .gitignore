@@ -38,3 +38,5 @@ output.js
 test.js
 event.json
 .rope*
+dist*
+*egg*

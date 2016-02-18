@@ -44,17 +44,15 @@ def prepare(edge_file):
     '''
     Dump vertex/edge data from fixtures to Fletcher
     '''
-
     handle = open(edge_file, 'r')
     edges = json.load(handle)
     handle.close()
-
     vertices = set()
 
     for edge in edges:
         vertices.add(edge['src'])
         vertices.add(edge['dst'])
-
+    vertices = list(vertices)
     threads = []
 
     for vertices_chunk in chunks(vertices, len(vertices) / 8):

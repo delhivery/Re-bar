@@ -54,12 +54,12 @@ inline bool TraversalDominance::operator () (const Traversal& first, const Trave
 
 vector<Path> Pareto::find_path(string_view src, string_view dst, long t_start, long t_max) {
     vector<Path> path;
-    if (vertex_map.find(src) == vertex_map.end()) {
-        throw invalid_argument("Invalid source");
+    if (vertex_map.find(src.to_string()) == vertex_map.end()) {
+        throw invalid_argument("P: Invalid source");
     }
 
-    if (vertex_map.find(dst) == vertex_map.end()) {
-        throw invalid_argument("Invalid destination");
+    if (vertex_map.find(dst.to_string()) == vertex_map.end()) {
+        throw invalid_argument("P: Invalid destination");
     }
 
     Vertex source = vertex_map.at(src.to_string());

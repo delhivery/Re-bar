@@ -73,7 +73,7 @@ void BaseGraph::add_vertex(string_view code) {
     unique_lock<shared_timed_mutex> graph_write_lock(graph_mutex, defer_lock);
     graph_write_lock.lock();
 
-    if (vertex_map.find(code) == vertex_map.end()) {
+    if (vertex_map.find(code.to_string()) == vertex_map.end()) {
 
         VertexProperty vprop{boost::num_vertices(g), code};
         Vertex created = boost::add_vertex(vprop, g);
@@ -85,15 +85,15 @@ void BaseGraph::add_vertex(string_view code) {
 }
 
 void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, const long tip, const long tap, const long top, const double cost) {
-    if (vertex_map.find(src) == vertex_map.end()) {
-        throw domain_error("Invalid source <" + src.to_string() + "> specified");
+    if (vertex_map.find(src.to_string()) == vertex_map.end()) {
+        throw domain_error("C: Invalid source <" + src.to_string() + "> specified");
     }
 
-    if (vertex_map.find(dst) == vertex_map.end()) {
-        throw domain_error("Invalid source <" + dst.to_string() + "> specified");
+    if (vertex_map.find(dst.to_string()) == vertex_map.end()) {
+        throw domain_error("C: Invalid destination <" + dst.to_string() + "> specified");
     }
 
-    if (edge_map.find(conn) == edge_map.end()) {
+    if (edge_map.find(conn.to_string()) == edge_map.end()) {
         size_t sindex = vertex_map.at(src.to_string());
         size_t dindex = vertex_map.at(dst.to_string());
 
@@ -116,15 +116,15 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
 }
 
 void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, const long dep, const long dur, const long tip, const long tap, const long top, const double cost) {
-    if (vertex_map.find(src) == vertex_map.end()) {
-        throw domain_error("Invalid source <" + src.to_string() + "> specified");
+    if (vertex_map.find(src.to_string()) == vertex_map.end()) {
+        throw domain_error("E: Invalid source <" + src.to_string() + "> specified");
     }
 
-    if (vertex_map.find(dst) == vertex_map.end()) {
-        throw domain_error("Invalid source <" + dst.to_string() + "> specified");
+    if (vertex_map.find(dst.to_string()) == vertex_map.end()) {
+        throw domain_error("E: Invalid destination <" + dst.to_string() + "> specified");
     }
 
-    if (edge_map.find(conn) == edge_map.end()) {
+    if (edge_map.find(conn.to_string()) == edge_map.end()) {
 
         size_t sindex = vertex_map.at(src.to_string());
         size_t dindex = vertex_map.at(dst.to_string());
@@ -148,10 +148,10 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
 }
 
 pair<EdgeProperty, VertexProperty> BaseGraph::lookup(string_view vertex, string_view edge) {
-    if (vertex_map.find(vertex) == vertex_map.end())
+    if (vertex_map.find(vertex.to_string()) == vertex_map.end())
         throw domain_error("No source vertex<" + vertex.to_string() + "> found in database");
 
-    if (edge_map.find(edge) == edge_map.end())
+    if (edge_map.find(edge.to_string()) == edge_map.end())
         throw domain_error("Connection<" + edge.to_string() + "> not in database");
 
     Vertex vdesc = vertex_map.at(vertex.to_string());
@@ -168,9 +168,8 @@ pair<EdgeProperty, VertexProperty> BaseGraph::lookup(string_view vertex, string_
 json_map BaseGraph::addv(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
     json_map response;
     try {
-        string_view value;
         check_kwargs(kwargs, "code");
-        value = any_cast<string>(kwargs.at("code"));
+        string value = any_cast<string>(kwargs.at("code"));
         solver->add_vertex(value);
         response["success"] = true;
     }
@@ -185,7 +184,7 @@ json_map BaseGraph::addv(shared_ptr<BaseGraph> solver, const map<string, any>& k
 json_map BaseGraph::adde(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
     json_map response;
     try {
-        string_view src, dst, conn;
+        string src, dst, conn;
         long dep, dur, tip, top, tap;
         double cost;
 
@@ -214,7 +213,7 @@ json_map BaseGraph::adde(shared_ptr<BaseGraph> solver, const map<string, any>& k
 json_map BaseGraph::addc(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
     json_map response;
     try {
-        string_view src, dst, conn;
+        string src, dst, conn;
         long tip, top, tap;
         double cost = 0.30;
         
@@ -240,8 +239,8 @@ json_map BaseGraph::look(shared_ptr<BaseGraph> solver, const map<string, any>& k
 
     try {
         check_kwargs(kwargs, list<string_view>{"src", "conn"});
-        string_view vertex = any_cast<string>(kwargs.at("src"));
-        string_view edge = any_cast<string>(kwargs.at("conn"));
+        string vertex = any_cast<string>(kwargs.at("src"));
+        string edge = any_cast<string>(kwargs.at("conn"));
         auto edge_property = solver->lookup(vertex, edge);
 
         json_map conn;
@@ -267,8 +266,8 @@ json_map BaseGraph::find(shared_ptr<BaseGraph> solver, const map<string, any>& k
     json_map response;
     try {
         check_kwargs(kwargs, list<string_view>{"src", "dst", "beg", "tmax"});
-        string_view src = any_cast<string>(kwargs.at("src"));
-        string_view dst = any_cast<string>(kwargs.at("dst"));
+        string src = any_cast<string>(kwargs.at("src"));
+        string dst = any_cast<string>(kwargs.at("dst"));
         long t_start    = any_cast<long>(kwargs.at("beg"));
         long t_max      = any_cast<long>(kwargs.at("tmax"));
 
