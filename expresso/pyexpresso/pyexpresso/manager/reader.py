@@ -134,7 +134,7 @@ class ScanReader(object):
             self.__parser.make_new_blank(
                 data['src'], None, data['cid'], data['sdt'])
             self.__parser.mark_termination(
-                'MISSING DATA: {}'.format(data['cid']))
+                'MISSING_DATA: {}'.format(data['cid']))
 
     def solve(self, src, dst, sdt, pdd, **kwargs):
         '''
