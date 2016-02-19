@@ -63,7 +63,7 @@ def validate(scan_dict):
         return False
 
     scan_dict['cn'] = scan_dict['cn'].split(' (')[0].strip()
-    scan_dict['cs.sl'] = scan_dict['cs']['sl'].split(' (')[0].strip()
+    scan_dict['cs']['sl'] = scan_dict['cs']['sl'].split(' (')[0].strip()
 
     if scan_dict['cs'].get('act', None) in ['+C', '<C']:
 
