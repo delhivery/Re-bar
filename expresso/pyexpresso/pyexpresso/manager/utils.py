@@ -71,6 +71,8 @@ def validate(scan_dict):
                 scan_dict['cs'].get('cid', None) is None and
                 scan_dict['cs'].get('pid', None) is not None):
             scan_dict['cs']['cid'] = scan_dict['cs']['pid']
+
+        if (scan_dict['cs']['cid'] is not None):
             scan_dict['cs']['pri'] = True
 
     else:
