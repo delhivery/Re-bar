@@ -120,7 +120,7 @@ def load_from_s3(client, bucket, waybill):
     '''
     Load graph data from s3
     '''
-    path = '/tmp/{}{}'.format(uuid.uuid4(), waybill)
+    path = '/tmp/{}{}.json'.format(uuid.uuid4(), waybill)
     try:
         client.download_file(bucket, waybill, path)
         handler = open(path, 'r')
@@ -138,7 +138,7 @@ def load_from_local(waybill):
     '''
     Load graph from local
     '''
-    path = 'tests/{}'.format(waybill)
+    path = 'tests/{}.json'.format(waybill)
     data = []
 
     try:
@@ -156,7 +156,7 @@ def store_to_local(waybill, data):
     '''
 
     if data:
-        path = 'tests/{}'.format(waybill)
+        path = 'tests/{}.json'.format(waybill)
         handler = open(path, 'w')
         handler.write(json.dumps(data))
         handler.close()
@@ -168,7 +168,7 @@ def store_to_s3(client, bucket, waybill, data):
     '''
 
     if data:
-        path = '/tmp/{}{}'.format(uuid.uuid4(), waybill)
+        path = '/tmp/{}{}.json'.format(uuid.uuid4(), waybill)
         handler = open(path, 'w')
         handler.write(json.dumps(data))
         handler.close()
