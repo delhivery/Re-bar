@@ -167,6 +167,10 @@ def store_to_s3(client, bucket, waybill, data):
     Store graph data to s3
     '''
 
+    for record in data:
+        if record.get('par', None) is not None:
+            record['pcon'] = data[record['par']]['conn']
+
     if data:
         path = '/tmp/{}{}.json'.format(uuid.uuid4(), waybill)
         handler = open(path, 'w')
