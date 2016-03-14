@@ -45,7 +45,7 @@ class Parser(object):
         '''
         self.__segments[self.active]['a_arr'] = sdt
 
-    def add_nullseg(self):
+    def add_nullseg(self, pdd=None):
         '''
         Add a null segment
         '''
@@ -63,20 +63,20 @@ class Parser(object):
             'idx': 0,
             'par': None,
             'sol': None,
-            'pdd': None,
+            'pdd': pdd,
         }
         self.__segments.append(segment)
         self.active = 0
         self.__lcost = self.__segments[self.active]['cst']
 
-    def add_segment(self, subgraph=False, **kwargs):
+    def add_segment(self, subgraph=False, pdd=None, **kwargs):
         '''
         Add a segment to parser
         '''
         if subgraph:
 
             if len(self.__segments) == 0:
-                self.add_nullseg()
+                self.add_nullseg(pdd=pdd)
 
         segment = {
             'src': kwargs['src'],
@@ -112,7 +112,7 @@ class Parser(object):
         self.__segments.append(segment)
         return len(self.__segments)
 
-    def add_segments(self, segments, novi=False):
+    def add_segments(self, segments, novi=False, pdd=None):
         '''
         Add multiple segments to parser
         '''
@@ -120,7 +120,7 @@ class Parser(object):
             raise TypeError('List expected. Got {}'.format(type(segments)))
 
         for segment in segments:
-            self.add_segment(subgraph=novi, **segment)
+            self.add_segment(subgraph=novi, pdd=pdd, **segment)
             novi = False
 
     def mark_inbound(self, scan_datetime, rmk=None, fail=False, arrived=False):

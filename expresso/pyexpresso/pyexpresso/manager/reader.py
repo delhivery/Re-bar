@@ -149,7 +149,7 @@ class ScanReader(object):
             sout = mod_path(
                 sout['path'], sdt, pdd=pdd, sol=MODES[mode],
                 offset=self.__parser.lcost + itd_cst)
-            self.__parser.add_segments(sout, novi=True)
+            self.__parser.add_segments(sout, novi=True, pdd=pdd)
             self.__parser.arrival = sdt
             return True
         return False
