@@ -26,6 +26,10 @@ def lambda_handler(event, context):
         data = json.loads(b64decode(record['kinesis']['data']))
         reader = ScanReader(client, S3CLIENT, S3BUCKET)
 
+        if (data.get('cs', {}).get('st', None) != 'UD'):
+            # Ignore non-forward flow
+            continue
+
         try:
             reader.read(data)
         except ValueError:
