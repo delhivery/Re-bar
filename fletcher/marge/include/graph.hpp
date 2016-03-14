@@ -132,12 +132,12 @@ struct EdgeProperty {
     /**
      * @brief Constructs an edge property for a continuous edge(such as custody scan).
      * @details Continuous edges are free i.e. there is no physical cost associated against movement via them.
-     * @param[in] :       Index of the edge in the underlying graph
-     * @param[in] :   Processing time in seconds for outbound at source vertex
-     * @param[in] :   Processing time in seconds for aggregation at source vertex
-     * @param[in] :   Processing time in seconds for inbound at destination vertex.
+     * @param[in] : Index of the edge in the underlying graph
+     * @param[in] : Processing time in seconds for outbound at source vertex
+     * @param[in] : Processing time in seconds for aggregation at source vertex
+     * @param[in] : Processing time in seconds for inbound at destination vertex.
      * @param[in] : Cost of iterating the edge.
-     * @param[in] :  Unique human readable name for edge
+     * @param[in] : Unique human readable name for edge
      */
     EdgeProperty(const size_t, const long, const long, const long, const double, string_view);
 
@@ -156,6 +156,11 @@ struct EdgeProperty {
     EdgeProperty(const size_t, const long, const long, const long, const long, const long, const double, string_view);
 
     /**
+     * @brief Construct an edge property from another ( copy constructor) with a new index
+     */
+    EdgeProperty(const size_t, EdgeProperty another);
+
+    /**
      * @brief Calculate the wait time to traverse this edge.
      * @param[in] : Time of arrival at edge source.
      * @return Time spent waiting at edge source before departing via this edge
@@ -169,6 +174,58 @@ struct EdgeProperty {
      * @return Cost on traversing this edge.
      */
     Cost weight(const Cost&, const long);
+};
+
+/**
+ * @brief Structure representing an edge with its src, dst in graph
+ */
+struct EdgeAll : EdgeProperty {
+    /**
+     * @brief Property to store source vertex
+     */
+    size_t src;
+
+    /**
+     * @brief Property to store destination vertex
+     */
+    size_t dst;
+
+    /**
+     * @brief Default constructs an empty edge property.
+     */
+    EdgeAll() : EdgeProperty() {}
+
+    /**
+     * @brief Constructs an edge property for a continuous edge(such as custody scan).
+     * @details Continuous edges are free i.e. there is no physical cost associated against movement via them.
+     * @param[in] : Index of the edge in the underlying graph
+     * @param[in] : Index of source vertex in underlying graph
+     * @param[in] : Index of destination vertex in underlying graph
+     * @param[in] : Processing time in seconds for outbound at source vertex
+     * @param[in] : Processing time in seconds for aggregation at source vertex
+     * @param[in] : Processing time in seconds for inbound at destination vertex.
+     * @param[in] : Cost of iterating the edge.
+     * @param[in] : Unique human readable name for edge
+     */
+    EdgeAll(const size_t, const size_t, const size_t, const long, const long, const long, const double, string_view);
+
+    /**
+     * @brief Constructs an edge property for a time-discrete edge
+     * @details A time-discrete edge is an edge with a discrete start and duration attribute
+     * @param[in] : Index of the edge in the underlying graph
+     * @param[in] : Index of source vertex in underlying graph
+     * @param[in] : Index of destination vertex in underlying graph
+     * @param[in] : Time of departure from source vertex
+     * @param[in] : Duration of iterating the edge
+     * @param[in] : Processing time in seconds for outbound at source vertex
+     * @param[in] : Processing time in seconds for aggregation at source vertex
+     * @param[in] : Processing time in seconds for inbound at destination vertex.
+     * @param[in] : Cost of iterating the edge
+     * @param[in] : Unique human readable name for edge
+     */
+    EdgeAll(const size_t, const size_t, const size_t, const long, const long, const long, const long, const long, const double, string_view);
+
+
 };
 
 /**
@@ -244,6 +301,11 @@ class BaseGraph {
         map<string, Edge, less<>> edge_map;
 
         /**
+        * @brief Mapping for verbose edge names to all possible edges
+        */
+        map<string, EdgeAll, less<>> edge_map_all;
+
+        /**
          * @brief Mutex to handle locks for read/write on graph
          */
         mutable shared_timed_mutex graph_mutex;
@@ -306,6 +368,13 @@ class BaseGraph {
         virtual void add_edge(string_view, string_view, string_view, const long, const long, const long, const long, const long, const double);
 
         /**
+        * @brief Disable or enable an edge
+        * @param[in] : Unique human readable name for edge
+        * @param[in] : Enable/Disable the edge
+        */
+        virtual void toggle_edge(string_view, bool);
+
+        /**
          * @brief Finds the properties of an edge
          * @param[in] : Source vertex
          * @param[in] : Edge name
@@ -327,7 +396,7 @@ class BaseGraph {
          * @brief Helper function to add vertex to graph.
          * @param[in] : Pointer to an instance of BaseGraph to which a vertex would be added
          * @param[in] : Named keyword arguments for adding a vertex
-         * @return A json response indicating success of failure of the command and any additional output from the underlying command
+         * @return A json response indicating success or failure of the command and any additional output from the underlying command
          */
         static json_map addv(shared_ptr<BaseGraph>, const map<string, any>&);
 
@@ -335,7 +404,7 @@ class BaseGraph {
          * @brief Helper function to add a time-discrete edge to BaseGraph.
          * @param[in] : Pointer to an instance of BaseGraph to which an edge would be added
          * @param[in] : Named keyword arguments for adding an edge
-         * @return A json response indicating success of failure of the command and any additional output from the underlying command
+         * @return A json response indicating success or failure of the command and any additional output from the underlying command
          */
         static json_map adde(shared_ptr<BaseGraph>, const map<string, any>&);
 
@@ -343,15 +412,23 @@ class BaseGraph {
          * @brief Helper function to add a continuous edge to BaseGraph.
          * @param[in] : Pointer to an instance of BaseGraph to which an edge would be added
          * @param[in] : Named keyword arguments for adding an edge
-         * @return A json response indicating success of failure of the command and any additional output from the underlying command
+         * @return A json response indicating success or failure of the command and any additional output from the underlying command
          */
         static json_map addc(shared_ptr<BaseGraph>, const map<string, any>&);
+
+        /**
+         * @brief Helper function to enable/disable an edge in BaseGraph
+         * @param[in] : Pointer to an instance of BaseGraph to which the edge would be toggled
+         * @param[in] : Named keyword arguments to respresent the edge being enabled/disabled
+         * @return A json response indicating success or failure of the command and any additional output from the underlying command
+         */
+        static json_map modc(shared_ptr<BaseGraph>, const map<string, any>&);
 
         /**
          * @brief Helper function to find an edge in BaseGraph.
          * @param[in] : Pointer to an instance of BaseGraph against which lookup is performed
          * @param[in] : Named keyword arguments for lookup
-         * @return A json response indicating success of failure of the command and any additional output from the underlying command
+         * @return A json response indicating success or failure of the command and any additional output from the underlying command
          */
         static json_map look(shared_ptr<BaseGraph>, const map<string, any>&);
 
@@ -359,7 +436,7 @@ class BaseGraph {
          * @brief Helper function to find a multi-criteria shortest path in BaseGraph.
          * @param[in] : Pointer to an instance of BaseGraph against which a path is traversed
          * @param[in] : Named keyword arguments for path traversal
-         * @return A json response indicating success of failure of the command and any additional output from the underlying command
+         * @return A json response indicating success or failure of the command and any additional output from the underlying command
          */
         static json_map find(shared_ptr<BaseGraph>, const map<string, any>&);
 };

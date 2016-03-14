@@ -127,6 +127,32 @@ class Client(object):
             )
         return response
 
+    def mod_edge(self, code, state):
+        '''
+        Enable/disable an edge
+            [in]code: code for connection
+            [in]state: boolean representing state of connection
+        '''
+        if not isinstance(code, str) and not isinstance(code, unicode):
+            raise TypeError('Connection should be a code. Got {}'.format(
+                type(code)))
+
+        if not isinstance(state, bool):
+            raise TypeError('State should be a boolean. Got {}'.format(
+                type(state)))
+
+        if state:
+            state = 1
+        else:
+            state = 0
+
+        kwargs = {
+            'code': code,
+            'state': state
+        }
+
+        return self.execute("MODC", **kwargs)
+
     def add_edge(self, **kwargs):
         '''
         Add an edge to solver. Parameters

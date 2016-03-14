@@ -34,6 +34,24 @@ EdgeProperty::EdgeProperty(const size_t _index, const long __dep, const long __d
     dur = _dur + _tap + _top + _tip;
 }
 
+EdgeProperty::EdgeProperty(const size_t _index, EdgeProperty another) {
+    index = _index;
+    _dep = another._dep;
+    _dur = another._dur;
+    _tip = another._tip;
+    _tap = another._tap;
+    _top = another._tip;
+    cost = another.cost;
+    code = another.code;
+    dep = another.dep;
+    dur = another.dur;
+}
+
+EdgeAll::EdgeAll(const size_t _index, const size_t _src, const size_t _dst, const long __tip, const long __tap, const long __top, const double _cost, string_view _code) : EdgeProperty(_index, __tip, __tap, __top, _cost, _code), src(_src), dst(_dst) {}
+
+EdgeAll::EdgeAll(const size_t _index, const size_t _src, const size_t _dst, const long __dep, const long __dur, const long __tip, const long __tap, const long __top, const double _cost, string_view _code) : EdgeProperty::EdgeProperty(_index, __dep, __dur, __tip, __tap, __top, _cost, _code), src(_src), dst(_dst)  {}
+
+
 long EdgeProperty::wait_time(const long t_departure) const {
     if (percon)
         return 0;
@@ -105,6 +123,7 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
 
         if (created.second) {
             edge_map[eprop.code] = created.first;
+            edge_map_all[eprop.code] = EdgeAll(eprop.index, sindex, dindex, tip, tap, top, cost, conn);
         }
         else {
             throw runtime_error("Unable to create edge");
@@ -112,6 +131,36 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
     }
     else {
         throw invalid_argument("Unable to create edge. Duplicate connection specified");
+    }
+}
+
+void BaseGraph::toggle_edge(string_view conn, bool state) {
+    if (state == true) {
+        if (edge_map.find(conn.to_string()) == edge_map.end()) {
+            if (edge_map_all.find(conn.to_string()) == edge_map_all.end()) {
+                throw domain_error("Invalid edge <" + conn.to_string() + "> specified");
+            }
+            unique_lock<shared_timed_mutex> graph_write_lock(graph_mutex, defer_lock);
+            graph_write_lock.lock();
+
+            EdgeAll eprop_all = edge_map_all.at(conn.to_string());
+            EdgeProperty eprop{boost::num_edges(g), eprop_all};
+            auto created = boost::add_edge(eprop_all.src, eprop_all.dst, eprop, g);
+
+            if (created.second) {
+                edge_map[eprop.code] = created.first;
+            }
+            else {
+                throw runtime_error("Unable to create edge");
+            }
+        }
+    }
+    else {
+        if (edge_map.find(conn.to_string()) != edge_map.end()) {
+            Edge edesc = edge_map.at(conn.to_string());
+            boost::remove_edge(edesc, g);
+            edge_map.erase(edge_map.find(conn.to_string()), edge_map.end());
+        }
     }
 }
 
@@ -137,6 +186,7 @@ void BaseGraph::add_edge(string_view src, string_view dst, string_view conn, con
 
         if (created.second) {
             edge_map[eprop.code] = created.first;
+            edge_map_all[eprop.code] = EdgeAll(eprop.index, sindex, dindex, tip, tap, top, cost, conn);
         }
         else {
             throw runtime_error("Unable to create edge.");
@@ -202,6 +252,33 @@ json_map BaseGraph::adde(shared_ptr<BaseGraph> solver, const map<string, any>& k
         cost = any_cast<double>(kwargs.at("cost"));
 
         solver->add_edge(src, dst, conn, dep, dur, tip, tap, top, cost);
+        response["success"] = true;
+    }
+    catch (const exception& exc) {
+        response["error"] = exc.what();
+    }
+    return response;
+}
+
+json_map BaseGraph::modc(shared_ptr<BaseGraph> solver, const map<string, any>& kwargs) {
+    json_map response;
+
+    try {
+        string code;
+        long state;
+        bool enabled;
+        check_kwargs(kwargs, list<string_view>{"code", "state"});
+
+        code = any_cast<string>(kwargs.at("code"));
+        state = any_cast<long>(kwargs.at("state"));
+
+        enabled = false;
+
+        if (state == 1) {
+            enabled = true;
+        }
+
+        solver->toggle_edge(code, enabled);
         response["success"] = true;
     }
     catch (const exception& exc) {

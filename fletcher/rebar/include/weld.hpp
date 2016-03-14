@@ -79,5 +79,6 @@ template <typename T> map<string, function<json_map(shared_ptr<T>, const map<str
     {"ADDE", T::adde},
     {"ADDC", T::addc},
     {"LOOK", T::look},
-    {"FIND", T::find}
+    {"FIND", T::find},
+    {"MODC", T::modc}
 };
