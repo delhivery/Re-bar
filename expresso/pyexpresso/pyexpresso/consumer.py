@@ -13,7 +13,10 @@ EXPATH_HOST = 'Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com'
 EXPATH_PORT = 80
 
 S3CLIENT = boto3.client('s3')
-S3BUCKET = 'expath'
+S3BUCKET = 'ExPath20160321'
+
+DDCLIENT = boto3.resource('dynamodb', region_name='us-east-1')
+DDTABLE = DDCLIENT.Table('expath')
 
 
 def lambda_handler(event, context):
@@ -22,6 +25,21 @@ def lambda_handler(event, context):
     '''
     client = Client(host=EXPATH_HOST, port=EXPATH_PORT)
 
+    records = []
+    waybills = []
+
+    for record in event['Records']:
+        data = json.loads(b64decode(record['kinesis']['data']))
+
+        if (
+                (data.get('cs', {}).get('st', None) != 'UD') or
+                not data.get('wbn', None)):
+            continue
+        else:
+            records.append(data)
+            waybills.append(data.get('wbn'))
+
+    
     for record in event['Records']:
         data = json.loads(b64decode(record['kinesis']['data']))
         reader = ScanReader(client, S3CLIENT, S3BUCKET)
