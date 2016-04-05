@@ -13,7 +13,7 @@ EXPATH_HOST = 'Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com'
 EXPATH_PORT = 80
 
 S3CLIENT = boto3.client('s3')
-S3BUCKET = 'ExPath20160321'
+S3BUCKET = 'expath'
 
 
 def lambda_handler(event, context):
