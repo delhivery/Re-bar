@@ -89,6 +89,7 @@ class Parser(object):
             'a_dep': kwargs.get('a_dep', None),
             'st':  kwargs.get('st', 'FUTURE'),
             'rmk': kwargs.get('rmk', []),
+            'pdd': pdd
         }
 
         for key, value in kwargs.items():
@@ -120,7 +121,10 @@ class Parser(object):
             raise TypeError('List expected. Got {}'.format(type(segments)))
 
         for segment in segments:
-            self.add_segment(subgraph=novi, pdd=pdd, **segment)
+
+            if segment.get('pdd', None) is None:
+                segment['pdd'] = pdd
+            self.add_segment(subgraph=novi, **segment)
             novi = False
 
     def mark_inbound(self, scan_datetime, rmk=None, fail=False, arrived=False):

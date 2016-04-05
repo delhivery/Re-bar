@@ -154,6 +154,9 @@ def store_to_local(waybill, data):
     '''
     Write graph to local
     '''
+    for record in data:
+        if record.get('par', None) is not None:
+            record['pcon'] = data[record['par']]['conn']
 
     if data:
         path = 'tests/{}.json'.format(waybill)

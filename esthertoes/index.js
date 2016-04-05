@@ -1,84 +1,66 @@
-var AWS = require('aws-sdk');
-var LineStream = require('byline').LineStream;
-var s3 = new AWS.S3();
-var elasticsearch = require('elasticsearch');
-var stream = require('stream');
-
-var numDocsAdded = 0;
-
+var aws = require('aws-sdk')
+var s3 = new aws.S3()
 var esDomain = {
-    endpoint: '4eba48c5d2c17c66b52433b0a61dc227.us-east-1.aws.found.io',
-    port: 9243,
-    user: 'admin',
-    password: 'juopmg3bltn323ao9m',
-    index: 'beatles',
-    doctype: 'segment'
-};
-
-var client = new elasticsearch.Client({
-    host: {
-        protocol: 'https',
-        host: esDomain.endpoint,
-        port: esDomain.port,
-        auth: esDomain.user + ':' + esDomain.password,
-    }
-})
-
-
-function postDocumentToES(doc, wbn, context) {
-    doc = JSON.parse(doc);
-    data = [];
-
-    doc.forEach( function( record) {
-        record['wbn'] = wbn;
-        data.push({update: {_index: esDomain.index, _type: esDomain.doctype, _id: wbn + record.idx}});
-        data.push({doc: record, doc_as_upsert: true});
-    });
-
-    client.bulk({
-        body: data
-    }, function(error, response) {
-        if (error !== undefined) {
-            console.log('Error: ', error);
-        }
-        else if (response.errors != false) {
-            console.log('Error: ', JSON.stringify(response));
-        }
-        else {
-            context.succeed()
-        }
-    });
+  endpoint: 'search-expath-5x6dtx75lntwuimllxrygn2mje.us-east-1.es.amazonaws.com',
+  region: 'us-east-1',
+  index: 'sierra',
+  docType: 'segment'
 }
 
-function esthertoes(bucket, key, context, lineStream, recordStream) {
-    var s3Stream = s3.getObject({Bucket: bucket, Key: key}).createReadStream();
+var endpoint = new aws.Endpoint(esDomain.endpoint)
+var creds = new aws.EnvironmentCredentials('AWS')
 
-    s3Stream
-        .pipe(lineStream)
-        .pipe(recordStream)
-        .on('data', function(parsedEntry) {
-            postDocumentToES(parsedEntry, key, context);
-        });
+function postDocumentToES (segments, waybill, context) {
+  var data = []
+  segments.forEach(function (segment) {
+    segment['wbn'] = waybill
+    if (segment.idx !== 0 && segment.idx !== '0') {
+      data.push({update: {_index: esDomain.index, _type: esDomain.docType, _id: waybill + '' + segment.idx}})
+      data.push({doc: segment, doc_as_upsert: true})
+    }
+  })
 
-    s3Stream.on('error', function() {
-        console.log('Error getting object "' + key + '" from bucket "' + bucket + '".');
-        context.fail();
-    });
+  var req = new aws.HttpRequest(endpoint)
+  req.path = '/_bulk'
+  req.region = esDomain.region
+  req.body = data
+  req.headers['presigned-expires'] = false
+  req.headers['Host'] = endpoint.host
+
+  var signer = new aws.Signers.V4(req, 'es')
+  signer.addAuthorization(creds, new Date())
+
+  var send = new aws.NodeHttpClient()
+  send.handleRequest(req, null, function (httpResp) {
+    var body = ''
+
+    httpResp.on('data', function (chunk) {
+      body += chunk
+    })
+
+    httpResp.on('end', function (chunk) {
+      console.log('Added segments added to ES')
+      context.succeed()
+    })
+  }, function (err) {
+    console.log('Error: ' + err)
+    context.fail()
+  })
 }
 
-exports.handler = function(event, context) {
-    var lineStream = new LineStream();
-    var recordStream = new stream.Transform({objectMode: true})
+exports.handler = function (event, context) {
+  event.Records.forEach(function (record) {
+    var bucket = record.s3.bucket.name
+    var objKey = decodeURIComponent(record.s3.object.key.replace(/\+/g, ' '))
 
-    recordStream._transform = function(line, encoding, done) {
-        var serializedRecord = line.toString();
-        this.push(serializedRecord);
-        done();
-    }
-
-    event.Records.forEach( function( record) {
-        var bucket = record.s3.bucket.name;
-        var objKey = decodeURIComponent(record.s3.object.key.replace(/\+/g, ' '));
-        esthertoes(bucket, objKey, context, lineStream, recordStream);
-    });
+    s3.getObject({Bucket: bucket, Key: objKey}, function (err, data) {
+      if (err) {
+        console.log(err)
+        context.fail()
+      } else {
+        var segments = JSON.parse(data.Body.toString('UTF-8'))
+        postDocumentToES(segments, objKey, context)
+      }
+    })
+  })
 }

@@ -15,9 +15,6 @@ EXPATH_PORT = 80
 S3CLIENT = boto3.client('s3')
 S3BUCKET = 'ExPath20160321'
 
-DDCLIENT = boto3.resource('dynamodb', region_name='us-east-1')
-DDTABLE = DDCLIENT.Table('expath')
-
 
 def lambda_handler(event, context):
     '''
@@ -39,7 +36,6 @@ def lambda_handler(event, context):
             records.append(data)
             waybills.append(data.get('wbn'))
 
-    
     for record in event['Records']:
         data = json.loads(b64decode(record['kinesis']['data']))
         reader = ScanReader(client, S3CLIENT, S3BUCKET)

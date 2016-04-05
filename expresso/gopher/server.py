@@ -67,6 +67,7 @@ def test_handler(stream):
 
     for data in stream:
         value = json.loads(base64.b64decode(data))
+        print('Location: {}'.format(value['cs']['sl']))
         reader = ScanReader(CLIENT, store=True)
         try:
             reader.read(value)

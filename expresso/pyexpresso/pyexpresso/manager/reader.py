@@ -63,7 +63,7 @@ class ScanReader(object):
         }
         self.load(scan['src'], scan['dst'], scan['sdt'], scan['pdd'])
 
-        if scan['act'] in ['<L', '<C'] and scan['pri']:
+        if scan['act'] == '<L' and scan['pri']:
             success = self.__parser.parse_inbound(scan['src'], scan['sdt'])
 
             if not success:
@@ -80,6 +80,11 @@ class ScanReader(object):
 
             if not success:
                 self.predict(**scan)
+
+            if scan['act'] == '+C':
+                self.__auto_custody_in(
+                    scan['src'], scan['dst'], scan['cid'], scan['sdt'],
+                    scan['pdd'])
 
             if self.__store:
                 self.__data.append({
@@ -114,6 +119,17 @@ class ScanReader(object):
                     'segments': prettify(self.__parser.value),
                     'scan': {},
                 })
+
+    def __auto_custody_in(self, src, dst, cid, sdt, pdd):
+        c_data = self.__client.lookup(src, cid)
+
+        if c_data.get('connection', None):
+            src = c_data['connection']['dst']
+            arr_dt = sdt + 1
+            success = self.__parser.parse_inbound(src, arr_dt)
+
+            if not success:
+                self.create(src, dst, (arr_dt, 0), pdd)
 
     def predict(self, **data):
         '''
