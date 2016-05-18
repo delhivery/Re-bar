@@ -9,7 +9,7 @@ import boto3
 
 from .manager import ScanReader, Client
 
-EXPATH_HOST = 'Expath-Fletcher-ELB-544799728.us-east-1.elb.amazonaws.com'
+EXPATH_HOST = 'internal-Expath-Fletcher-1090438106.us-east-1.elb.amazonaws.com'
 EXPATH_PORT = 80
 
 S3CLIENT = boto3.client('s3')

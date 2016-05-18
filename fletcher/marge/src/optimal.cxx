@@ -18,10 +18,12 @@ void Optimal::run_dijkstra(Vertex src, Vertex dst, DistanceMap& dmap, Predecesso
 
     dmap[src] = zero;
 
+    /*
     for (auto vertices = boost::vertices(g); vertices.first != vertices.second; vertices.first++) {
         Vertex vertex = *vertices.first;
         bin_heap.push(make_pair(vertex, dmap[vertex]));
-    }
+    }*/
+    bin_heap.push(make_pair(src, dmap[src]));
 
     while (!bin_heap.empty()) {
         auto current = bin_heap.top();

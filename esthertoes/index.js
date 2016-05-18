@@ -1,34 +1,35 @@
 var aws = require('aws-sdk')
 var s3 = new aws.S3()
+
 var esDomain = {
-  endpoint: 'search-expath-5x6dtx75lntwuimllxrygn2mje.us-east-1.es.amazonaws.com',
-  region: 'us-east-1',
+  endpoint: 'b687fbbb4069aa3ce8a0e783e9c119fc.us-east-1.aws.found.io',
   index: 'sierra',
   docType: 'segment'
 }
 
 var endpoint = new aws.Endpoint(esDomain.endpoint)
-var creds = new aws.EnvironmentCredentials('AWS')
+endpoint.protocol = 'https:'
 
 function postDocumentToES (segments, waybill, context) {
   var data = []
+  waybill = waybill.split('.')[0]
+
   segments.forEach(function (segment) {
-    segment['wbn'] = waybill
     if (segment.idx !== 0 && segment.idx !== '0') {
-      data.push({update: {_index: esDomain.index, _type: esDomain.docType, _id: waybill + '' + segment.idx}})
-      data.push({doc: segment, doc_as_upsert: true})
+      segment['wbn'] = waybill
+      var segmentIdx = waybill + '_' + segment.idx
+      var upd_record = { 'update': {'_id': segmentIdx, '_type': esDomain.docType, '_index': esDomain.index, '_retry_on_conflict': 3} }
+      var dat_record = { 'doc': segment, 'doc_as_upsert': true }
+      data.push(JSON.stringify(upd_record))
+      data.push(JSON.stringify(dat_record))
     }
   })
 
   var req = new aws.HttpRequest(endpoint)
   req.path = '/_bulk'
-  req.region = esDomain.region
-  req.body = data
-  req.headers['presigned-expires'] = false
+  req.body = data.join('\n') + '\n'
   req.headers['Host'] = endpoint.host
-
-  var signer = new aws.Signers.V4(req, 'es')
-  signer.addAuthorization(creds, new Date())
+  req.headers['Authorization'] = 'Basic ' + new Buffer('lambda:8jdRgjs$sPfs^T<*').toString('base64')
 
   var send = new aws.NodeHttpClient()
   send.handleRequest(req, null, function (httpResp) {
@@ -39,7 +40,8 @@ function postDocumentToES (segments, waybill, context) {
     })
 
     httpResp.on('end', function (chunk) {
-      console.log('Added segments added to ES')
+      body += chunk
+      console.log('Added segments to ES', body)
       context.succeed()
     })
   }, function (err) {

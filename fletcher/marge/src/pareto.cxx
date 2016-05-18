@@ -80,16 +80,17 @@ vector<Path> Pareto::find_path(string_view src, string_view dst, long t_start, l
     );
 
     for (auto const& solution: optimal_solutions) {
-        Cost current{0, 0};
+        Cost current{0, t_start};
         Vertex target = destination;
         Vertex source;
         EdgeProperty eprop;
+
 
         for (auto const& edge: reverse(solution)) {
             source = boost::source(edge, g);
             target = boost::target(edge, g);
             eprop = g[edge];
-            path.push_back(Path{g[source].code, g[edge].code, g[target].code, current.second, eprop.wait_time(current.second) + current.second, current.first});
+            path.push_back(Path{g[source].code, eprop.code, g[target].code, current.second, eprop.wait_time(current.second) + current.second, current.first});
             current = eprop.weight(current, t_max);
         }
         path.push_back(Path{g[target].code, "", "", current.second, P_L_INF, current.first});
