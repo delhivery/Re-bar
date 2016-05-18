@@ -90,11 +90,7 @@ def mod_path(path, start_time, offset=0, **kwargs):
 
     for path_segment in path:
         departure = path_segment['departure_from_source']
-        departure = (
-            departure + start_time) if departure < 1000000 else departure
-
         arrival = path_segment['arrival_at_source']
-        arrival = arrival + start_time if arrival < 1000000 else arrival
 
         source = path_segment['source']
         destination = path_segment['destination']
