@@ -20,7 +20,7 @@ find_package(Threads)
 add_executable(${PROJECT_NAME} ${REBAR_SRCS})
 target_link_libraries(${PROJECT_NAME} marge jezik ${CMAKE_THREAD_LIBS_INIT})
 
-# install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 # 
 # file(GLOB HEADER_FILES_AND_DIRS "${PROJECT_INCLUDE_DIR}/*")
 # 
