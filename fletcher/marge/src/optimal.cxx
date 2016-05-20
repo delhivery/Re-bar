@@ -106,7 +106,7 @@ vector<Path> Optimal::find_path(string_view src, string_view dst, long t_start, 
 
     Vertex current = destination;
     Edge inbound;
-    long departure = P_L_INF;
+    long departure = P_L_INF, expected_by = P_L_INF;
     bool first = true;
 
     do {
@@ -119,13 +119,14 @@ vector<Path> Optimal::find_path(string_view src, string_view dst, long t_start, 
         VertexProperty vprop = g[current];
 
         if(first) {
-            path.push_back(Path{g[current].code, "", "", distance.second, departure, distance.first});
+            path.push_back(Path{g[current].code, "", "", distance.second, expected_by, departure, distance.first});
             first = false;
         }
         else {
             EdgeProperty eprop = g[inbound];
-            departure = distance.second + eprop.wait_time(distance.second);
-            path.push_back(Path{g[current].code, g[inbound].code, g[boost::target(inbound, g)].code, distance.second, departure, distance.first});
+            expected_by = distance.second + eprop.wait_time(distance.second);
+            departure =  expected_by + eprop._tap + eprop._top;
+            path.push_back(Path{g[current].code, g[inbound].code, g[boost::target(inbound, g)].code, distance.second, expected_by, departure, distance.first});
         }
 
         if (current == source) {

@@ -130,10 +130,11 @@ class SimpleGopherServer(BaseHTTPRequestHandler):
             })
 
             try:
-                r_data = run(req.json())
+                data = req.json()
+                r_data = run(data)
                 response_h = response_h + json.dumps(r_data)
-            except ValueError:
-                print('Error reading json')
+            except ValueError as e:
+                print('Error reading json: {}'.format(e))
 
         self.send_response(200)
         self.send_header('Content-type', 'text/html')

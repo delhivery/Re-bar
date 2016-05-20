@@ -91,6 +91,7 @@ def mod_path(path, start_time, offset=0, **kwargs):
     for path_segment in path:
         departure = path_segment['departure_from_source']
         arrival = path_segment['arrival_at_source']
+        latest_arrival = path_segment['arrival_max_by']
 
         source = path_segment['source']
         destination = path_segment['destination']
@@ -102,6 +103,7 @@ def mod_path(path, start_time, offset=0, **kwargs):
             'dst': destination,
             'conn': connection,
             'p_arr': arrival,
+            'm_arr': latest_arrival,
             'p_dep': departure,
             'cst': cost + offset,
         }

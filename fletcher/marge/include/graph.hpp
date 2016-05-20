@@ -254,6 +254,12 @@ struct Path {
      */
     long dep;
 
+
+    /**
+     * @brief Minimum time by which item should arrive at source vertex
+     */
+    long mdep;
+
     /**
      * @brief Cumulative cost of arriving at the source vertex
      */
@@ -270,10 +276,11 @@ struct Path {
      * @param[in] : Edge used to reach destination from source
      * @param[in] : Destination Vertex
      * @param[in] : Arrival time at destination vertex
+     * @param[in] : Minimum time of arrival at source vertex for succesful departure
      * @param[in] : Departure time from source vertex
      * @param[in] : Cost incurred to arrive at source vertex
      */
-    Path(string_view, string_view, string_view, long, long, double);
+    Path(string_view, string_view, string_view, long, long, long, double);
 };
 
 typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS, VertexProperty, EdgeProperty> Graph;

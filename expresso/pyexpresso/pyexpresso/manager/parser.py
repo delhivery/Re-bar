@@ -56,6 +56,7 @@ class Parser(object):
             'p_arr': None,
             'a_arr': None,
             'p_dep': None,
+            'm_arr': None,
             'a_dep': None,
             'cst': None,
             'st': 'REACHED',
@@ -83,6 +84,7 @@ class Parser(object):
             'dst': kwargs['dst'],
             'conn': kwargs['conn'],
             'p_arr': kwargs['p_arr'],
+            'm_arr': kwargs['m_arr'],
             'p_dep': kwargs['p_dep'],
             'cst': kwargs['cst'],
             'a_arr': kwargs.get('a_arr', None),
@@ -95,7 +97,7 @@ class Parser(object):
         for key, value in kwargs.items():
             if key not in [
                     'src', 'dst', 'conn', 'p_arr', 'p_dep', 'cst',
-                    'a_arr', 'a_dep', 'st', 'rmk', 'idx', 'par']:
+                    'a_arr', 'a_dep', 'st', 'rmk', 'idx', 'par', 'm_arr']:
                 segment[key] = value
 
         segment['idx'] = kwargs.get('idx', len(self.__segments))
@@ -197,6 +199,7 @@ class Parser(object):
             'conn': cid,
             'p_arr': None,
             'a_arr': None,
+            'm_arr': None,
             'p_dep': None,
             'a_dep': sdt,
             'cst': self.__lcost,
@@ -238,7 +241,7 @@ class Parser(object):
             if a_seg['p_arr'] >= scan_datetime:
                 self.mark_inbound(scan_datetime, arrived=True)
                 return True
-            elif scan_datetime < a_seg['p_dep']:
+            elif scan_datetime < a_seg['m_arr']:
                 self.mark_inbound(
                     scan_datetime, rmk='WARN_LATE_ARRIVAL', arrived=True)
                 return True

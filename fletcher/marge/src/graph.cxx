@@ -9,7 +9,7 @@ bool operator < (const Cost& first, const Cost& second) {
     return (first.first < second.first) ? true : ((first.first > second.first) ? false : (first.second < second.second));
 }
 
-Path::Path(string_view _src, string_view _conn, string_view _dst, long _arr, long _dep, double _cost) : src(_src), conn(_conn), dst(_dst), arr(_arr), dep(_dep), cost(_cost) {}
+Path::Path(string_view _src, string_view _conn, string_view _dst, long _arr, long _mdep, long _dep, double _cost) : src(_src), conn(_conn), dst(_dst), arr(_arr), mdep(_mdep), dep(_dep), cost(_cost) {}
 
 VertexProperty::VertexProperty(size_t _index, string_view _code) {
     index = _index;
@@ -357,6 +357,7 @@ json_map BaseGraph::find(shared_ptr<BaseGraph> solver, const map<string, any>& k
             seg["connection"] = segment.conn.to_string();
             seg["destination"] = segment.dst.to_string();
             seg["arrival_at_source"] = segment.arr;
+            seg["arrival_max_by"] = segment.mdep;
             seg["departure_from_source"] = segment.dep;
             seg["cost_reaching_source"] = segment.cost;
             segments.push_back(seg);

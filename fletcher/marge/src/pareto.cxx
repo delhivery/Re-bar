@@ -78,6 +78,8 @@ vector<Path> Pareto::find_path(string_view src, string_view dst, long t_start, l
         allocator<boost::r_c_shortest_paths_label<Graph, Traversal> >(),
         boost::default_r_c_shortest_paths_visitor()
     );
+    
+    long departure = P_L_INF, expected_by = P_L_INF;
 
     for (auto const& solution: optimal_solutions) {
         Cost current{0, t_start};
@@ -90,10 +92,12 @@ vector<Path> Pareto::find_path(string_view src, string_view dst, long t_start, l
             source = boost::source(edge, g);
             target = boost::target(edge, g);
             eprop = g[edge];
-            path.push_back(Path{g[source].code, g[edge].code, g[target].code, current.second, eprop.wait_time(current.second) + current.second, current.first});
+            expected_by = current.second + eprop.wait_time(current.second);
+            departure = expected_by + eprop._tap + eprop._top;
+            path.push_back(Path{g[source].code, g[edge].code, g[target].code, current.second, expected_by, departure, current.first});
             current = eprop.weight(current, t_max);
         }
-        path.push_back(Path{g[target].code, "", "", current.second, P_L_INF, current.first});
+        path.push_back(Path{g[target].code, "", "", current.second, P_L_INF, P_L_INF, current.first});
         break;
     }
 
