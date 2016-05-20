@@ -250,15 +250,14 @@ struct Path {
     long arr;
 
     /**
-     * @brief Time of departure from source vertex
-     */
-    long dep;
-
-
-    /**
      * @brief Minimum time by which item should arrive at source vertex
      */
     long mdep;
+
+    /**
+     * @brief Time of departure from source vertex
+     */
+    long dep;
 
     /**
      * @brief Cumulative cost of arriving at the source vertex
