@@ -244,7 +244,9 @@ class Client(object):
             'top': top
         }
 
-        if departure is None and duration is None and cost is None:
+        if (
+                departure is None and duration is None and cost is None) or (
+                departure == 0 and duration == 0 and cost == 0):
             return self.execute("ADDC", **kwargs)
         elif (
                 departure is not None and

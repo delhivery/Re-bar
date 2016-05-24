@@ -59,7 +59,7 @@ def lambda_handler(event, context):
             scan.get('sl'),
             scan.get('sd')
         )
-        if not (RDCLIENT.setnx(key, 1, ex=24 * 3600, nx=True)):
+        if not (RDCLIENT.set(key, 1, ex=24 * 3600, nx=True)):
             continue
 
         try:

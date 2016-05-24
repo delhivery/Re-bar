@@ -13,7 +13,8 @@ setup(
     author='Amit Prakash Ambasta',
     author_email='amit.ambasta@delhivery.com',
     install_requires=[
-        'boto3',
+        'redis',
+        # 'boto3'
     ],
     classifiers=[
         'Development Status :: 5 - Stable',
