@@ -40,3 +40,4 @@ event.json
 .rope*
 dist*
 *egg*
+build/*
