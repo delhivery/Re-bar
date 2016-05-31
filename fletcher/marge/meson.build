@@ -1,4 +1,4 @@
-install_headers('marge.hpp')
+install_headers('graph.hpp')
 install_headers('optimal.hpp')
 install_headers('pareto.hpp')
 
