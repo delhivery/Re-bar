@@ -147,6 +147,7 @@ class ScanReader(object):
             self.create(itd, data['dst'], (lat, itd_cst), data['pdd'])
             self.__parser.arrival = None
         else:
+            print('Looking up {}, {} failed'.format(data['src'], data['cid']))
             self.__parser.make_new_blank(
                 data['src'], None, data['cid'], data['sdt'])
             self.__parser.mark_termination(
