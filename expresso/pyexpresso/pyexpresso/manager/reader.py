@@ -155,7 +155,7 @@ class ScanReader(object):
             self.__parser.mark_termination(
                 'MISSING_DATA: {}'.format(data['cid']))
         else:
-            self.predict(data)
+            self.predict(**data)
 
     def solve(self, src, dst, sdt, pdd, **kwargs):
         '''
