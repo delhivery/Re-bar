@@ -5,6 +5,7 @@ from __future__ import print_function
 
 import datetime
 import json
+import os
 import uuid
 
 import boto3
@@ -124,6 +125,7 @@ def load_from_s3(client, bucket, waybill):
         handler = open(path, 'r')
         data = json.load(handler)
         handler.close()
+        os.remove(path)
         return data
     except (
             boto3.exceptions.S3TransferFailedError,
@@ -178,3 +180,4 @@ def store_to_s3(client, bucket, waybill, data):
         handler.write(json.dumps(data))
         handler.close()
         client.upload_file(path, bucket, waybill)
+        os.remove(path)
