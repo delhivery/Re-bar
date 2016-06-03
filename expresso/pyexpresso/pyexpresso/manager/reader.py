@@ -130,6 +130,8 @@ class ScanReader(object):
 
             if not success:
                 self.create(src, dst, (arr_dt, 0), pdd)
+        elif 'error' not in c_data:
+            self.__auto_custody_in(src, dst, cid, sdt, pdd)
 
     def predict(self, **data):
         '''
@@ -146,10 +148,10 @@ class ScanReader(object):
                 data['src'], itd, data['cid'], data['sdt'])
             self.create(itd, data['dst'], (lat, itd_cst), data['pdd'])
             self.__parser.arrival = None
-        elif c_data.get('error', None):
+        elif 'error' in c_data:
             print(
-                'Looking up {}, {} failed. Response: {}'.format(
-                    data['src'], data['cid'], c_data))
+                'Looking up {}, {} failed. Reponse: {} Error: {}'.format(
+                    data['src'], data['cid'], c_data, c_data['error']))
             self.__parser.make_new_blank(
                 data['src'], None, data['cid'], data['sdt'])
             self.__parser.mark_termination(

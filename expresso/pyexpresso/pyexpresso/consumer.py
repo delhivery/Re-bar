@@ -28,8 +28,6 @@ def lambda_handler(event, context):
     '''
     Invokation handler for records fetched via kinesis on lambda
     '''
-    client = Client(host=EXPATH_HOST, port=EXPATH_PORT)
-
     records = []
     waybills = []
 
@@ -46,7 +44,6 @@ def lambda_handler(event, context):
 
     for record in event['Records']:
         data = json.loads(b64decode(record['kinesis']['data']))
-        reader = ScanReader(client, S3CLIENT, S3BUCKET)
 
         if (data.get('cs', {}).get('st', None) != 'UD'):
             # Ignore non-forward flow
@@ -63,7 +60,9 @@ def lambda_handler(event, context):
             continue
 
         try:
+            client = Client(host=EXPATH_HOST, port=EXPATH_PORT)
+            reader = ScanReader(client, S3CLIENT, S3BUCKET)
             reader.read(data)
+            client.close()
         except ValueError:
             continue
-    client.close()
