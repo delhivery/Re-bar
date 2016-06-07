@@ -121,7 +121,7 @@ def load_from_s3(client, bucket, waybill):
     '''
     data = []
     try:
-        data = json.load(
+        data = json.loads(
             client.get_object(
                 Bucket=bucket, Key=waybill)['Body'].read().decode('UTF-8'))
         return data
