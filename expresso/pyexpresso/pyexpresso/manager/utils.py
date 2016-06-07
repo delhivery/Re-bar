@@ -5,7 +5,7 @@ from __future__ import print_function
 
 import datetime
 import json
-import os
+import tempfile
 import uuid
 
 import boto3
@@ -119,19 +119,17 @@ def load_from_s3(client, bucket, waybill):
     '''
     Load graph data from s3
     '''
-    path = '/tmp/{}{}.json'.format(uuid.uuid4(), waybill)
+    data = []
     try:
-        client.download_file(bucket, waybill, path)
-        handler = open(path, 'r')
-        data = json.load(handler)
-        handler.close()
-        os.remove(path)
+        data = json.load(
+            client.get_object(
+                Bucket=bucket, Key=waybill)['Body'].read().decode('UTF-8'))
         return data
     except (
             boto3.exceptions.S3TransferFailedError,
             botocore.exceptions.ClientError):
-        return []
-    return []
+        pass
+    return data
 
 
 def load_from_local(waybill):
@@ -175,9 +173,8 @@ def store_to_s3(client, bucket, waybill, data):
             record['pcon'] = data[record['par']]['conn']
 
     if data:
-        path = '/tmp/{}{}.json'.format(uuid.uuid4(), waybill)
-        handler = open(path, 'w')
-        handler.write(json.dumps(data))
-        handler.close()
-        client.upload_file(path, bucket, waybill)
-        os.remove(path)
+
+        with tempfile.NamedTemporaryFile(mode='w+') as handler:
+            json.dump(data, handler)
+            handler.flush()
+            client.upload_file(handler.name, bucket, waybill)
