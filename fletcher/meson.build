@@ -5,7 +5,7 @@ subdir('structures')
 
 
 proto_linkdep = dependency('protobuf')
-grpc_linkdep = dependency('grpc++_unsecure')
+grpc_linkdep = dependency('gRPC++_unsecure')
 
 PROJECT_EXECUTABLE_NAME='fletcher'
 fletcher_exe = executable(
