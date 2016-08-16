@@ -28,7 +28,7 @@ struct Cost {
 
     bool is_infinite() const;
 
-    Cost& operator = (const Cost& operand);
+    Cost& operator = (Cost operand);
 };
 
 /**

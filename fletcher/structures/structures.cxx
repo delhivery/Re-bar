@@ -61,12 +61,9 @@ Cost operator + (const Cost& first, const Cost& second) {
     return Cost{first.cost() + second.cost(), first.time() + second.time()};
 }
 
-Cost& Cost::operator = (const Cost &operand) {
-    if (this == &operand) {
-        return *this;
-    }
-    this->~Cost();
-    new(this) Cost(operand);
+Cost& Cost::operator = (Cost operand) {
+    std::swap(expense, operand.expense);
+    std::swap(duration, operand.duration);
     return *this;
 }
 

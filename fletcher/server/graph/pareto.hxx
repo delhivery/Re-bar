@@ -22,13 +22,8 @@ struct Resource {
 
     Resource(Cost _cost=Cost{0, 0}) : cost(_cost) {}
 
-    Resource& operator = (const Resource& other) {
-        if (this == &other) {
-            return *this;
-        }
-
-        this->~Resource();
-        new (this) Resource(other);
+    Resource& operator = (Resource other) {
+        std::swap(cost, other.cost);
         return *this;
     }
 };
