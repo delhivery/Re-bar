@@ -29,13 +29,10 @@ typedef boost::graph_traits<Graph>::vertex_descriptor Vertex;
 typedef boost::graph_traits<Graph>::edge_descriptor Edge;
 
 
-std::map<std::string, std::string> getFeatures(auto const& features) {
-    std::map<std::string, std::string> features_;
-
+void getFeatures(std::map<std::string, std::string>& features_, auto const& features) {
     for (auto const& feature: features){
         features_[feature.type()] = feature.value();
     }
-    return features_;
 };
 
 auto validate_edge(
@@ -98,7 +95,8 @@ public:
                 edge->departure(),
                 edge->duration());
 
-        std::map<std::string, std::string> feats = getFeatures(edge->features());
+        std::map<std::string, std::string> feats{};
+        getFeatures(feats, edge->features());
 
         if (is_valid.first) {
             if (edge->type() == expath::Edge_ConnectionType_CUSTODY) {
@@ -148,9 +146,11 @@ public:
             response->set_success(false);
             response->set_message("Invalid/Missing connection identifier.");
         }
-        remove_connection(edge->code(), graph);
-        response->set_success(true);
-        response->set_message("");
+        else {
+            remove_connection(edge->code(), graph);
+            response->set_success(true);
+            response->set_message("");
+        }
         return grpc::Status::OK;
     }
 
