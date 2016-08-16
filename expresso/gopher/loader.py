@@ -35,7 +35,7 @@ def chunks(lst, chunk_size):
     '''
     Split a list into equal chunks of chunk_size
     '''
-
+    chunk_size = int(chunk_size)
     for idx in range(0, len(lst), chunk_size):
         yield lst[idx: idx + chunk_size]
 
@@ -55,7 +55,7 @@ def prepare(edge_file):
     vertices = list(vertices)
     threads = []
 
-    for vertices_chunk in chunks(vertices, len(vertices) / 8):
+    for vertices_chunk in chunks(vertices, int(len(vertices) / 8)):
         thread = threading.Thread(target=add_vertex_chunk, args=[vertices_chunk])
         thread.start()
         threads.append(thread)
