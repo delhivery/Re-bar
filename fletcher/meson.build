@@ -1,19 +1,15 @@
-project('fletcher', 'cpp', version: '2.0.0', license: 'Delhivery', default_options: ['cpp_std=c++14'])
+project('fletcher', 'cpp', version: '2.5.0', license: 'Delhivery', default_options:['cpp_std=c++1z'])
 
-ext_dep = declare_dependency(include_directories: include_directories('external'))
-bgl_dep = dependency('boost', modules: ['graph'])
-btl_linkdep = dependency('boost', modules: ['thread'])
+subdir('protobuf')
+subdir('structures')
 
 
-FLETCHER_EXECUTABLE_NAME = 'fletcher'
+proto_linkdep = dependency('protobuf')
+grpc_linkdep = dependency('gRPC++_unsecure')
 
-subdir('marge')
-subdir('jezik')
-subdir('systemd')
-
+PROJECT_EXECUTABLE_NAME='fletcher'
 fletcher_exe = executable(
-    FLETCHER_EXECUTABLE_NAME, 'fletcher.cxx',
-    dependencies: [ext_dep, marge_dep, jezik_dep, btl_linkdep],
-    link_with: [margelib, jeziklib],
+    PROJECT_EXECUTABLE_NAME, 'main.cxx',
+    dependencies: [prot_deps, struct_deps, grpc_linkdep, proto_linkdep],
+    link_with: [struct_library, prot_libs, grpc_libs],
     install: true)
-test('fletcher test', fletcher_exe)
