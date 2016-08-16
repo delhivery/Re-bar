@@ -133,7 +133,7 @@ struct EdgeProperty {
             const long tip_,
             const double cst_,
             std::experimental::string_view con_,
-            Features& features_) :
+            const Features& features_) :
         code(con_.to_string()),
         _dep(dep_),
         _dur(dur_),
