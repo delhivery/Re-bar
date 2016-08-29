@@ -28,6 +28,14 @@ message Edge {
     repeated Feature features = 11;
 }
 
+message PathRequest {
+    string source = 1;
+    string destination = 2;
+    int64 t_start = 3;
+    int64 t_limit = 4;
+    repeated Feature features = 5;
+}
+
 message Response {
     bool success = 1;
     string message = 2;
@@ -38,8 +46,22 @@ message FindResponse {
     Edge edge = 2;
 }
 
+message Segment {
+    string vertex = 1;
+    string edge = 2;
+    int64 arrival_vertex = 3;
+    int64 max_arrival_vertex = 3;
+    int64 departure_vertex = 4;
+    double cost_arrival_vertex = 5;
+}
+
+message Path {
+    repeated Segment segments = 1;
+}
+
 service EPServices {
     rpc AddEdge (Edge) returns (Response);
     rpc RemoveEdge (Edge) returns (Response);
     rpc SearchEdge (Edge) returns (FindResponse);
+    rpc GetPath (PathRequest) return (PathResponse);
 }
