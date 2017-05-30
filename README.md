@@ -1,3 +1,5 @@
+# This project is now dead with all new development happenning against the project Kraken 
+
 # Re-bar, Expected Path and Metrics
 Re-bar is an ongoing experiment to build routing solutions for shipments moving across the Delivery Last-Mile Network. Its goal is to come up with ideal recommendations for paths a shipments or bags should take in order to reach their destinations within SLAs while minimizing costs and satisfying other operational criteria.
 
